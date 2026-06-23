@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReLU vs Sigmoid 对比图</title>
+<style>
+  :root{ --ink:#111; --axis:#8a8a8a; --mut:#5b6b86; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:#e9edf3; padding:40px;
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,system-ui,sans-serif;}
+  .fig{background:#fff; border:1px solid #dfe5ee; border-radius:16px; padding:34px 40px 26px;
+    box-shadow:0 14px 40px rgba(30,50,90,.10);}
+  .title{text-align:center; font-size:23px; font-weight:800; color:#16233f; letter-spacing:.5px; margin-bottom:6px;}
+  .sub{text-align:center; font-size:14px; color:var(--mut); margin-bottom:18px;}
+  .panels{display:flex; gap:46px;}
+  .panel{position:relative; width:380px; height:280px;}
+  .panel .name{position:absolute; top:-2px; left:0; right:0; text-align:center;
+    font-size:15px; font-weight:700; color:#16233f;}
+  /* 斜体衬线数学标注，参考论文图风格 */
+  .lbl{position:absolute; font-family:"Times New Roman",Georgia,"Cambria",serif; font-style:italic;
+    color:var(--ink); font-size:20px; white-space:nowrap;}
+  .lbl sub{font-size:13px;} .lbl sup{font-size:13px;}
+  .tick{position:absolute; font-family:"Times New Roman",Georgia,serif; font-style:italic; color:#444; font-size:15px;}
+  .clbl{position:absolute; font-size:16px; font-weight:800; line-height:1.18;}
+  .note{position:absolute; font-size:12.5px; color:#d23a55; font-weight:700; line-height:1.25;}
+  .cap{margin-top:14px; max-width:806px; text-align:center; font-size:14.5px; color:#33425e; line-height:1.6;}
+  .cap b{color:#16233f;}
+  .cap .hi{color:#1a5fe0; font-weight:700;} .cap .hr{color:#d23a55; font-weight:700;}
+  .hintbar{margin-top:14px; text-align:center; font-size:12px; color:#90a0bb;}
+</style>
+</head>
+<body>
+  <div class="fig" id="fig">
+    <div class="title">ReLU 与 Sigmoid 激活函数对比</div>
+    <div class="sub">叠在同一坐标系 —— Sigmoid 两端饱和、导数→0，深层连乘时梯度消失</div>
+
+    <div class="combo" style="position:relative; width:600px; height:372px; margin:2px auto 0;">
+      <svg viewBox="0 0 600 372" width="600" height="372">
+        <!-- 等比例坐标：两轴 80px/单位，故 f=y 呈真正的 45° -->
+        <!-- 横轴：输入 y（f=0 线） -->
+        <line x1="64" y1="300" x2="552" y2="300" stroke="#8a8a8a" stroke-width="1.6"/>
+        <polygon points="560,300 547,295 547,305" fill="#8a8a8a"/>
+        <!-- 纵轴：f(y) -->
+        <line x1="300" y1="318" x2="300" y2="52" stroke="#8a8a8a" stroke-width="1.6"/>
+        <polygon points="300,44 295,57 305,57" fill="#8a8a8a"/>
+        <!-- f=1 渐近线 -->
+        <line x1="80" y1="220" x2="540" y2="220" stroke="#c2c2c2" stroke-width="1.2" stroke-dasharray="6 5"/>
+        <!-- ReLU（黑）：负区 0，正区斜率=1 → 视觉 45° -->
+        <path d="M80,300 L300,300 L540,60" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <polygon points="545,55 533,61 541,71" fill="#111"/>
+        <!-- Sigmoid（蓝）：有界于 0~1 -->
+        <path d="M80,295 C175,293 230,283 300,260 C370,237 430,228 540,224" fill="none" stroke="#1a5fe0" stroke-width="3.6" stroke-linecap="round"/>
+        <!-- 两端近水平切线，强调导数≈0 -->
+        <line x1="92" y1="294.5" x2="166" y2="294" stroke="#d23a55" stroke-width="3.2" stroke-linecap="round"/>
+        <line x1="452" y1="224.5" x2="520" y2="224" stroke="#d23a55" stroke-width="3.2" stroke-linecap="round"/>
+        <!-- 指向左端 -->
+        <path d="M150,322 L150,298" stroke="#d23a55" stroke-width="1.3" stroke-dasharray="3 3"/>
+        <polygon points="150,295 146,303 154,303" fill="#d23a55"/>
+        <!-- 指向右端 -->
+        <path d="M492,250 L492,228" stroke="#d23a55" stroke-width="1.3" stroke-dasharray="3 3"/>
+        <polygon points="492,225 488,233 496,233" fill="#d23a55"/>
+      </svg>
+      <!-- 数学轴标注 -->
+      <div class="lbl" style="left:262px; top:42px;">f(y)</div>
+      <div class="lbl" style="left:540px; top:306px;">y</div>
+      <div class="lbl" style="left:281px; top:209px;">1</div>
+      <!-- 曲线标注 -->
+      <div class="clbl" style="left:386px; top:104px; color:#111;">ReLU<br><span style="font-size:12px; font-weight:600;">斜率=1，导数=1</span></div>
+      <div class="clbl" style="left:430px; top:202px; color:#1a5fe0;">Sigmoid</div>
+      <!-- 两端饱和标注 -->
+      <div class="note" style="left:54px; top:326px;">左端饱和：导数→0<br>→ 梯度消失</div>
+      <div class="note" style="left:426px; top:256px;">右端饱和：导数→0<br>→ 梯度消失</div>
+    </div>
+
+    <div class="cap">
+      <b>关键差异（梯度视角）：</b>
+      <span class="hi">ReLU</span> 正区导数恒为 <b>1</b>（两轴等比例，故呈 <b>45°</b>）、负区为 0，<b>不饱和</b> → 深层连乘梯度不缩水；
+      <span class="hr">Sigmoid</span> 有界于 0~1、两端<b>饱和</b>（导数→0、最大仅 0.25）→ 深层<b>梯度消失</b>。
+    </div>
+    <div class="hintbar">提示：截图本白色卡片，或直接将此 SVG 复制进 PPT 即可（矢量、可无损缩放）。</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>知识库 · 数学与机器学习可视化门户</title>
+<style>
+  /* ============================================================
+     视觉风格：浅色学术风（纸白底 / 墨蓝标题 / 琥珀点缀）
+     与「残差连接 · Transformer」等页面保持一致
+     ============================================================ */
+  :root{
+    color-scheme: dark;
+    --paper:#0e1320;
+    --paper2:#1d2540;
+    --panel:#161d2e;
+    --ink:#e4ebf7;
+    --muted:#9aa6bf;
+    --dim:#6b768f;
+    --line:#283248;
+    --line2:#36425e;
+    --blue:#6aa6ff;
+    --green:#9bce6b;
+    --amber:#f0bf4c;
+    --red:#ff8a8a;
+    --violet:#b49bff;
+    --teal:#46d7cc;
+    --shadow:0 18px 46px rgba(0,0,0,.42);
+    --shadow-sm:0 4px 16px rgba(0,0,0,.30);
+    --maxw:1180px;
+    --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+            "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 620px at 86% -10%, #16203a 0%, #111729 46%, var(--paper) 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    min-height:100vh;
+  }
+  a{color:inherit;text-decoration:none;}
+  ::selection{background:rgba(51,92,129,.18);}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+
+  /* ---------- 顶部 ---------- */
+  header.top{padding:52px 0 26px;}
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--blue);display:flex;align-items:center;gap:12px;margin-bottom:16px;
+  }
+  .eyebrow::before{content:"";width:34px;height:1px;background:linear-gradient(90deg,var(--blue),transparent);}
+  h1.title{
+    font-size:clamp(30px,4.4vw,46px);font-weight:800;letter-spacing:-.01em;
+    line-height:1.1;margin:0 0 14px;color:var(--ink);
+  }
+  h1.title em{font-style:normal;color:var(--amber);}
+  .lede{font-size:clamp(15px,1.7vw,18px);color:var(--muted);max-width:62ch;margin:0;}
+  .lede b{color:var(--ink);font-weight:700;}
+
+  /* ---------- 工具条：搜索 + 分类 ---------- */
+  .toolbar{
+    position:sticky;top:0;z-index:40;
+    margin-top:30px;padding:14px 0 12px;
+    background:linear-gradient(180deg, var(--paper) 72%, rgba(14,19,32,0));
+    backdrop-filter:saturate(1.1) blur(2px);
+  }
+  .searchrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .search{
+    flex:1 1 320px;min-width:240px;position:relative;display:flex;align-items:center;
+  }
+  .search svg{position:absolute;left:15px;width:17px;height:17px;color:var(--dim);pointer-events:none;}
+  .search input{
+    width:100%;padding:13px 16px 13px 42px;font-size:15px;font-family:var(--sans);
+    color:var(--ink);background:var(--panel);border:1px solid var(--line2);border-radius:12px;
+    box-shadow:var(--shadow-sm);outline:none;transition:border-color .18s, box-shadow .18s;
+  }
+  .search input::placeholder{color:var(--dim);}
+  .search input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(106,166,255,.20);}
+  .search kbd{
+    position:absolute;right:13px;font-family:var(--mono);font-size:11px;color:var(--dim);
+    border:1px solid var(--line2);border-radius:5px;padding:2px 6px;background:var(--paper2);
+  }
+  .count{font-family:var(--mono);font-size:12.5px;color:var(--dim);white-space:nowrap;}
+  .count b{color:var(--blue);}
+
+  .chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+  .chip{
+    font-size:13.5px;font-weight:600;color:var(--muted);
+    padding:7px 15px;border-radius:999px;border:1px solid var(--line2);
+    background:var(--panel);cursor:pointer;transition:all .16s;user-select:none;
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--dim);}
+  .chip .n{font-family:var(--mono);font-size:11.5px;color:var(--dim);}
+  .chip:hover{border-color:var(--blue);color:var(--ink);}
+  .chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .chip.active .n{color:rgba(14,19,32,.6);}
+  .chip.active .dot{background:var(--paper);}
+
+  /* ---------- 卡片网格 ---------- */
+  .grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:22px;margin:30px 0 60px;
+  }
+  .card{
+    display:flex;flex-direction:column;background:var(--panel);
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    box-shadow:var(--shadow-sm);transition:transform .2s ease, box-shadow .2s ease, border-color .2s;
+    cursor:pointer;
+  }
+  .card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:var(--line2);}
+  .cover{
+    position:relative;height:128px;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  .cover .ic{font-size:46px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.18));z-index:2;}
+  .cover::after{ /* 细微纹理光泽 */
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(120% 80% at 80% -20%, rgba(255,255,255,.35), transparent 60%);
+  }
+  .cover .badge{
+    position:absolute;left:14px;bottom:12px;z-index:3;
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:#fff;background:rgba(0,0,0,.26);backdrop-filter:blur(3px);
+    padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.28);
+  }
+  .body{padding:18px 18px 16px;display:flex;flex-direction:column;flex:1;}
+  .card h3{margin:0 0 5px;font-size:18.5px;font-weight:700;color:var(--ink);line-height:1.3;}
+  .card .sub{margin:0 0 12px;font-size:13.5px;color:var(--muted);line-height:1.5;flex:1;}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .tag{
+    font-size:11.5px;color:var(--muted);background:var(--paper2);
+    border:1px solid var(--line);padding:2px 9px;border-radius:6px;
+  }
+  .meta{
+    display:flex;align-items:center;justify-content:space-between;
+    padding-top:11px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--dim);font-family:var(--mono);
+  }
+  .meta .open{color:var(--blue);font-weight:600;font-family:var(--sans);display:flex;align-items:center;gap:4px;transition:gap .16s;}
+  .card:hover .meta .open{gap:8px;}
+
+  .empty{
+    grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--dim);
+  }
+  .empty .big{font-size:40px;margin-bottom:12px;}
+
+  /* ---------- 页脚 ---------- */
+  footer{border-top:1px solid var(--line);padding:26px 0 50px;color:var(--dim);font-size:13px;}
+  footer code{font-family:var(--mono);font-size:12px;color:var(--amber);background:rgba(240,191,76,.12);padding:1px 6px;border-radius:5px;}
+  footer a.src{color:var(--blue);}
+
+  @media (max-width:560px){
+    .wrap{padding:0 18px;}
+    header.top{padding:38px 0 18px;}
+    .grid{grid-template-columns:1fr;gap:16px;}
+    .search kbd{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Knowledge Base</div>
+    <h1 class="title">我的知识库 · <em>数学与机器学习可视化</em></h1>
+    <p class="lede">把散落的知识页面收拢成一处入口。从<b>傅里叶级数</b>、<b>李群李代数</b>到<b>Transformer</b> 与<b>强化学习</b> —— 按主题浏览，或直接搜索。</p>
+  </header>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="searchrow">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="text" placeholder="搜索标题、主题、标签…" autocomplete="off" />
+        <kbd>/</kbd>
+      </label>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="wrap">
+  <footer>
+    共 <b id="total"></b> 篇 · 新增页面只需在本文件顶部的 <code>PAGES</code> 数组里加一条记录即可自动出现在这里。
+  </footer>
+</div>
+
+<script>
+/* ================================================================
+   📚 知识页面清单 —— 新增一篇知识页面，复制一条记录改即可：
+   {
+     file:  "pages/文件名.html",     // pages/ 目录下的 html 文件
+     title: "标题",
+     sub:   "一句话副标题/描述",
+     cat:   "分类",                 // 见下方 CATEGORIES，新分类会自动建一个色卡
+     tags:  ["标签1","标签2"],
+     icon:  "🔣",                   // 封面图标（emoji）
+     date:  "2026-06-23"            // 更新日期，用于「最近更新」排序
+   }
+   ================================================================ */
+
+const CATEGORIES = {
+  "数学基础":     { color:"#6aa6ff", g:["#3b6a93","#22405c"] },
+  "神经网络":     { color:"#9bce6b", g:["#38826d","#1f4d40"] },
+  "大模型":       { color:"#b49bff", g:["#7d6392","#4c3a5e"] },
+  "强化学习":     { color:"#f0bf4c", g:["#b06c2e","#6f3f18"] },
+  "机器人 / SLAM":{ color:"#46d7cc", g:["#34908d","#1c504f"] },
+};
+
+const PAGES = [
+  {
+    file:"pages/transformer_math_share.html",
+    title:"Transformer 的数学原理",
+    sub:"从注意力矩阵到大模型架构谱系：注意力的矩阵形式，以及由此衍生的架构家族。",
+    cat:"大模型", tags:["注意力","架构","谱系"], icon:"✨", date:"2026-06-19"
+  },
+  {
+    file:"pages/neural_net_matrix_ops.html",
+    title:"神经网络中的矩阵运算",
+    sub:"用一张苹果图像，直观展示网络里的矩阵乘法与张量运算。",
+    cat:"神经网络", tags:["矩阵","线性代数","可视化"], icon:"🔢", date:"2026-06-23"
+  },
+  {
+    file:"pages/relu-vs-sigmoid.html",
+    title:"ReLU vs Sigmoid",
+    sub:"两种经典激活函数的形状、梯度与适用场景对比。",
+    cat:"神经网络", tags:["激活函数","对比"], icon:"📈", date:"2026-06-21"
+  },
+  {
+    file:"pages/强化学习_GRPO_可视化讲解.html",
+    title:"强化学习与 GRPO",
+    sub:"RL 与 DL 的本质差异，以及 GRPO 如何改写策略优化的规则。",
+    cat:"强化学习", tags:["RL","GRPO","大模型"], icon:"🎯", date:"2026-06-21"
+  },
+  {
+    file:"pages/lie-groups-slam.html",
+    title:"流形与李群李代数",
+    sub:"从流形、切空间到 SE(3)/SO(3)，指数映射如何支撑机器人位姿优化。",
+    cat:"机器人 / SLAM", tags:["流形","SLAM","机器人"], icon:"🌐", date:"2026-06-22"
+  },
+  {
+    file:"pages/fourier-series.html",
+    title:"傅里叶级数",
+    sub:"周期信号的三维分解与相量合成：把信号拆成正弦谐波再合回去。",
+    cat:"数学基础", tags:["信号处理","复数","可视化"], icon:"〰️", date:"2026-06-21"
+  },
+];
+
+/* ---------------- 渲染逻辑 ---------------- */
+const $ = s => document.querySelector(s);
+const grid = $("#grid"), chipsEl = $("#chips");
+let activeCat = "全部";
+let query = "";
+
+function catStyle(cat){
+  const c = CATEGORIES[cat] || { color:"#9aa6bf", g:["#3a4358","#262d3e"] };
+  return c;
+}
+
+function buildChips(){
+  const counts = {};
+  PAGES.forEach(p => counts[p.cat] = (counts[p.cat]||0)+1);
+  const cats = ["全部", ...Object.keys(CATEGORIES).filter(c => counts[c])];
+  chipsEl.innerHTML = "";
+  cats.forEach(cat => {
+    const n = cat === "全部" ? PAGES.length : counts[cat];
+    const c = cat === "全部" ? {color:"var(--ink)"} : catStyle(cat);
+    const el = document.createElement("div");
+    el.className = "chip" + (cat === activeCat ? " active" : "");
+    el.innerHTML = `<span class="dot" style="background:${c.color}"></span>${cat}<span class="n">${n}</span>`;
+    el.onclick = () => { activeCat = cat; render(); };
+    chipsEl.appendChild(el);
+  });
+}
+
+function matches(p){
+  if (activeCat !== "全部" && p.cat !== activeCat) return false;
+  if (!query) return true;
+  const hay = (p.title + " " + p.sub + " " + p.cat + " " + p.tags.join(" ")).toLowerCase();
+  return query.toLowerCase().split(/\s+/).every(t => hay.includes(t));
+}
+
+function render(){
+  buildChips();
+  const list = PAGES.filter(matches);
+  grid.innerHTML = "";
+
+  if (!list.length){
+    grid.innerHTML = `<div class="empty"><div class="big">🔍</div>没有匹配的知识页面，换个关键词试试。</div>`;
+    $("#count").innerHTML = `共 <b>0</b> 篇`;
+    return;
+  }
+
+  list.forEach(p => {
+    const c = catStyle(p.cat);
+    const card = document.createElement("a");
+    card.className = "card";
+    card.href = encodeURI(p.file);
+    card.target = "_blank";
+    card.rel = "noopener";
+    const tags = p.tags.map(t => `<span class="tag">${t}</span>`).join("");
+    card.innerHTML = `
+      <div class="cover" style="background:linear-gradient(135deg,${c.g[0]},${c.g[1]})">
+        <span class="ic">${p.icon}</span>
+        <span class="badge">${p.cat}</span>
+      </div>
+      <div class="body">
+        <h3>${p.title}</h3>
+        <p class="sub">${p.sub}</p>
+        <div class="tags">${tags}</div>
+        <div class="meta">
+          <span>${p.date}</span>
+          <span class="open">打开 →</span>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  $("#count").innerHTML = `显示 <b>${list.length}</b> / ${PAGES.length} 篇`;
+}
+
+/* 搜索框 */
+$("#q").addEventListener("input", e => { query = e.target.value.trim(); render(); });
+// "/" 快速聚焦搜索
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== $("#q")){ e.preventDefault(); $("#q").focus(); }
+  if (e.key === "Escape"){ $("#q").value=""; query=""; render(); $("#q").blur(); }
+});
+
+$("#total").textContent = PAGES.length;
+render();
+</script>
+</body>
+</html>

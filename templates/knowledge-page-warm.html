@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<!-- ⬇️ 改成本页标题 -->
+<title>页面标题 · 知识库</title>
+<meta name="description" content="一句话描述本页内容（可选）。" />
+
+<!-- 字体（沿用知识库统一字体：Spectral 衬线标题 + Inter 正文 + JetBrains Mono 等宽）-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  暖米色知识页模板 · WARM-BEIGE KNOWLEDGE TEMPLATE              ║
+   ║  设计令牌见 :root —— 所有颜色只在此处定义，全站统一               ║
+   ║  组件：hero / section / callout / mathbox / figure / table /  ║
+   ║        code / blockquote / cards / 重点高亮                    ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+:root{
+  color-scheme: light;
+
+  /* —— 暖米色底色系 —— */
+  --bg:      #f3ead6;   /* 页面底：暖米色 */
+  --bg-soft: #efe3ca;   /* 略深的米色（渐变/分区）*/
+  --panel:   #fcf8ef;   /* 卡片 / 面板：奶油白 */
+  --panel-2: #f6eedd;   /* 次级面板 */
+
+  /* —— 文字：暖墨（深棕黑，不用冷灰）—— */
+  --ink:    #2d2820;
+  --muted:  #6d6450;
+  --dim:    #9b8e73;
+
+  /* —— 线条 —— */
+  --line:   #e4d8bf;
+  --line-2: #d7c7a9;
+
+  /* —— 强调色：与米色和谐的大地色系 —— */
+  --terra:  #b75432;    /* 赤陶 · 主强调色 */
+  --amber:  #b9842a;    /* 赭黄 */
+  --olive:  #5d6e3a;    /* 橄榄绿 */
+  --teal:   #2f7d74;    /* 青 */
+  --blue:   #3f648c;    /* 靛蓝 */
+  --plum:   #7c5580;    /* 梅紫 */
+  --rust:   #a23a2c;    /* 锈红（警示）*/
+
+  /* —— 柔和底色（标签 / 高亮块 / callout 背景）—— */
+  --soft-terra: #f0ddd1;
+  --soft-amber: #f1e7cf;
+  --soft-olive: #e7e9d4;
+  --soft-teal:  #dae9e4;
+  --soft-blue:  #e0e6ef;
+
+  --shadow:    0 16px 44px rgba(74,55,24,.12);   /* 暖色调阴影 */
+  --shadow-sm: 0 4px 14px rgba(74,55,24,.08);
+  --radius: 16px;
+  --maxw: 820px;
+
+  --serif: "Spectral", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --sans:  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+           "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; min-height:100vh;
+  background:
+    radial-gradient(1200px 680px at 84% -12%, #f7eed9 0%, #f4ebd7 46%, var(--bg) 100%);
+  background-attachment:fixed;
+  color:var(--ink); font-family:var(--sans); line-height:1.72;
+  font-size:17.5px; -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(183,84,50,.18);}
+
+/* 顶部阅读进度条 */
+#progress{position:fixed; left:0; top:0; height:3px; width:0;
+  background:linear-gradient(90deg,var(--terra),var(--amber)); z-index:60; transition:width .12s;}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+/* ---------- 顶部：返回 + Hero ---------- */
+.topnav{padding:26px 0 0;}
+.back{font-family:var(--mono); font-size:13px; color:var(--muted);
+  display:inline-flex; align-items:center; gap:7px; transition:color .15s;}
+.back:hover{color:var(--terra);}
+a{color:var(--terra); text-decoration:none;}
+a:hover{text-decoration:underline; text-underline-offset:3px;}
+
+header.hero{padding:30px 0 26px; border-bottom:1px solid var(--line); margin-bottom:38px;}
+.eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--terra); display:flex; align-items:center; gap:11px; margin-bottom:18px;}
+.eyebrow::before{content:""; width:30px; height:1px; background:linear-gradient(90deg,var(--terra),transparent);}
+h1{font-family:var(--serif); font-weight:700; font-size:clamp(30px,5vw,46px);
+  line-height:1.14; letter-spacing:-.01em; margin:0 0 16px; color:var(--ink);}
+h1 em{font-style:italic; color:var(--terra);}
+.lede{font-size:clamp(17px,2vw,21px); color:var(--muted); margin:0; line-height:1.6;}
+.lede b{color:var(--ink); font-weight:600;}
+.byline{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:22px;
+  font-family:var(--mono); font-size:12.5px; color:var(--dim);}
+.byline .pill{background:var(--panel); border:1px solid var(--line);
+  padding:3px 11px; border-radius:999px;}
+
+/* ---------- 正文排版 ---------- */
+main{padding-bottom:30px;}
+section{margin:0 0 40px;}
+h2{font-family:var(--serif); font-weight:600; font-size:clamp(23px,3vw,30px);
+  line-height:1.25; margin:46px 0 16px; color:var(--ink);
+  padding-bottom:10px; border-bottom:1px solid var(--line);}
+h3{font-family:var(--serif); font-weight:600; font-size:21px; margin:30px 0 10px; color:var(--ink);}
+p{margin:0 0 17px;}
+ul,ol{margin:0 0 18px; padding-left:1.3em;}
+li{margin:0 0 8px;}
+li::marker{color:var(--terra);}
+hr{border:0; border-top:1px solid var(--line); margin:38px 0;}
+
+/* 重点高亮：行内强调与彩色关键词 */
+b,strong{color:var(--ink); font-weight:700;}
+.hi  {color:var(--terra); font-weight:600;}
+.hb  {color:var(--blue);  font-weight:600;}
+.hg  {color:var(--olive); font-weight:600;}
+.ha  {color:var(--amber); font-weight:600;}
+.ht  {color:var(--teal);  font-weight:600;}
+.mark{background:linear-gradient(180deg,transparent 62%, rgba(185,132,42,.32) 0); padding:0 2px;}
+
+/* 行内代码 / 代码块 */
+code{font-family:var(--mono); font-size:.9em; color:var(--rust);
+  background:var(--soft-amber); padding:2px 6px; border-radius:5px;}
+pre{margin:0 0 20px; padding:18px 20px; overflow:auto; border-radius:var(--radius);
+  background:#2f2a22; color:#efe6d3; border:1px solid #241f18; box-shadow:var(--shadow-sm);}
+pre code{background:none; color:inherit; padding:0; font-size:13.5px; line-height:1.6;}
+
+/* 链接式脚注 / 引用编号 */
+.cite{font-family:var(--mono); font-size:.78em; color:var(--blue); vertical-align:super;}
+
+/* ---------- 组件：Callout（提示 / 要点 / 注意）---------- */
+.callout{display:flex; gap:13px; padding:16px 18px; margin:0 0 22px;
+  border:1px solid var(--line); border-left-width:4px; border-radius:12px;
+  background:var(--panel); box-shadow:var(--shadow-sm);}
+.callout .ic{font-size:20px; line-height:1.5; flex:0 0 auto;}
+.callout .ct{flex:1;} .callout .ct p:last-child{margin:0;}
+.callout .ct .t{font-weight:700; color:var(--ink); display:block; margin-bottom:3px;}
+.callout.note{border-left-color:var(--blue);  background:var(--soft-blue);}
+.callout.tip {border-left-color:var(--olive); background:var(--soft-olive);}
+.callout.warn{border-left-color:var(--rust);  background:var(--soft-terra);}
+.callout.key {border-left-color:var(--amber); background:var(--soft-amber);}
+
+/* ---------- 组件：公式框 ---------- */
+.mathbox{background:var(--panel); border:1px solid var(--line-2); border-radius:var(--radius);
+  padding:18px 22px; margin:0 0 22px; box-shadow:var(--shadow-sm);}
+.mathbox .lbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dim); margin-bottom:8px;}
+.mathbox.center{text-align:center;}
+
+/* ---------- 组件：图示 + 题注 ---------- */
+figure{margin:0 0 24px;}
+figure .frame{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px; box-shadow:var(--shadow-sm); overflow:hidden;}
+figure img, figure svg{display:block; max-width:100%; height:auto; margin:0 auto; border-radius:8px;}
+figcaption{margin-top:10px; font-size:14px; color:var(--muted); text-align:center;}
+figcaption b{color:var(--ink);}
+
+/* ---------- 组件：表格 ---------- */
+.tablewrap{overflow-x:auto; margin:0 0 24px; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);}
+table{width:100%; border-collapse:collapse; background:var(--panel); font-size:15.5px;}
+thead th{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--terra); text-align:left; padding:12px 16px; background:var(--panel-2);
+  border-bottom:1px solid var(--line-2);}
+td{padding:11px 16px; border-bottom:1px solid var(--line); color:var(--muted);}
+td b{color:var(--ink);}
+tbody tr:last-child td{border-bottom:0;}
+tbody tr:hover td{background:var(--panel-2);}
+
+/* ---------- 组件：引述 ---------- */
+blockquote{margin:0 0 22px; padding:6px 0 6px 20px; border-left:3px solid var(--amber);
+  color:var(--muted); font-family:var(--serif); font-style:italic; font-size:19px;}
+
+/* ---------- 组件：卡片网格（延伸阅读 / 要点并列）---------- */
+.cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin:0 0 24px;}
+.cards .c{display:block; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:16px 17px; box-shadow:var(--shadow-sm); transition:transform .16s, box-shadow .16s;}
+.cards a.c:hover{transform:translateY(-3px); box-shadow:var(--shadow); text-decoration:none;}
+.cards .c .k{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--terra);}
+.cards .c h4{font-family:var(--serif); font-size:17px; margin:6px 0 5px; color:var(--ink);}
+.cards .c p{font-size:13.5px; color:var(--muted); margin:0;}
+
+/* ---------- 页脚 ---------- */
+footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
+  font-size:13.5px; color:var(--dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+
+@media (max-width:560px){
+  body{font-size:16.5px;}
+  .wrap{padding:0 18px;}
+  h2{margin-top:34px;}
+}
+</style>
+
+<!-- MathJax（需要公式时保留；不用可整段删除）。用法：行内 \( … \)，独立 \[ … \] -->
+<script>
+  window.MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] }, svg:{ fontCache:'global' } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body>
+<div id="progress"></div>
+
+<div class="wrap">
+
+  <!-- ░░░ 顶部返回链接（指向知识库门户）░░░ -->
+  <nav class="topnav"><a class="back" href="../index.html">← 返回知识库</a></nav>
+
+  <!-- ░░░ HERO ░░░ -->
+  <header class="hero">
+    <div class="eyebrow">分类 · CATEGORY</div>
+    <h1>页面标题，可用 <em>斜体强调</em> 关键词</h1>
+    <p class="lede">一段引导语：用一两句话说清这篇要讲<b>什么问题</b>、给读者<b>什么收获</b>。</p>
+    <div class="byline">
+      <span class="pill">2026-06-23</span>
+      <span class="pill">#标签一</span>
+      <span class="pill">#标签二</span>
+      <span class="pill">约 5 分钟</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ░░░ 正文：每个 section 一个小节 ░░░ -->
+    <section>
+      <p>正文段落示例。可以用<span class="hi">赤陶色重点</span>、<span class="hb">靛蓝</span>、<span class="hg">橄榄绿</span>、<span class="ha">赭黄</span>、<span class="ht">青色</span>标注不同类别的关键词，也可以用 <span class="mark">高亮笔触</span> 强调一句话。行内代码写成 <code>like_this()</code>。</p>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">一句话要点</span><p>把本节最核心的结论放进要点框，读者扫一眼就能抓住重点。</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>一级小节标题</h2>
+      <p>用列表拆解步骤或要点：</p>
+      <ul>
+        <li>第一点：简洁、可扫读。</li>
+        <li>第二点：必要时嵌 <code>代码</code> 或 \( 行内公式 \)。</li>
+        <li>第三点：保持每条一个想法。</li>
+      </ul>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">提示 (note)</span><p>补充背景或旁注。还有 <code>.tip</code>（建议）/ <code>.warn</code>（注意）/ <code>.key</code>（要点）三种变体。</p></div>
+      </div>
+
+      <h3>公式展示</h3>
+      <div class="mathbox center">
+        <div class="lbl">注意力</div>
+        \[ \mathrm{Attention}(Q,K,V) = \mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V \]
+      </div>
+    </section>
+
+    <section>
+      <h2>图示与题注</h2>
+      <figure>
+        <div class="frame">
+          <!-- 换成 <img src="../assets/你的图.png" alt="…"> 或内联 SVG -->
+          <svg viewBox="0 0 480 150" width="480" height="150" role="img" aria-label="示例图">
+            <rect x="20" y="35" width="120" height="80" rx="10" fill="#f0ddd1" stroke="#b75432"/>
+            <rect x="180" y="35" width="120" height="80" rx="10" fill="#e7e9d4" stroke="#5d6e3a"/>
+            <rect x="340" y="35" width="120" height="80" rx="10" fill="#e0e6ef" stroke="#3f648c"/>
+            <path d="M140 75 H180 M300 75 H340" stroke="#9b8e73" stroke-width="2" marker-end="url(#a)"/>
+            <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#9b8e73"/></marker></defs>
+            <text x="80" y="80" text-anchor="middle" font-family="Inter" font-size="14" fill="#2d2820">输入</text>
+            <text x="240" y="80" text-anchor="middle" font-family="Inter" font-size="14" fill="#2d2820">变换</text>
+            <text x="400" y="80" text-anchor="middle" font-family="Inter" font-size="14" fill="#2d2820">输出</text>
+          </svg>
+        </div>
+        <figcaption><b>图 1.</b> 题注：用一句话说明这张图在讲什么。</figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <h2>表格与代码</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>方法</th><th>优点</th><th>代价</th></tr></thead>
+          <tbody>
+            <tr><td><b>方案 A</b></td><td>实现简单</td><td>精度有限</td></tr>
+            <tr><td><b>方案 B</b></td><td>效果好</td><td>计算量大</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre><code>def attention(q, k, v):
+    scores = q @ k.transpose(-2, -1) / d_k ** 0.5
+    return scores.softmax(-1) @ v</code></pre>
+
+      <blockquote>用引述块放一句值得记住的话，或原文摘录。</blockquote>
+    </section>
+
+    <section>
+      <h2>延伸阅读</h2>
+      <div class="cards">
+        <a class="c" href="#"><span class="k">相关</span><h4>另一篇知识页</h4><p>一句话说明关联。</p></a>
+        <a class="c" href="#"><span class="k">论文</span><h4>原始论文</h4><p>arXiv 链接等。</p></a>
+        <div class="c"><span class="k">备注</span><h4>非链接卡片</h4><p>也可只展示信息。</p></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>知识库 · 数学与机器学习可视化</span>
+    <a class="back" href="../index.html">← 返回门户</a>
+  </footer>
+
+</div>
+
+<script>
+  // 顶部阅读进度条
+  const bar = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  };
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+</body>
+</html>

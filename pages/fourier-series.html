@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>傅里叶级数 · 周期信号的三维分解与相量合成</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070b16; --panel:#0d1325; --panel-2:#111a32;
+    --hair:rgba(120,160,255,.07);
+    --ink:#e9eefc; --muted:#8a97b8; --dim:#5d6a8c;
+    --phosphor:#ffb454; --ghost:#67799f; --accent:#5cd8ff;
+    --cos:#57c7ff; --sin:#ff8fb0;     /* cos / sin accent colors */
+    --line:#223152; --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --display:'Space Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--display);
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+    background-image:linear-gradient(var(--hair) 1px,transparent 1px),
+      linear-gradient(90deg,var(--hair) 1px,transparent 1px);
+    background-size:34px 34px; background-position:center;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:48px 24px 80px}
+
+  header{margin-bottom:28px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--accent);display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .eyebrow::before{content:"";width:34px;height:1px;background:var(--accent);opacity:.6}
+  h1{font-size:clamp(28px,5vw,48px);line-height:1.08;font-weight:700;letter-spacing:-.015em;
+    margin:0 0 18px;max-width:22ch}
+  h1 .amber{color:var(--phosphor)}
+  .lede{color:var(--muted);font-size:clamp(15px,1.9vw,17px);max-width:66ch;margin:0}
+  .lede b{color:var(--ink);font-weight:500}
+  .lede .cos{color:var(--cos)} .lede .sin{color:var(--sin)}
+
+  .console{margin:28px 0 22px;border:1px solid var(--line);border-radius:var(--radius);
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    padding:18px 20px;display:flex;flex-wrap:wrap;gap:22px 30px;align-items:flex-end}
+  .ctrl{display:flex;flex-direction:column;gap:9px}
+  .ctrl-label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);
+    font-family:var(--display);font-weight:500;font-size:14px;padding:9px 14px;cursor:pointer;
+    transition:background .15s,color .15s;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:0}
+  .seg button:hover{color:var(--ink);background:rgba(92,216,255,.06)}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#04121c;font-weight:600}
+  .slider-row{display:flex;align-items:center;gap:12px}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:4px;width:130px;
+    background:var(--line);border-radius:3px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);border:2px solid #04121c;cursor:pointer;box-shadow:0 0 0 3px rgba(92,216,255,.18)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);
+    border:2px solid #04121c;cursor:pointer}
+  .readout{font-family:var(--mono);font-size:14px;color:var(--phosphor);min-width:2ch;text-align:right}
+  .btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);
+    color:var(--muted);background:transparent;font-family:var(--mono);font-size:13px;letter-spacing:.05em;
+    padding:9px 13px;border-radius:8px;cursor:pointer;transition:all .15s}
+  .btn:hover{color:var(--ink);border-color:var(--accent)}
+  .btn.on{border-color:var(--accent);color:var(--accent);background:rgba(92,216,255,.08)}
+  .btn.icon{min-width:38px;padding:9px 0;font-size:15px}
+
+  .stage{position:relative;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    background:radial-gradient(120% 120% at 50% 0%,#0c1426 0%,#070b16 70%)}
+  #gl{display:block;width:100%;height:520px}
+  .overlay{position:absolute;left:16px;top:14px;font-family:var(--mono);font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--dim);pointer-events:none}
+  .hud{position:absolute;right:16px;bottom:14px;font-family:var(--mono);font-size:12px;
+    color:var(--muted);text-align:right;pointer-events:none;line-height:1.7}
+  .hud b{color:var(--phosphor);font-weight:500}
+  .axis-key{position:absolute;left:16px;bottom:14px;display:flex;flex-direction:column;gap:5px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);pointer-events:none}
+  .axis-key span{display:flex;align-items:center;gap:8px}
+  .axis-key i{width:14px;height:3px;border-radius:2px;display:inline-block}
+  .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);color:var(--dim);font-size:13px;letter-spacing:.1em;text-align:center}
+  .paused-tag{position:absolute;left:50%;top:14px;transform:translateX(-50%);
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:#04121c;background:var(--phosphor);
+    padding:4px 12px;border-radius:20px;display:none}
+  .paused .paused-tag{display:block}
+
+  .grid2{display:grid;grid-template-columns:1.42fr 1fr;gap:22px;margin-top:22px}
+  .panel{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow:hidden}
+  .panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding:13px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(255,255,255,.018),transparent)}
+  .panel-title{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .panel-title b{color:var(--ink);font-weight:600}
+  .panel-note{font-size:12.5px;color:var(--dim);text-align:right;max-width:30ch}
+  canvas.flat{display:block;width:100%}
+  #phasor{height:340px} #inspect{height:340px} #coeff{height:170px}
+
+  .coeffwrap{margin-top:22px}
+
+  .legend{display:flex;flex-wrap:wrap;gap:18px;padding:12px 18px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .swatch{width:20px;height:3px;border-radius:2px;display:inline-block}
+  .swatch.dash{background:repeating-linear-gradient(90deg,var(--ghost) 0 4px,transparent 4px 8px)}
+  .swatch.amber{background:var(--phosphor)} .swatch.cos{background:var(--cos)} .swatch.sin{background:var(--sin)}
+
+  /* explanation */
+  .why{margin-top:28px;border:1px solid var(--line);border-radius:var(--radius);
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:30px 30px 26px}
+  .why h2{font-size:clamp(20px,3vw,26px);margin:0 0 6px;letter-spacing:-.01em}
+  .why h2 .cos{color:var(--cos)} .why h2 .sin{color:var(--sin)}
+  .why .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  .why .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px 30px;margin-top:22px}
+  .why .pt{border-left:2px solid var(--line);padding:2px 0 2px 18px}
+  .why .pt .n{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.1em}
+  .why .pt h3{font-size:16px;margin:6px 0 8px;font-weight:600}
+  .why .pt p{margin:0;color:var(--muted);font-size:14px}
+  .why .pt p b{color:var(--ink);font-weight:500}
+  .why code{font-family:var(--mono);font-size:.92em;color:var(--accent)}
+  .why .cos{color:var(--cos)} .why .sin{color:var(--sin)} .why .amb{color:var(--phosphor)}
+  .eqbox{margin-top:8px;padding:18px 20px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.18);
+    font-family:var(--mono);font-size:clamp(14px,2.1vw,18px);color:var(--ink);overflow-x:auto;white-space:nowrap}
+  .eqbox .cos{color:var(--cos)} .eqbox .sin{color:var(--sin)} .eqbox .amb{color:var(--phosphor)} .eqbox .dim{color:var(--dim)}
+
+  footer{margin-top:38px;color:var(--dim);font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-align:center}
+
+  @media (max-width:820px){
+    .grid2{grid-template-columns:1fr}
+    .why .grid{grid-template-columns:1fr}
+    #gl{height:400px}
+    .panel-note{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Fourier Series · 三维分解 + 相量合成</div>
+    <h1>每个谐波，都是一个<span class="amber">转动的圆</span></h1>
+    <p class="lede">
+      圆上一点的坐标天生就是 <span class="cos">(cos</span>, <span class="sin">sin)</span>——水平方向走 <span class="cos">cos</span>、竖直方向走 <span class="sin">sin</span>，相差 90°。
+      这正是傅里叶级数里每一项都<b>同时含 sin 和 cos</b> 的根本原因：要让一个谐波转到<b>任意起始角度（相位）</b>，
+      就必须把 <span class="cos">cos</span> 和 <span class="sin">sin</span> 按比例混起来。
+      下面把信号摊在三维里看分解，再用转动的圆把它合成回来；<b>随时暂停</b>，可以定格观察任意一帧。
+    </p>
+  </header>
+
+  <div class="console">
+    <div class="ctrl">
+      <span class="ctrl-label">信号 / Signal</span>
+      <div class="seg" id="sigSeg" role="group" aria-label="选择信号">
+        <button data-sig="square" aria-pressed="true">方波</button>
+        <button data-sig="sawtooth" aria-pressed="false">锯齿波</button>
+        <button data-sig="triangle" aria-pressed="false">三角波</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <span class="ctrl-label">谐波数量 N</span>
+      <div class="slider-row"><input id="harm" type="range" min="1" max="16" value="6" step="1"><span class="readout" id="harmVal">6</span></div>
+    </div>
+    <div class="ctrl">
+      <span class="ctrl-label">相位平移 τ（造出 cos 项）</span>
+      <div class="slider-row"><input id="tau" type="range" min="0" max="100" value="12" step="1"><span class="readout" id="tauVal">.12T</span></div>
+    </div>
+    <div class="ctrl">
+      <span class="ctrl-label">时间流速</span>
+      <div class="slider-row"><input id="speed" type="range" min="0" max="100" value="38" step="1"></div>
+    </div>
+    <div class="ctrl">
+      <span class="ctrl-label">3D 视角</span>
+      <div class="seg" id="viewSeg" role="group" aria-label="切换视角">
+        <button data-view="persp" aria-pressed="true">透视</button>
+        <button data-view="time" aria-pressed="false">时域</button>
+        <button data-view="freq" aria-pressed="false">频谱</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <span class="ctrl-label">播放 / 定格</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn on" id="play">❚❚ 暂停</button>
+        <button class="btn icon" id="stepB" title="后退一帧">◀</button>
+        <button class="btn icon" id="stepF" title="前进一帧">▶</button>
+        <button class="btn on" id="spin">⟳ 旋转</button>
+      </div>
+    </div>
+    <div class="ctrl" style="flex:1;min-width:200px">
+      <span class="ctrl-label">逐帧拖动 / Scrub（暂停后任意定格）</span>
+      <div class="slider-row"><input id="scrub" type="range" min="0" max="628" value="0" step="1" style="width:100%"></div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="gl"></canvas>
+    <div class="overlay">3D Cube · 时间 × 幅度 × 频率 · 拖动旋转</div>
+    <div class="paused-tag">⏸ 已定格 · 可拖动 Scrub 逐帧</div>
+    <div class="axis-key">
+      <span><i style="background:#5cd8ff"></i> 时间 t（横）</span>
+      <span><i style="background:#ff7eb6"></i> 频率 n（纵深）</span>
+      <span><i style="background:#9fb0d6"></i> 幅度（纵）</span>
+    </div>
+    <div class="hud" id="hud"></div>
+    <div class="loading" id="loading">正在加载三维场景…</div>
+  </div>
+
+  <div class="grid2">
+    <!-- phasor synthesis -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title"><b>相量合成</b> Phasor Chain</span>
+        <span class="panel-note">每个圆 = 一个谐波，首尾相接，笔尖描出信号</span>
+      </div>
+      <canvas id="phasor" class="flat"></canvas>
+      <div class="legend">
+        <span><i class="swatch amber"></i> 合成信号</span>
+        <span><i class="swatch dash"></i> 目标</span>
+        <span>圆半径 = 谐波振幅 Aₙ</span>
+      </div>
+    </div>
+    <!-- inspector -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title"><b>单谐波检视</b> Inspector</span>
+        <span class="panel-note">圆上点 =（cos, sin）</span>
+      </div>
+      <canvas id="inspect" class="flat"></canvas>
+      <div class="legend">
+        <span><i class="swatch cos"></i> 水平 = Aₙcos α</span>
+        <span><i class="swatch sin"></i> 竖直 = Aₙsin α</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- coefficient spectrum -->
+  <div class="panel coeffwrap">
+    <div class="panel-head">
+      <span class="panel-title"><b>系数频谱</b> Coefficients · <span style="color:var(--cos)">aₙ cos</span> / <span style="color:var(--sin)">bₙ sin</span></span>
+      <span class="panel-note">悬停高亮某谐波到检视图 · 拉动 τ 看 cos↔sin 此消彼长</span>
+    </div>
+    <canvas id="coeff" class="flat"></canvas>
+  </div>
+
+  <!-- why sin & cos -->
+  <section class="why">
+    <div class="kicker">Why both?</div>
+    <h2>为什么每一项都是 <span class="cos">sin</span> 和 <span class="sin">cos</span> 一起？</h2>
+    <div class="eqbox">
+      <span class="amb">f(t)</span> = <span class="dim">a₀/2</span> + Σ&nbsp;[&nbsp;<span class="cos">aₙ·cos(nωt)</span> + <span class="sin">bₙ·sin(nωt)</span>&nbsp;]
+      &nbsp;&nbsp;<span class="dim">≡</span>&nbsp;&nbsp;<span class="dim">a₀/2</span> + Σ&nbsp;Aₙ·sin(nωt + φₙ)<span class="dim">,&nbsp; Aₙ=√(aₙ²+bₙ²)</span>
+    </div>
+    <div class="grid">
+      <div class="pt">
+        <div class="n">01 · 圆</div>
+        <h3>一个谐波就是一次匀速转圈</h3>
+        <p>圆上的点坐标永远是 <span class="cos">(cos α</span>, <span class="sin">sin α)</span>：横轴分量是 <span class="cos">cos</span>、纵轴分量是 <span class="sin">sin</span>，差 90°。
+        只给 cos 或只给 sin，点就被困在一条直线上、转不起来。<b>要转圈，就得两个都要。</b></p>
+      </div>
+      <div class="pt">
+        <div class="n">02 · 相位</div>
+        <h3>相位需要两个数才能锁定</h3>
+        <p>同频率的正弦波可以有任意"起跑角度"。把 <code>Aₙcos(nωt+φₙ)</code> 用和角公式展开，正好得到
+        <span class="cos">aₙcos</span>+<span class="sin">bₙsin</span>，其中 <code>aₙ=Aₙcosφₙ</code>、<code>bₙ=−Aₙsinφₙ</code>。
+        这一对 <b>(aₙ, bₙ) 编码了振幅与相位</b>——少一个就对不准。</p>
+      </div>
+      <div class="pt">
+        <div class="n">03 · 偶 + 奇</div>
+        <h3>cos 管偶，sin 管奇</h3>
+        <p><span class="cos">cos</span> 是偶函数、<span class="sin">sin</span> 是奇函数。任何信号都能拆成"偶部分 + 奇部分"，于是天然需要两族基。
+        方波/锯齿/三角是<b>奇函数</b>，所以默认只有 sin 项；<b>把上面的「相位平移 τ」一拉</b>，它不再对称，
+        <span class="cos">cos 项立刻冒出来</span>——而每个圆的大小（振幅）不变，变的只是起始角度。</p>
+      </div>
+      <div class="pt">
+        <div class="n">04 · 复数</div>
+        <h3>欧拉公式把两者打包成一个旋转</h3>
+        <p>令 <code>cₙ = (aₙ − i·bₙ)/2</code>，级数就写成 <code>Σ cₙ·e^{inωt}</code>。欧拉公式 <code>e^{iθ}=cosθ+i·sinθ</code>
+        把 <span class="cos">cos</span> 与 <span class="sin">sin</span> 合成一个复指数——也就是上面那些<b>转动的圆</b>。
+        sin 与 cos，本就是同一个旋转的两个影子。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>三维傅里叶级数 + 相量合成 · 暂停可逐帧定格观察 · Three.js / Canvas / WebGL</footer>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const TAU = Math.PI*2;
+
+// ---------- state ----------
+const state = {
+  sig:'square', N:6, tau:0.12*TAU, speed:0.011, t:0,
+  playing:true, spin:true, highlight:1,
+};
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduceMotion){ state.playing=false; state.spin=false; }
+
+// ---------- Fourier coefficients (general: a·cos + b·sin) ----------
+// base = odd-signal pure-sine amplitude Bn; a time-shift τ mixes it into cos & sin.
+function baseAmp(sig,n){
+  if(sig==='square')   return (n%2===1)? 4/(Math.PI*n):0;
+  if(sig==='sawtooth') return (2/Math.PI)*Math.pow(-1,n+1)/n;
+  if(sig==='triangle'){ if(n%2===1){const k=(n-1)/2; return (8/(Math.PI*Math.PI))*Math.pow(-1,k)/(n*n);} return 0;}
+  return 0;
+}
+let cs=[]; // [{n,B,a,b,A,psi}]
+function computeCoeffs(){
+  cs=[];
+  for(let n=1;n<=state.N;n++){
+    const B=baseAmp(state.sig,n);
+    const a=-B*Math.sin(n*state.tau);   // cos coefficient
+    const b= B*Math.cos(n*state.tau);   // sin coefficient
+    const A=Math.abs(B);                // amplitude = √(a²+b²)
+    const psi=Math.atan2(a,b);          // phase so that a·cos+b·sin = A·sin(·+psi)
+    cs.push({n,B,a,b,A,psi});
+  }
+}
+// instantaneous value at signal-time u
+function recon(u){ let s=0; for(const c of cs) s+=c.a*Math.cos(c.n*u)+c.b*Math.sin(c.n*u); return s; }
+function baseIdeal(sig,u){
+  if(sig==='square')   return Math.sin(u)>=0?1:-1;
+  if(sig==='sawtooth'){const ph=(((u%TAU)+TAU)%TAU)-Math.PI; return ph/Math.PI;}
+  if(sig==='triangle') return (2/Math.PI)*Math.asin(Math.sin(u));
+  return 0;
+}
+function idealShifted(sig,u){ return baseIdeal(sig,u-state.tau); }
+function hsl(n,N){ const span=Math.max(1,N-1); const h=(186+(n-1)/span*(330-186))/360; return new THREE.Color().setHSL(h,0.78,0.62); }
+function hslCss(n,N,l,al){ const span=Math.max(1,N-1); const h=186+(n-1)/span*(330-186); return `hsla(${h},80%,${l==null?62:l}%,${al==null?1:al})`; }
+
+// =========================================================
+//  3D scene (Three.js)
+// =========================================================
+const canvas = document.getElementById('gl');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas,antialias:true}); }
+catch(err){
+  const l=document.getElementById('loading');
+  l.innerHTML='此浏览器/环境无法创建 WebGL，<br>请用支持 WebGL 的浏览器打开（Chrome / Safari / Edge）。';
+  throw err;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070b16);
+scene.fog = new THREE.Fog(0x070b16, 26, 62);
+const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
+const VIEWS = {
+  persp:{pos:new THREE.Vector3(16,12,23), tgt:new THREE.Vector3(0,0,-5)},
+  time :{pos:new THREE.Vector3(0,3.5,30), tgt:new THREE.Vector3(0,0,-5)},
+  freq :{pos:new THREE.Vector3(-31,7,2),  tgt:new THREE.Vector3(0,0,-5)},
+};
+camera.position.copy(VIEWS.persp.pos);
+const controls = new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.08;
+controls.target.copy(VIEWS.persp.tgt);
+controls.minDistance=10; controls.maxDistance=70;
+controls.autoRotate=state.spin; controls.autoRotateSpeed=0.7;
+
+const PERIODS=2, TTOTAL=PERIODS*TAU, M=200, XSPAN=18, YSCALE=2.3, ZSTEP=0.82;
+const tval=new Float32Array(M);
+for(let i=0;i<M;i++) tval[i]=(i/(M-1))*TTOTAL;
+const xOf=t=>(t/TTOTAL)*XSPAN-XSPAN/2;
+
+function resizeGL(){
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio())){
+    renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+  }
+}
+new ResizeObserver(resizeGL).observe(canvas);
+
+// scaffolding
+const scaffold=new THREE.Group(); scene.add(scaffold);
+const grid=new THREE.GridHelper(40,40,0x1d2b4f,0x14203c);
+grid.position.set(0,-3.6,-8); grid.material.transparent=true; grid.material.opacity=0.5; scaffold.add(grid);
+function axisLine(a,b,color,op){const g=new THREE.BufferGeometry().setFromPoints([a,b]);
+  return new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:op==null?.5:op}));}
+const xEnd=XSPAN/2+1;
+scaffold.add(axisLine(new THREE.Vector3(-xEnd,0,.001),new THREE.Vector3(xEnd,0,.001),0x5cd8ff,.55));
+scaffold.add(axisLine(new THREE.Vector3(-XSPAN/2-.6,-3.4,.001),new THREE.Vector3(-XSPAN/2-.6,3.4,.001),0x9fb0d6,.5));
+function makeLabel(text,colorCss){
+  const pad=8,fs=46,c=document.createElement('canvas'),ctx=c.getContext('2d');
+  ctx.font=`600 ${fs}px 'IBM Plex Mono',monospace`; const w=ctx.measureText(text).width;
+  c.width=w+pad*2;c.height=fs+pad*2; ctx.font=`600 ${fs}px 'IBM Plex Mono',monospace`;
+  ctx.fillStyle=colorCss;ctx.textBaseline='middle';ctx.fillText(text,pad,c.height/2);
+  const tex=new THREE.CanvasTexture(c);tex.anisotropy=4;
+  const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
+  const s=0.018;spr.scale.set(c.width*s,c.height*s,1);return spr;
+}
+const lblT=makeLabel('时间 t →','#5cd8ff'); lblT.position.set(xEnd+1.6,0,0); scaffold.add(lblT);
+const lblA=makeLabel('幅度 ↑','#9fb0d6'); lblA.position.set(-XSPAN/2-.6,4.2,0); scaffold.add(lblA);
+const lblF=makeLabel('频率 n ↘','#ff7eb6'); scaffold.add(lblF);
+
+let harmonics=[], sumLine=null, sumPos=null, targetLine=null, targetPos=null;
+const stems=new THREE.Group(), waveGroup=new THREE.Group();
+scene.add(stems); scene.add(waveGroup);
+function clearGroup(g){for(let i=g.children.length-1;i>=0;i--){const o=g.children[i];o.geometry?.dispose();o.material?.dispose();g.remove(o);}}
+
+function build(){
+  computeCoeffs();
+  clearGroup(waveGroup); clearGroup(stems); harmonics=[];
+  const zOf=idx=>-(idx+1)*ZSTEP;
+  cs.forEach((c,idx)=>{
+    const z=zOf(idx), pts=new Float32Array(M*3);
+    for(let i=0;i<M;i++){pts[i*3]=xOf(tval[i]);pts[i*3+1]=0;pts[i*3+2]=z;}
+    const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pts,3));
+    const col=hsl(c.n,state.N);
+    const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.85}));
+    waveGroup.add(line);
+    harmonics.push({n:c.n,line,pos:pts,color:col,z});
+    if(c.A>1e-7){
+      const h=c.A*YSCALE, sx=-XSPAN/2-.6;
+      const sg=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(sx,0,z),new THREE.Vector3(sx,h,z)]);
+      stems.add(new THREE.Line(sg,new THREE.LineBasicMaterial({color:col})));
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(.12,10,10),new THREE.MeshBasicMaterial({color:col}));
+      dot.position.set(sx,h,z); stems.add(dot);
+    }
+  });
+  sumPos=new Float32Array(M*3);
+  for(let i=0;i<M;i++){sumPos[i*3]=xOf(tval[i]);sumPos[i*3+1]=0;sumPos[i*3+2]=0;}
+  const sg=new THREE.BufferGeometry(); sg.setAttribute('position',new THREE.BufferAttribute(sumPos,3));
+  sumLine=new THREE.Line(sg,new THREE.LineBasicMaterial({color:0xffb454})); waveGroup.add(sumLine);
+  targetPos=new Float32Array(M*3);
+  for(let i=0;i<M;i++){targetPos[i*3]=xOf(tval[i]);targetPos[i*3+1]=0;targetPos[i*3+2]=.5;}
+  const tg=new THREE.BufferGeometry(); tg.setAttribute('position',new THREE.BufferAttribute(targetPos,3));
+  targetLine=new THREE.Line(tg,new THREE.LineDashedMaterial({color:0x8a9bc4,dashSize:.5,gapSize:.35,transparent:true,opacity:.8}));
+  waveGroup.add(targetLine);
+  lblF.position.set(XSPAN/2+1.2,-.4,zOf(cs.length-1)-.5);
+  updateWaves3D();
+}
+function updateWaves3D(){
+  for(const h of harmonics){
+    const c=cs[h.n-1], p=h.pos;
+    for(let i=0;i<M;i++){const arg=tval[i]+state.t; p[i*3+1]=(c.a*Math.cos(c.n*arg)+c.b*Math.sin(c.n*arg))*YSCALE;}
+    h.line.geometry.attributes.position.needsUpdate=true; h.line.geometry.computeBoundingSphere();
+    const hi=state.highlight===h.n;
+    h.line.material.opacity= hi?1:.6;
+  }
+  for(let i=0;i<M;i++) sumPos[i*3+1]=recon(tval[i]+state.t)*YSCALE;
+  sumLine.geometry.attributes.position.needsUpdate=true; sumLine.geometry.computeBoundingSphere();
+  for(let i=0;i<M;i++) targetPos[i*3+1]=idealShifted(state.sig,tval[i]+state.t)*YSCALE;
+  targetLine.geometry.attributes.position.needsUpdate=true; targetLine.computeLineDistances();
+}
+let camTween=null;
+function setView(name){const v=VIEWS[name];if(!v)return;
+  camTween={fromP:camera.position.clone(),toP:v.pos.clone(),fromT:controls.target.clone(),toT:v.tgt.clone(),k:0};}
+
+// =========================================================
+//  2D canvases: phasor, inspector, coefficient spectrum
+// =========================================================
+function ctxOf(c){const ctx=c.getContext('2d');
+  function size(){const dpr=Math.min(devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;
+    c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);c._w=w;c._h=h;}
+  size(); new ResizeObserver(size).observe(c); return ctx;}
+const phC=document.getElementById('phasor'), inC=document.getElementById('inspect'), coC=document.getElementById('coeff');
+const ph=ctxOf(phC), inx=ctxOf(inC), co=ctxOf(coC);
+function graticule(ctx,W,H,step){ctx.save();ctx.strokeStyle='rgba(26,39,74,.7)';ctx.lineWidth=1;
+  for(let x=step;x<W;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=step;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}ctx.restore();}
+
+// ---- phasor chain ----
+function drawPhasor(){
+  const W=phC._w,H=phC._h; ph.clearRect(0,0,W,H); graticule(ph,W,H,32);
+  const cy=H/2, sumAbs=cs.reduce((a,c)=>a+c.A,0)||1;
+  const leftPad=20,rightPad=16,gap=24;
+  let ampPx=(0.50*W-60)/(2*sumAbs+1e-3); ampPx=Math.max(16,Math.min(ampPx,H*0.30,64));
+  const reach=sumAbs*ampPx, cxp=leftPad+reach, traceX0=cxp+reach+gap, traceW=Math.max(60,W-traceX0-rightPad);
+
+  // chain
+  let x=cxp,y=cy;
+  for(const c of cs){
+    if(c.A<1e-7) continue;
+    const r=c.A*ampPx, ang=c.n*state.t+c.psi, hl=state.highlight===c.n;
+    ph.beginPath(); ph.arc(x,y,r,0,TAU);
+    ph.strokeStyle=hslCss(c.n,state.N,62,hl?.95:.26); ph.lineWidth=hl?2:1; ph.stroke();
+    const nx=x+r*Math.cos(ang), ny=y-r*Math.sin(ang);
+    ph.beginPath(); ph.moveTo(x,y); ph.lineTo(nx,ny);
+    ph.strokeStyle=hslCss(c.n,state.N,62,hl?1:.7); ph.lineWidth=hl?2.6:1.5; ph.stroke();
+    ph.beginPath(); ph.arc(nx,ny,hl?3:2,0,TAU); ph.fillStyle=hslCss(c.n,state.N,62,1); ph.fill();
+    x=nx;y=ny;
+  }
+  const penY=y, f=recon(state.t);
+
+  // zero line
+  ph.save(); ph.strokeStyle='rgba(103,121,159,.25)'; ph.setLineDash([2,5]);
+  ph.beginPath(); ph.moveTo(traceX0,cy); ph.lineTo(W-rightPad,cy); ph.stroke(); ph.restore();
+  // ideal ghost (sampled analytically -> scrub-safe)
+  const dtT=Math.max(0.006,state.speed*0.9);
+  ph.save(); ph.strokeStyle='rgba(103,121,159,.5)'; ph.lineWidth=1.3; ph.setLineDash([5,5]); ph.beginPath();
+  for(let i=0;i<traceW;i++){const py=cy-idealShifted(state.sig,state.t-i*dtT)*ampPx; i?ph.lineTo(traceX0+i,py):ph.moveTo(traceX0+i,py);}
+  ph.stroke(); ph.restore();
+  // reconstructed trace (analytic -> always correct when paused/scrubbed)
+  ph.save(); ph.strokeStyle='#ffb454'; ph.lineWidth=2.3; ph.lineJoin='round'; ph.lineCap='round';
+  ph.shadowColor='rgba(255,180,84,.5)'; ph.shadowBlur=10; ph.beginPath();
+  for(let i=0;i<traceW;i++){const py=cy-recon(state.t-i*dtT)*ampPx; i?ph.lineTo(traceX0+i,py):ph.moveTo(traceX0+i,py);}
+  ph.stroke(); ph.restore();
+  // connector + pen
+  ph.save(); ph.strokeStyle='rgba(255,180,84,.4)'; ph.lineWidth=1; ph.setLineDash([3,4]);
+  ph.beginPath(); ph.moveTo(x,penY); ph.lineTo(traceX0,cy-f*ampPx); ph.stroke(); ph.restore();
+  ph.save(); ph.fillStyle='#ffb454'; ph.shadowColor='rgba(255,180,84,.8)'; ph.shadowBlur=12;
+  ph.beginPath(); ph.arc(traceX0,cy-f*ampPx,3.4,0,TAU); ph.fill(); ph.restore();
+  ph.fillStyle='rgba(138,151,184,.7)'; ph.font='11px "IBM Plex Mono",monospace';
+  ph.fillText('Σ 圆',leftPad,16); ph.fillText('信号 →',traceX0,16);
+}
+
+// ---- single-harmonic inspector (point on circle = (cos, sin)) ----
+function drawInspector(){
+  const W=inC._w,H=inC._h; inx.clearRect(0,0,W,H); graticule(inx,W,H,32);
+  const c=cs[state.highlight-1]; if(!c){return;}
+  const ox=W*0.40, oy=H*0.5;
+  const maxA=Math.max(...cs.map(k=>k.A),1e-3);
+  const Rmax=Math.min(W,H)*0.34;
+  const R=Math.max(Rmax*0.18, (c.A/maxA)*Rmax);
+  const ang=c.n*state.t+c.psi;
+  const tipx=ox+R*Math.cos(ang), tipy=oy-R*Math.sin(ang);
+
+  // axes through origin
+  inx.strokeStyle='rgba(103,121,159,.3)'; inx.lineWidth=1;
+  inx.beginPath(); inx.moveTo(ox-Rmax-12,oy); inx.lineTo(ox+Rmax+12,oy); inx.stroke();
+  inx.beginPath(); inx.moveTo(ox,oy-Rmax-12); inx.lineTo(ox,oy+Rmax+12); inx.stroke();
+  // start-angle (phase) reference ray
+  inx.save(); inx.strokeStyle='rgba(255,180,84,.5)'; inx.setLineDash([4,4]); inx.lineWidth=1.2;
+  inx.beginPath(); inx.moveTo(ox,oy); inx.lineTo(ox+R*Math.cos(c.psi),oy-R*Math.sin(c.psi)); inx.stroke(); inx.restore();
+  // circle
+  inx.beginPath(); inx.arc(ox,oy,R,0,TAU);
+  inx.strokeStyle=hslCss(c.n,state.N,62,.8); inx.lineWidth=2; inx.stroke();
+  // cos leg (horizontal) and sin leg (vertical)
+  inx.lineWidth=2.4;
+  inx.strokeStyle='#57c7ff'; inx.beginPath(); inx.moveTo(ox,oy); inx.lineTo(tipx,oy); inx.stroke();      // cos
+  inx.strokeStyle='#ff8fb0'; inx.beginPath(); inx.moveTo(tipx,oy); inx.lineTo(tipx,tipy); inx.stroke();   // sin
+  // right-angle marker
+  const s=8*Math.sign(tipy-oy||1), sx2=8*Math.sign(tipx-ox||1);
+  inx.strokeStyle='rgba(180,195,225,.5)'; inx.lineWidth=1;
+  inx.strokeRect(tipx- (tipx>ox?sx2:0), oy-(tipy<oy?-0:0)-(tipy<oy?Math.abs(s):0), Math.abs(sx2)*Math.sign(ox-tipx||-1)|| -8, 8*Math.sign(oy-tipy||1));
+  // vector
+  inx.strokeStyle=hslCss(c.n,state.N,62,1); inx.lineWidth=3;
+  inx.beginPath(); inx.moveTo(ox,oy); inx.lineTo(tipx,tipy); inx.stroke();
+  inx.beginPath(); inx.arc(tipx,tipy,4,0,TAU); inx.fillStyle=hslCss(c.n,state.N,62,1); inx.fill();
+  // leg labels
+  inx.font='11px "IBM Plex Mono",monospace';
+  inx.fillStyle='#57c7ff'; inx.fillText('cos', (ox+tipx)/2-8, oy+(tipy>oy?16:-8));
+  inx.fillStyle='#ff8fb0'; inx.fillText('sin', tipx+(tipx>ox?6:-26), (oy+tipy)/2);
+
+  // readout box
+  const lines=[
+    `谐波 n = ${c.n}`,
+    `aₙ (cos) = ${c.a>=0?' ':''}${c.a.toFixed(3)}`,
+    `bₙ (sin) = ${c.b>=0?' ':''}${c.b.toFixed(3)}`,
+    `Aₙ = √(aₙ²+bₙ²) = ${c.A.toFixed(3)}`,
+    `相位 φₙ = ${(c.psi*180/Math.PI).toFixed(0)}°`,
+    `此刻 αₙ = ${(((ang%TAU)+TAU)%TAU*180/Math.PI).toFixed(0)}°`,
+  ];
+  const bx=W-168, by=14, lh=18;
+  inx.save();
+  inx.fillStyle='rgba(8,13,28,.72)'; inx.strokeStyle='rgba(34,49,82,.9)';
+  inx.beginPath(); inx.rect(bx-10,by-4,168,lines.length*lh+10); inx.fill(); inx.stroke();
+  inx.font='12px "IBM Plex Mono",monospace'; inx.textBaseline='top';
+  lines.forEach((t,i)=>{
+    inx.fillStyle = i===1?'#57c7ff' : i===2?'#ff8fb0' : i===3?'#ffb454' : '#c3cce4';
+    inx.fillText(t,bx,by+i*lh);
+  });
+  inx.restore();
+  inx.fillStyle='rgba(138,151,184,.7)'; inx.font='11px "IBM Plex Mono",monospace'; inx.textBaseline='alphabetic';
+  inx.fillText('圆上一点 =（cos α, sin α）',16,H-14);
+}
+
+// ---- coefficient spectrum: aₙ (cos) vs bₙ (sin) ----
+let coBars=[];
+function drawCoeff(){
+  const W=coC._w,H=coC._h; co.clearRect(0,0,W,H);
+  const padL=40,padR=16,padT=14,padB=22, plotW=W-padL-padR, midY=padT+(H-padT-padB)/2, half=(H-padT-padB)/2-2;
+  const N=cs.length, slot=plotW/N, bw=Math.max(3,Math.min(slot*0.30,14));
+  const maxA=Math.max(...cs.map(c=>Math.max(Math.abs(c.a),Math.abs(c.b))),1e-3);
+  // mid axis
+  co.strokeStyle='rgba(103,121,159,.4)'; co.lineWidth=1;
+  co.beginPath(); co.moveTo(padL,midY); co.lineTo(W-padR,midY); co.stroke();
+  co.font='10px "IBM Plex Mono",monospace'; co.textAlign='center';
+  coBars=[];
+  for(let i=0;i<N;i++){
+    const c=cs[i], cx=padL+slot*(i+0.5);
+    coBars.push({n:c.n,x0:cx-slot/2,x1:cx+slot/2});
+    const ha=(c.a/maxA)*half, hb=(c.b/maxA)*half;
+    const hl=state.highlight===c.n;
+    // cos bar (left of slot center)
+    co.fillStyle=hl?'#9fe0ff':'#57c7ff'; co.globalAlpha=hl?1:.85;
+    co.fillRect(cx-bw-1, ha>=0?midY-ha:midY, bw, Math.abs(ha));
+    // sin bar (right of slot center)
+    co.fillStyle=hl?'#ffbfd2':'#ff8fb0';
+    co.fillRect(cx+1, hb>=0?midY-hb:midY, bw, Math.abs(hb));
+    co.globalAlpha=1;
+    // amplitude tick (envelope) as a small cap
+    const hA=(c.A/maxA)*half;
+    co.strokeStyle=hl?'rgba(255,180,84,.95)':'rgba(255,180,84,.45)'; co.lineWidth=hl?2:1;
+    co.beginPath(); co.moveTo(cx-bw-2,midY-hA); co.lineTo(cx+bw+2,midY-hA); co.stroke();
+    // n labels
+    co.fillStyle='rgba(138,151,184,.75)';
+    if(N<=16) co.fillText(c.n,cx,H-7);
+  }
+  co.textAlign='left'; co.fillStyle='rgba(93,106,140,.9)';
+  co.fillText('+',6,padT+8); co.fillText('0',6,midY+3); co.fillText('−',6,H-padB);
+  co.textAlign='right'; co.fillStyle='rgba(93,106,140,.9)'; co.fillText('谐波 n →',W-padR,H-7);
+}
+
+// =========================================================
+//  HUD / loop / controls
+// =========================================================
+const hud=document.getElementById('hud'), stage=document.getElementById('stage'), scrub=document.getElementById('scrub');
+function updateHud(){
+  const names={square:'方波',sawtooth:'锯齿波',triangle:'三角波'};
+  hud.innerHTML=`<b>${names[state.sig]}</b> · N=<b>${state.N}</b> · τ=<b>${(state.tau/TAU).toFixed(2)}T</b><br>t = <b>${(((state.t%TAU)+TAU)%TAU).toFixed(2)}</b> ${state.playing?'':'· 已定格'}`;
+}
+function draw2D(){ drawPhasor(); drawInspector(); drawCoeff(); }
+
+function animate(){
+  resizeGL();
+  if(state.playing){
+    state.t+=state.speed;
+    updateWaves3D();
+    // reflect into scrubber (one base period)
+    scrub.value=Math.round((((state.t%TAU)+TAU)%TAU)*100);
+  }
+  if(camTween){camTween.k=Math.min(1,camTween.k+0.045);const e=1-Math.pow(1-camTween.k,3);
+    camera.position.lerpVectors(camTween.fromP,camTween.toP,e);
+    controls.target.lerpVectors(camTween.fromT,camTween.toT,e);
+    if(camTween.k>=1)camTween=null;}
+  controls.autoRotate=state.spin&&!camTween; controls.update();
+  draw2D(); updateHud();
+  renderer.render(scene,camera);
+  requestAnimationFrame(animate);
+}
+
+// recompute on τ (no geometry rebuild needed) / rebuild on N,sig
+function onTau(){ computeCoeffs(); updateWaves3D(); }
+
+// ---- wiring ----
+document.getElementById('sigSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  state.sig=b.dataset.sig;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));build();});
+const harm=document.getElementById('harm'),harmVal=document.getElementById('harmVal');
+harm.addEventListener('input',()=>{state.N=+harm.value;harmVal.textContent=state.N;
+  if(state.highlight>state.N)state.highlight=state.N; build();});
+const tau=document.getElementById('tau'),tauVal=document.getElementById('tauVal');
+tau.addEventListener('input',()=>{state.tau=(+tau.value/100)*TAU;tauVal.textContent='.'+(+tau.value<10?'0':'')+(+tau.value)+'T';onTau();});
+document.getElementById('speed').addEventListener('input',e=>{state.speed=(+e.target.value/100)*0.028;});
+document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));setView(b.dataset.view);});
+
+const playBtn=document.getElementById('play');
+function setPlaying(p){state.playing=p;playBtn.classList.toggle('on',p);playBtn.textContent=p?'❚❚ 暂停':'▶ 播放';
+  stage.classList.toggle('paused',!p);}
+playBtn.addEventListener('click',()=>setPlaying(!state.playing));
+function step(d){setPlaying(false); state.t+=d; updateWaves3D(); scrub.value=Math.round((((state.t%TAU)+TAU)%TAU)*100);}
+document.getElementById('stepF').addEventListener('click',()=>step(+0.04));
+document.getElementById('stepB').addEventListener('click',()=>step(-0.04));
+scrub.addEventListener('input',()=>{setPlaying(false); state.t=+scrub.value/100; updateWaves3D();});
+const spinBtn=document.getElementById('spin');
+spinBtn.addEventListener('click',()=>{state.spin=!state.spin;spinBtn.classList.toggle('on',state.spin);});
+
+// hover coefficient bars -> highlight harmonic (sticky)
+function coHover(ev){const r=coC.getBoundingClientRect();const mx=(ev.clientX??(ev.touches&&ev.touches[0].clientX))-r.left;
+  for(const b of coBars){if(mx>=b.x0&&mx<=b.x1){state.highlight=b.n;break;}}}
+coC.addEventListener('mousemove',coHover);
+coC.addEventListener('touchstart',coHover,{passive:true});
+coC.addEventListener('touchmove',coHover,{passive:true});
+
+// reduced-motion default reflect
+if(reduceMotion){setPlaying(false);spinBtn.classList.remove('on');}
+
+// keyboard: space = play/pause, arrows = step
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();setPlaying(!state.playing);}
+  else if(e.code==='ArrowRight'){step(+0.04);} else if(e.code==='ArrowLeft'){step(-0.04);}
+});
+
+// ---- go ----
+resizeGL(); build();
+document.getElementById('loading').style.display='none';
+animate();
+</script>
+</body>
+</html>

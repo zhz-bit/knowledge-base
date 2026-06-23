@@ -1,0 +1,2402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>流形与切空间 · 李群李代数及其在 SLAM 与机器人中的应用</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0f1a;
+  --ink2:#0e1424;
+  --panel:#131a2b;
+  --panel2:#172033;
+  --line:#243149;
+  --gold:#f0bf4c;        /* 群 / 流形 / 弯曲 */
+  --gold-soft:#f6d486;
+  --cyan:#46d7cc;        /* 代数 / 切空间 / 平直 */
+  --cyan-soft:#7ff0e7;
+  --violet:#9d8cff;      /* 指数映射 / 桥梁 */
+  --txt:#eaf0fb;
+  --muted:#8b9ab8;
+  --muted2:#5f6f8e;
+  --red:#ff6b6b;
+  --green:#5be08a;
+  --blue:#5b9dff;
+  --serif:'Spectral',Georgia,'Songti SC',serif;
+  --sans:'Inter',system-ui,-apple-system,'PingFang SC',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',monospace;
+  --maxw:1080px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--ink);
+  color:var(--txt);
+  font-family:var(--sans);
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(900px 600px at 78% -8%, rgba(240,191,76,.10), transparent 60%),
+    radial-gradient(800px 700px at 10% 12%, rgba(70,215,204,.08), transparent 55%),
+    radial-gradient(700px 700px at 50% 110%, rgba(157,140,255,.07), transparent 60%);
+}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(240,191,76,.28)}
+
+/* ---------- Nav ---------- */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px clamp(16px,4vw,40px);
+  backdrop-filter:blur(12px);
+  background:linear-gradient(to bottom, rgba(11,15,26,.86), rgba(11,15,26,.35));
+  border-bottom:1px solid rgba(36,49,73,.6);
+}
+.brand{display:flex;align-items:center;gap:11px;font-family:var(--serif);font-weight:600;letter-spacing:.02em}
+.brand .gly{width:26px;height:26px;flex:none}
+.brand b{font-weight:600;font-size:16px}
+.brand span{color:var(--muted);font-size:12px;font-family:var(--sans);letter-spacing:.06em}
+.navlinks{display:flex;gap:4px;flex-wrap:wrap}
+.navlinks a{
+  font-size:12.5px;color:var(--muted);padding:6px 10px;border-radius:8px;
+  letter-spacing:.02em;transition:.2s;white-space:nowrap;
+}
+.navlinks a:hover{color:var(--txt);background:rgba(255,255,255,.05)}
+@media(max-width:880px){.navlinks{display:none}}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(18px,5vw,32px);position:relative;z-index:1}
+section{scroll-margin-top:72px}
+.section{padding:clamp(64px,9vw,120px) 0}
+.eyebrow{
+  font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--cyan);display:flex;align-items:center;gap:12px;margin-bottom:18px;
+}
+.eyebrow::before{content:"";width:30px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
+h2.title{font-family:var(--serif);font-weight:600;font-size:clamp(28px,4.6vw,46px);line-height:1.12;letter-spacing:.01em}
+h2.title em{font-style:italic;color:var(--gold)}
+.lede{color:var(--muted);font-size:clamp(15px,1.8vw,18px);max-width:62ch;margin-top:18px}
+.lede b{color:var(--txt);font-weight:600}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;padding-top:70px;overflow:hidden}
+#heroCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:0;opacity:.92}
+.hero .wrap{z-index:2}
+.hero-tag{font-family:var(--mono);font-size:12.5px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:22px}
+.hero h1{
+  font-family:var(--serif);font-weight:600;
+  font-size:clamp(40px,8vw,86px);line-height:1.02;letter-spacing:-.01em;
+  text-shadow:0 2px 40px rgba(0,0,0,.6);
+}
+.hero h1 .l1{display:block;color:var(--txt)}
+.hero h1 .l2{display:block}
+.hero h1 .g{color:var(--gold)}
+.hero h1 .c{color:var(--cyan);font-style:italic}
+.hero p.sub{color:var(--muted);font-size:clamp(15px,2vw,19px);max-width:54ch;margin-top:26px}
+.hero .duo{display:flex;gap:26px;flex-wrap:wrap;margin-top:34px}
+.duo .chip{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted)}
+.duo .dot{width:11px;height:11px;border-radius:50%}
+.scrollhint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:2;color:var(--muted2);font-family:var(--mono);font-size:11px;letter-spacing:.25em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:8px}
+.scrollhint .ln{width:1px;height:34px;background:linear-gradient(var(--gold),transparent);animation:drop 1.8s infinite}
+@keyframes drop{0%{opacity:.2;transform:scaleY(.3);transform-origin:top}50%{opacity:1}100%{opacity:.2;transform:scaleY(1);transform-origin:top}}
+
+/* ---------- Cards / panels ---------- */
+.panel{background:linear-gradient(180deg,var(--panel),var(--ink2));border:1px solid var(--line);border-radius:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- Timeline ---------- */
+.timeline{position:relative;margin-top:46px;padding-left:8px}
+.timeline::before{content:"";position:absolute;left:13px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--gold),var(--cyan),var(--violet))}
+.tl-item{position:relative;padding:0 0 30px 48px}
+.tl-item .yr{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--ink);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center}
+.tl-item .yr i{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.tl-item.cyan .yr{border-color:var(--cyan)} .tl-item.cyan .yr i{background:var(--cyan)}
+.tl-item.violet .yr{border-color:var(--violet)} .tl-item.violet .yr i{background:var(--violet)}
+.tl-item .y{font-family:var(--mono);font-size:13px;color:var(--gold);letter-spacing:.08em;font-weight:600}
+.tl-item.cyan .y{color:var(--cyan)} .tl-item.violet .y{color:var(--violet)}
+.tl-item h4{font-family:var(--serif);font-size:19px;font-weight:600;margin:2px 0 4px}
+.tl-item p{color:var(--muted);font-size:14.5px;max-width:64ch}
+.tl-item p b{color:var(--txt)}
+
+/* ---------- Interactive widget shell ---------- */
+.demo{margin-top:34px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#101627,#0b1120)}
+.demo-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.015)}
+.demo-head .lbl{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.demo-head .lbl b{color:var(--txt);font-weight:600;letter-spacing:.04em}
+.demo-head .legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.demo-head .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.demo-body{display:grid;grid-template-columns:1.15fr .85fr;gap:0}
+@media(max-width:760px){.demo-body{grid-template-columns:1fr}}
+.canvas-wrap{position:relative;background:radial-gradient(120% 120% at 50% 0%,#0d1424,#080c16);min-height:340px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--line)}
+@media(max-width:760px){.canvas-wrap{border-right:none;border-bottom:1px solid var(--line)}}
+.canvas-wrap canvas{display:block;width:100%;height:100%;touch-action:none}
+.controls{padding:20px 20px 24px;display:flex;flex-direction:column;gap:16px}
+.ctl{display:flex;flex-direction:column;gap:7px}
+.ctl label{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted)}
+.ctl label .v{font-family:var(--mono);color:var(--cyan-soft);font-size:12.5px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:#22304a;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);border:2px solid #1a2236;cursor:pointer;box-shadow:0 0 0 3px rgba(240,191,76,.18);transition:.15s}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 0 5px rgba(240,191,76,.22)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--gold);border:2px solid #1a2236;cursor:pointer}
+input.cy[type=range]::-webkit-slider-thumb{background:var(--cyan);box-shadow:0 0 0 3px rgba(70,215,204,.18)}
+input.cy[type=range]::-moz-range-thumb{background:var(--cyan)}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap}
+button.btn{
+  font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink);
+  background:var(--gold);border:none;border-radius:9px;padding:9px 15px;cursor:pointer;transition:.18s;letter-spacing:.01em;
+}
+button.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+button.btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+button.btn.ghost:hover{border-color:var(--cyan);color:var(--cyan-soft)}
+button.btn.cy{background:var(--cyan)}
+button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.readout{font-family:var(--mono);font-size:12px;color:var(--muted);background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:10px;padding:11px 13px;line-height:1.85}
+.readout .k{color:var(--cyan-soft)}
+.readout .g{color:var(--gold-soft)}
+.note{font-size:13px;color:var(--muted);border-left:2px solid var(--gold);padding-left:13px;line-height:1.6}
+.note.cy{border-color:var(--cyan)}
+
+/* ---------- group definition ---------- */
+.groupdef{padding:28px clamp(20px,3.4vw,36px);margin-top:34px}
+.gd-head{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px;display:flex;align-items:center;gap:11px}
+.gd-head::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
+.gd-intro{color:var(--muted);font-size:15px;max-width:74ch;margin-bottom:24px}
+.gd-intro b{color:var(--txt);font-weight:600}
+.axioms{list-style:none;display:flex;flex-direction:column;gap:20px}
+.axioms li{display:flex;gap:16px;align-items:flex-start}
+.ax-n{flex:none;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);background:var(--gold);width:38px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.axioms li:nth-child(4) .ax-n{background:var(--cyan)}
+.ax-t{font-family:var(--serif);font-size:18px;font-weight:600;display:block;margin-bottom:7px;color:var(--txt)}
+.ax-t .en{font-family:var(--mono);font-size:11.5px;color:var(--muted2);font-weight:400;letter-spacing:.06em;margin-left:7px}
+.ax-f{display:inline-block;font-family:var(--mono);font-size:13.5px;color:var(--cyan-soft);background:rgba(70,215,204,.08);border:1px solid rgba(70,215,204,.2);border-radius:8px;padding:5px 12px;margin:0 0 9px;line-height:1.5}
+.ax-d{display:block;color:var(--muted);font-size:14px;line-height:1.62;max-width:72ch}
+.ax-d b{color:var(--txt);font-weight:600}
+.gd-foot{margin-top:24px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;max-width:76ch}
+.gd-foot b{color:var(--gold-soft);font-weight:600}
+.order-examples{display:flex;flex-wrap:wrap;gap:9px 10px;margin:2px 0}
+.oe{font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:9px;padding:7px 12px}
+.oe i{color:var(--gold);font-style:normal;font-weight:700;padding:0 3px}
+/* segmented axis picker */
+.seg{display:inline-flex;gap:4px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:9px;padding:3px;width:max-content}
+.seg button{font-family:var(--mono);font-size:12.5px;color:var(--muted);background:transparent;border:none;border-radius:6px;padding:5px 14px;cursor:pointer;transition:.15s}
+.seg button.on{background:var(--gold);color:var(--ink);font-weight:600}
+.seg.cy button.on{background:var(--cyan)}
+.seg button:hover:not(.on){color:var(--txt)}
+/* rotation-matrix intuition */
+.basis-map{display:flex;flex-direction:column;gap:10px;margin:6px 0 2px}
+.bm{font-family:var(--mono);font-size:13.5px;color:var(--txt);background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:11px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:9px;line-height:1.4}
+.bm-h{font-family:var(--sans);font-size:11.5px;font-weight:600;letter-spacing:.03em;background:rgba(255,255,255,.05);border-radius:6px;padding:2px 9px}
+.bm-t{color:var(--muted2);font-size:11.5px;margin-left:auto;font-family:var(--sans);white-space:nowrap}
+.matcols{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:11.5px;font-family:var(--sans);margin-top:2px}
+.ctl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+/* foldable deep-dive */
+.fold{margin-top:34px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,var(--panel),var(--ink2));overflow:hidden}
+.fold>summary{cursor:pointer;list-style:none;padding:18px 22px;font-family:var(--serif);font-size:18px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:"▸";color:var(--gold);font-family:var(--mono);transition:transform .2s}
+.fold[open]>summary::before{transform:rotate(90deg)}
+.fold>summary .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);font-weight:400;margin-left:auto}
+.fold-body{padding:0 22px 24px}
+
+/* ---------- Matrix ---------- */
+.mtx{position:relative;display:inline-grid;gap:.18em .7em;padding:.28em .58em;margin:0 .2em;font-family:var(--mono);font-size:12.5px;vertical-align:middle;line-height:1.2}
+.mtx::before,.mtx::after{content:"";position:absolute;top:2px;bottom:2px;width:6px;border:1.6px solid var(--mc,var(--cyan))}
+.mtx::before{left:0;border-right:none;border-radius:3px 0 0 3px}
+.mtx::after{right:0;border-left:none;border-radius:0 3px 3px 0}
+.mtx b{font-weight:500;text-align:center;min-width:3.1em;color:var(--txt)}
+.mtx.gold{--mc:var(--gold)}
+.eq{display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.eq .op{color:var(--violet);font-weight:600;padding:0 2px}
+.eq .lbl{color:var(--muted2);font-size:11px}
+
+/* ---------- concept cards ---------- */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:30px}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,var(--panel),var(--ink2));border:1px solid var(--line);border-radius:16px;padding:22px}
+.card .ic{font-family:var(--mono);font-size:13px;color:var(--gold);letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h4{font-family:var(--serif);font-size:18px;font-weight:600;margin-bottom:8px}
+.card p{color:var(--muted);font-size:14px}
+.card.cy .ic{color:var(--cyan)}
+.card.vi .ic{color:var(--violet)}
+
+/* ---------- cheat table ---------- */
+.cheat{margin-top:34px;width:100%;border-collapse:separate;border-spacing:0;font-size:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.cheat th,.cheat td{padding:13px 15px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.cheat thead th{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);background:rgba(70,215,204,.05)}
+.cheat tbody tr:last-child td{border-bottom:none}
+.cheat td:first-child{font-family:var(--serif);font-weight:600;color:var(--gold-soft)}
+.cheat code{font-family:var(--mono);font-size:12.5px;color:var(--txt);background:rgba(255,255,255,.05);padding:1px 6px;border-radius:5px}
+.cheat .mut{color:var(--muted)}
+@media(max-width:760px){.cheat,.cheat thead,.cheat tbody,.cheat th,.cheat td,.cheat tr{display:block}.cheat thead{display:none}.cheat td{border:none;padding:5px 15px}.cheat tr{border-bottom:1px solid var(--line);padding:12px 0}.cheat td:first-child{font-size:17px;padding-top:12px}.cheat td::before{content:attr(data-h);font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);display:block;margin-bottom:2px}}
+
+/* ---------- footer ---------- */
+.foot{border-top:1px solid var(--line);padding:42px 0 60px;margin-top:30px}
+.foot .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-end}
+.foot p{color:var(--muted);font-size:13.5px;max-width:48ch}
+.foot .refs{font-size:12px;color:var(--muted2);font-family:var(--mono);line-height:2}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+  .scrollhint .ln{animation:none}
+  html{scroll-behavior:auto}
+}
+.kbd{font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <a href="#top" class="brand">
+    <svg class="gly" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="14" stroke="#f0bf4c" stroke-width="2.4"/>
+      <line x1="20" y1="6" x2="38" y2="6" stroke="#46d7cc" stroke-width="2.4"/>
+      <circle cx="20" cy="6" r="3" fill="#46d7cc"/>
+    </svg>
+    <b>李群 · 李代数</b><span>SLAM &amp; Robotics</span>
+  </a>
+  <div class="navlinks">
+    <a href="#history">发展简史</a>
+    <a href="#group">什么是群</a>
+    <a href="#liegroup">李群</a>
+    <a href="#liealgebra">李代数</a>
+    <a href="#exp">指数映射</a>
+    <a href="#so3">SO(3) 三维旋转</a>
+    <a href="#se">刚体运动 SE(2)</a>
+    <a href="#slam">SLAM 应用</a>
+    <a href="#cheat">速查表</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <canvas id="heroCanvas"></canvas>
+  <div class="wrap">
+    <div class="hero-tag reveal">连续的对称 · 弯曲的空间 · 平直的代数</div>
+    <h1 class="reveal">
+      <span class="l1">在<span class="g"> 弯曲 </span>的流形上,</span>
+      <span class="l2">用<span class="c">平直</span>的语言思考运动</span>
+    </h1>
+    <p class="sub reveal">从伽罗瓦的群,到李的连续变换群,再到机器人手中的位姿估计——
+    李群描述「能连续变化的对称」,李代数把它在单位元处<b>线性化</b>。
+    这正是 SLAM 让相机与机器人在三维空间里平滑求导、优化、插值的数学钥匙。</p>
+    <div class="duo reveal">
+      <div class="chip"><span class="dot" style="background:var(--gold)"></span>金色 = 群 / 流形 / 弯曲</div>
+      <div class="chip"><span class="dot" style="background:var(--cyan)"></span>青色 = 代数 / 切空间 / 平直</div>
+      <div class="chip"><span class="dot" style="background:var(--violet)"></span>紫色 = exp / log 这座桥</div>
+    </div>
+  </div>
+  <div class="scrollhint"><span>向下滚动</span><span class="ln"></span></div>
+</header>
+
+<!-- ============ HISTORY ============ -->
+<section id="history" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第一章 · 渊源</div>
+    <h2 class="title reveal">一场决斗、一份遗稿,<br>与<em>对称性</em>的两个世纪</h2>
+    <p class="lede reveal">「群」最初是为了回答一个纯代数问题:五次方程为什么没有求根公式。
+    可一旦人们意识到<b>对称可以被当作对象来运算</b>,这个想法就再也关不住了——
+    从离散的置换,到连续的旋转,最终成为现代物理与机器人的通用语言。</p>
+
+    <div class="timeline">
+      <div class="tl-item reveal"><div class="yr"><i></i></div>
+        <div class="y">1832</div><h4>伽罗瓦 · 决斗前夜的群</h4>
+        <p>年仅 20 岁的 <b>Évariste Galois</b> 在决斗前夜整理手稿,用「群(groupe)」刻画方程根的置换对称,
+        判定了多项式何时可用根式求解。他奠定了群的雏形,却没能活着看到它被理解。</p></div>
+
+      <div class="tl-item reveal"><div class="yr"><i></i></div>
+        <div class="y">1854</div><h4>凯莱 · 抽象群的定义</h4>
+        <p><b>Arthur Cayley</b> 把群从「置换」中抽离出来:只要一个集合配上满足<b>封闭、结合、单位元、逆元</b>四条公理的运算,它就是群。对称从此成为独立的研究对象。</p></div>
+
+      <div class="tl-item reveal cyan"><div class="yr"><i></i></div>
+        <div class="y">1872</div><h4>克莱因 · 埃尔朗根纲领</h4>
+        <p><b>Felix Klein</b> 提出:一种几何 = 一类变换群下保持不变的性质。欧氏几何属于刚体运动群,
+        射影几何属于更大的群。<b>几何就是群论</b>——这句话至今支配着我们看待空间的方式。</p></div>
+
+      <div class="tl-item reveal cyan"><div class="yr"><i></i></div>
+        <div class="y">1873</div><h4>索菲斯·李 · 连续变换群</h4>
+        <p>挪威数学家 <b>Sophus Lie</b> 想为微分方程做伽罗瓦为多项式做过的事。
+        他研究<b>能连续变化</b>的变换群(如全体旋转),并发现:研究这种群,只需研究它在单位元附近的<b>无穷小生成元</b>——这就是后来的<b>李代数</b>。曲与直的对偶就此诞生。</p></div>
+
+      <div class="tl-item reveal"><div class="yr"><i></i></div>
+        <div class="y">1888</div><h4>基灵 &amp; 嘉当 · 完全分类</h4>
+        <p><b>Wilhelm Killing</b> 与 <b>Élie Cartan</b> 借助根系,把所有单李代数彻底分类,
+        包括五个奇异的「例外型」 G₂、F₄、E₆、E₇、E₈。一个看似无穷的连续世界,竟有有限而精确的骨架。</p></div>
+
+      <div class="tl-item reveal violet"><div class="yr"><i></i></div>
+        <div class="y">1925</div><h4>外尔 · 表示论与物理</h4>
+        <p><b>Hermann Weyl</b> 发展了李群的表示论,把它送进量子力学与粒子物理:
+        自旋、规范场、守恒律,本质都是连续对称。李群从纯数学走向了描述自然的核心。</p></div>
+
+      <div class="tl-item reveal violet"><div class="yr"><i></i></div>
+        <div class="y">2000s →</div><h4>进入机器人与 SLAM</h4>
+        <p>当机器人需要在三维空间里估计自己的位姿、对旋转求导、对轨迹平滑插值时,
+        人们发现答案早已写好:位姿活在李群 <code style="color:var(--gold)">SE(3)</code> 上,
+        而优化、滤波、预积分都在它的李代数 <code style="color:var(--cyan)">se(3)</code> 里完成。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT IS A GROUP ============ -->
+<section id="group" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第二章 · 基础</div>
+    <h2 class="title reveal">群:把<em>对称</em>当成能相乘的东西</h2>
+    <p class="lede reveal">一个<b>群</b>就是一个集合配上一个运算,只要它满足四条公理。
+    我们先把这个定义完整、严谨地摆出来,再用下面的时钟——最朴素的群、<b>整数模 n 加法群</b> Zₙ——
+    把每一条公理逐个走一遍。它是离散的,但当 n → ∞、格子无限细密时,时钟就连成一个圆,
+    那正是下一节的连续旋转群 SO(2)。</p>
+
+    <div class="groupdef panel reveal">
+      <div class="gd-head">定义 · 群 (Group)</div>
+      <p class="gd-intro">一个<b>群</b>是一个集合 G,配上一个<b>二元运算</b> ∘ : G × G → G,并满足下面四条公理。
+      正是这四条——不多、不少——把「对称可以像数一样被运算」这件事精确地定义了出来。</p>
+      <ol class="axioms">
+        <li><span class="ax-n">G1</span><div>
+          <b class="ax-t">封闭性 <span class="en">Closure</span></b>
+          <span class="ax-f">∀ a, b ∈ G ， a ∘ b ∈ G</span>
+          <span class="ax-d">任意两个元素运算后,结果仍属于 G——运算不会把你带出这个集合。</span>
+        </div></li>
+        <li><span class="ax-n">G2</span><div>
+          <b class="ax-t">结合律 <span class="en">Associativity</span></b>
+          <span class="ax-f">(a ∘ b) ∘ c = a ∘ (b ∘ c)</span>
+          <span class="ax-d">多个元素连续运算时,括号怎么分组都得到同一结果。注意:<b>并不要求</b>可交换。</span>
+        </div></li>
+        <li><span class="ax-n">G3</span><div>
+          <b class="ax-t">单位元 <span class="en">Identity</span></b>
+          <span class="ax-f">∃ e ∈ G ， 对一切 a： e ∘ a = a ∘ e = a</span>
+          <span class="ax-d">存在一个「什么都不做」的元素 e;它与任何 a 复合都不改变 a(可证 e 唯一)。</span>
+        </div></li>
+        <li><span class="ax-n">G4</span><div>
+          <b class="ax-t">逆元 <span class="en">Inverse</span></b>
+          <span class="ax-f">∀ a ∈ G ， ∃ a⁻¹ ∈ G： a ∘ a⁻¹ = a⁻¹ ∘ a = e</span>
+          <span class="ax-d"><b>逆元正是由这条等式所"定义"的:</b> a⁻¹ 是那个「与 a 复合后恰好回到单位元 e」的元素。
+          它不是一个固定公式,而是一个<b>要求</b>;在不同的群里,把这条要求解出来,形状完全不同——
+          在 Zₙ 里它是 n−a,在旋转群里是反向旋转,在矩阵群里是逆矩阵。</span>
+        </div></li>
+      </ol>
+      <div class="gd-foot">
+        <p style="margin:0 0 14px"><b>那交换律呢?</b> a ∘ b = b ∘ a <b>不在</b>上面四条里——这不是疏漏,而是<b>有意为之</b>。
+        群本就是为刻画<b>变换与置换</b>而生,而变换的复合<b>天生不可交换</b>:「先做 A 再做 B」和「先做 B 再做 A」往往是两回事。
+        若把交换律设成必需公理,就会一上来把旋转、置换、矩阵、机器人运动统统踢出门外,只剩「数的加法」这类乖巧情形。
+        所以它被特意留在门外:额外满足它的群,才另起一名叫<b>阿贝尔群(交换群)</b>。</p>
+        <div class="order-examples">
+          <span class="oe">穿衣:先袜子后鞋 <i>≠</i> 先鞋后袜子</span>
+          <span class="oe">机器人:先前进后转 <i>≠</i> 先转后前进 · SE(2)</span>
+          <span class="oe">旋转:绕 x 再绕 y <i>≠</i> 绕 y 再绕 x · SO(3)</span>
+          <span class="oe">函数 f∘g <i>≠</i> g∘f &nbsp;·&nbsp; 矩阵 AB <i>≠</i> BA</span>
+        </div>
+        <p style="margin:14px 0 0">Zₙ 与 SO(2) 都是阿贝尔群(顺序无所谓,像数一样);而三维旋转 SO(3) 不可交换,不是阿贝尔群。
+        这点「顺序要紧」正是它需要更精巧李代数的原因——李括号 [X,Y]=XY−YX 度量的恰是交换失败的程度。你可以在第六章 SO(3) 里亲手验证。</p>
+      </div>
+    </div>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">◷</span> <b>循环群 Zₙ</b> · 时钟上的加法</div>
+        <div class="legend">
+          <span><i style="background:var(--gold)"></i>a</span>
+          <span><i style="background:var(--cyan)"></i>b</span>
+          <span><i style="background:var(--violet)"></i>a ∘ b = (a+b) mod n</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_group"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>阶数 n（时钟格数）<span class="v" id="g_n">12</span></label>
+            <input type="range" id="s_gn" min="3" max="16" value="12" step="1">
+          </div>
+          <div class="ctl">
+            <label>元素 a<span class="v" id="g_a">3</span></label>
+            <input type="range" id="s_ga" min="0" max="11" value="3" step="1">
+          </div>
+          <div class="ctl">
+            <label>元素 b<span class="v cy" id="g_b">5</span></label>
+            <input type="range" id="s_gb" class="cy" min="0" max="11" value="5" step="1">
+          </div>
+          <div class="readout" id="g_out"></div>
+          <div class="note cy">在这个时钟上逐条验证上面的定义:<br>
+            <b>① 封闭</b> 转完仍落在表盘上 · <b>② 结合</b> 先并哪两步都一样<br>
+            <b>③ 单位元</b> e = 0(转 0 格,什么都不做)<br>
+            <b>④ 逆元</b> 按定义要求 a ∘ a⁻¹ = e,即 (a + a⁻¹) mod n = 0,
+            反解得 a⁻¹ = n − a——逆元的形状是被这条等式<b>定义</b>出来的,不是凭空给的公式。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card reveal"><div class="ic">▣ 离散群</div><h4>置换、对称、密码</h4>
+        <p>魔方的全体操作、晶体的对称、纠错码——元素一个个数得清,运算是组合。</p></div>
+      <div class="card cy reveal"><div class="ic">◠ 李群</div><h4>连续的对称</h4>
+        <p>旋转、平移、洛伦兹变换。元素可以<b>光滑地</b>连续变化,本身构成一个流形。</p></div>
+      <div class="card vi reveal"><div class="ic">↯ 李代数</div><h4>无穷小生成元</h4>
+        <p>把李群在单位元处「求导」,得到一个线性空间。复杂的曲,被压成易算的直。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LIE GROUP ============ -->
+<section id="liegroup" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第三章 · 李群</div>
+    <h2 class="title reveal">李群:既是<em>群</em>,又是<em>光滑流形</em></h2>
+    <p class="lede reveal">最小的例子是 <b>SO(2)</b>——平面内所有旋转。每个旋转由角度 θ 决定,
+    所有 θ 排起来就是一个<b>圆</b>:这个圆既能做群运算(转两次=角度相加),又是一条光滑曲线(流形)。
+    拖动滑块,看 x、y 两根坐标轴(<b style="color:var(--red)">红</b>、<b style="color:var(--green)">绿</b>)被一起转动——
+    它们旋转后的新位置,正好<b>逐列</b>填进右侧那个矩阵 R(θ);单位元始终在 θ=0 处。</p>
+
+    <div class="panel reveal" style="padding:26px clamp(20px,3vw,32px);margin-top:30px">
+      <div class="gd-head">直观 · 旋转矩阵到底在说什么</div>
+      <p class="gd-intro">先约定记号:<b>R(θ) 就是「旋转 θ 角」对应的那个旋转矩阵</b>,下文有时简写成 <b>R</b>——
+      凡是看到 R 或 R(θ),指的都是同一个矩阵,只是省略与否的区别。
+      别把它当成一堆冷冰冰的数字。一个线性变换<b>完全由「它把基向量送到哪里」决定</b>——
+      只要知道两根坐标轴转去了哪,就知道整个平面会怎么转。平面的两根基向量是
+      <b style="color:var(--red)">x 轴 ê₁ = (1, 0)</b> 与 <b style="color:var(--green)">y 轴 ê₂ = (0, 1)</b>;
+      把它们各自旋转 θ,落点就<b>一列一列</b>地写进了矩阵:</p>
+      <div class="basis-map">
+        <div class="bm"><span class="bm-h" style="color:var(--red)">x 轴的去向</span>
+          R · ê₁ = R · (1, 0) = ( cos θ ,&nbsp; sin θ ) <span class="bm-t">↦ R 的第 1 列</span></div>
+        <div class="bm"><span class="bm-h" style="color:var(--green)">y 轴的去向</span>
+          R · ê₂ = R · (0, 1) = ( −sin θ ,&nbsp; cos θ ) <span class="bm-t">↦ R 的第 2 列</span></div>
+      </div>
+      <div class="note" style="margin:14px 0 0">这里的 <b>R</b> 就是那个 2×2 矩阵,<b>R · ê₁</b> 是「矩阵 × 向量」。把它逐行乘开看个明白:
+        <div class="eq" style="margin-top:9px;gap:5px 7px">
+          <span class="g" style="font-family:var(--mono)">R · ê₁</span> =
+          <span class="mtx gold" style="grid-template-columns:repeat(2,auto)"><b style="color:var(--red)">cos θ</b><b style="color:var(--green)">−sin θ</b><b style="color:var(--red)">sin θ</b><b style="color:var(--green)">cos θ</b></span>
+          <span class="mtx" style="grid-template-columns:auto"><b>1</b><b>0</b></span>
+          <span class="op">=</span>
+          <span style="font-family:var(--mono);font-size:12.5px">( cos θ·1 − sin θ·0 ,&nbsp; sin θ·1 + cos θ·0 )</span>
+          <span class="op">=</span>
+          <span style="font-family:var(--mono);font-size:13px;color:var(--red)">( cos θ, sin θ )</span>
+        </div>
+        逐行点乘,结果正好是矩阵的<b>第 1 列</b>。这就是普适规则:<b>矩阵 × 第 i 个基向量 = 取出第 i 列</b>。
+        同理 R · ê₂ =(−sin θ, cos θ),就是<b>第 2 列</b>。</div>
+      <p class="gd-foot" style="margin-top:18px">于是旋转任意向量都不必背公式:把 v 拆成 v = v₁ê₁ + v₂ê₂,
+      转完就是 <b>R · v = v₁ · (第 1 列) + v₂ · (第 2 列)</b>——基怎么动,整个平面就怎么动。
+      又因为这两列<b>互相垂直、长度都为 1、且 det R = 1</b>,这个变换只转动、不拉伸、不剪切——这正是它是「<b>刚性旋转</b>」的原因。
+      现在到右图里拖动 θ,看<b style="color:var(--red)">红</b>、<b style="color:var(--green)">绿</b>两支箭头(就是这两列)如何扫过整个圆。</p>
+    </div>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">◯</span> <b>SO(2)</b> · 圆周即群,也是流形</div>
+        <div class="legend">
+          <span><i style="background:var(--gold)"></i>群 = 单位圆</span>
+          <span><i style="background:var(--red)"></i>x 轴去向 = R 第1列</span>
+          <span><i style="background:var(--green)"></i>y 轴去向 = R 第2列</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_so2"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>旋转角 θ<span class="v" id="so2_t">0.90 rad</span></label>
+            <input type="range" id="s_so2" min="-314" max="314" value="90" step="1">
+          </div>
+          <div class="note" style="margin-bottom:2px"><b>这里的 R(θ) 是什么?</b> 它就是「把平面旋转 θ 角」这个动作对应的<b>旋转矩阵</b>——
+          公式里写的 <b>R</b> 是它的简写,两者是同一个东西。它乘到向量上 <b>R·v</b> 就把 v 转过 θ。
+          下式<b>左边是通式</b>,<b>右边是代入当前 θ</b> 算出的具体数(拖滑块时右边会变,左边不变):</div>
+          <div class="eq" style="gap:6px 7px">
+            <span class="g" style="font-family:var(--mono)">R(θ)</span> =
+            <span class="mtx gold" style="grid-template-columns:repeat(2,auto)">
+              <b style="color:var(--red)">cos θ</b><b style="color:var(--green)">−sin θ</b>
+              <b style="color:var(--red)">sin θ</b><b style="color:var(--green)">cos θ</b>
+            </span>
+            <span class="op">=</span>
+            <span class="mtx gold" style="grid-template-columns:repeat(2,auto)">
+              <b id="r00" style="color:var(--red)">1.00</b><b id="r01" style="color:var(--green)">0.00</b>
+              <b id="r10" style="color:var(--red)">0.00</b><b id="r11" style="color:var(--green)">1.00</b>
+            </span>
+          </div>
+          <div class="matcols">
+            <span style="color:var(--red)">▮ 第 1 列 = x 轴落点 ê₁′ = (cos θ, sin θ)</span>
+            <span style="color:var(--green)">▮ 第 2 列 = y 轴落点 ê₂′ = (−sin θ, cos θ)</span>
+          </div>
+          <div class="note cy">注意三件事:<br>
+            ① 群运算 = 角度相加,<b>R(α)R(β)=R(α+β)</b>,而且可交换(阿贝尔群);<br>
+            ② 单位元 = 不旋转 = 圆上 θ=0 的那个点;<br>
+            ③ 每个旋转都<b>可逆</b>:R(θ)⁻¹ = R(−θ)。</div>
+          <div class="readout" id="so2_out"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:46px">
+      <div class="gd-head">再深一层 · 矩阵到底是什么</div>
+      <p class="gd-intro">既然旋转就是一个矩阵,不妨把视野放大:<b>任何矩阵,本质上都是一次线性变换</b>——
+      它把整个平面映成新的平面,让直线仍是直线、网格仍然均匀、原点保持不动。
+      在这个意义下,矩阵能<b>旋转、缩放、剪切、反射</b>;而旋转 R(θ) 只是其中
+      「<b>只转动、不改变长度与角度</b>」的特例。正因如此,我们才从「所有可逆矩阵」里特意把这一类挑出来,叫它 SO(2)。</p>
+
+      <div class="cards" style="margin-top:22px">
+        <div class="card"><div class="ic">▦ 本质一</div><h4>它是一次变换</h4>
+          <p>矩阵 = 一个动作。<b>列就是答案</b>:第 i 列 = 第 i 根坐标轴变换后的落点。知道了列,就知道整个平面怎么动。</p></div>
+        <div class="card cy"><div class="ic">∑ 本质二</div><h4>它是列的重新组合</h4>
+          <p><b>M·v = v₁·(第1列) + v₂·(第2列)</b>。矩阵乘向量,就是用向量的分量去<b>加权叠加矩阵的列</b>——这正是「列向量重组」的含义。</p></div>
+        <div class="card vi"><div class="ic">⇄ 本质三</div><h4>左乘 ≠ 右乘</h4>
+          <p><b>左乘 A·M</b> 变换 M 的每一<b>列</b>(在外部/世界系叠加动作);<b>右乘 M·A</b> 重组 M 的列、相当于动它的<b>行</b>(在内部/机体系叠加)。顺序与方位都要紧。</p></div>
+      </div>
+
+      <p class="gd-foot" style="margin-top:24px">把<b>左乘与右乘</b>说透一点:变换作用到列向量上写成 <b>y = M·v</b>,矩阵永远在<b>左边</b>;
+      多个变换 <b>A·B·v</b> 里<b>最右边的先作用</b>。换个对象看——左乘 A·M 等于「对 M 的每一列各做一次 A」(从<b>输出端 / 世界坐标系</b>叠加);
+      右乘 M·A 等于「用 A 把 M 的列重新组合」(从<b>输入端 / 机体坐标系</b>叠加,是一次基变换)。
+      到第八章 SLAM,旋转的<b>左扰动 exp(δφ)·R</b> 与<b>右扰动 R·exp(δφ)</b> 之所以给出不同的雅可比,根子就在这条左右之分上。</p>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:40px">
+      <div class="gd-head">同一道题,两种读法 · 方程组视角 vs 向量视角</div>
+      <p class="gd-intro">线性代数确实有<b>两套互补的看法</b>,核心都浓缩在一道式子 <b>A x = b</b> 里。
+      一套把它读成「<b>方程组</b>」(行视角),一套把它读成「<b>向量的线性组合 / 一次变换</b>」(列视角)。
+      同一个解,两个几何故事——而且两者答案永远一致,因为<b>行秩 = 列秩</b>:</p>
+      <table class="cheat reveal" style="margin-top:18px">
+        <thead><tr><th>看法</th><th>A x = b 读作</th><th>一行 / 一列代表</th><th>有解 ⟺</th><th>它通向</th></tr></thead>
+        <tbody>
+          <tr>
+            <td data-h="看法">方程组视角<br><span class="mut" style="font-weight:400">行 / row</span></td>
+            <td data-h="读作" class="mut">m 个约束<b style="color:#eaf0fb">同时成立</b></td>
+            <td data-h="代表" class="mut">每<b style="color:#eaf0fb">行</b> = 一个方程 = 一条直线 / 超平面</td>
+            <td data-h="有解" class="mut">这些超平面<b style="color:#f6d486">有公共交点</b>（方程相容）</td>
+            <td data-h="通向" class="mut">高斯消元、相容性、唯一性、自由变量</td>
+          </tr>
+          <tr>
+            <td data-h="看法">向量视角<br><span class="mut" style="font-weight:400">列 / column</span></td>
+            <td data-h="读作" class="mut">b 是 A 各<b style="color:#eaf0fb">列的线性组合</b>：x₁·col₁ + x₂·col₂ + …</td>
+            <td data-h="代表" class="mut">每<b style="color:#eaf0fb">列</b> = 一个向量（变换后基的去向）</td>
+            <td data-h="有解" class="mut">b <b style="color:#f6d486">落在列张成的空间</b>（列空间）里</td>
+            <td data-h="通向" class="mut">张成 span、列空间、线性无关、变换 / 像、特征向量</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="gd-foot" style="margin-top:22px">两种看法答案永远相同,但<b>味道不同</b>:方程组视角擅长<b>「怎么解、解几个」</b>(计算);
+      向量视角擅长<b>「空间长什么样、变换做了什么」</b>(几何)。这一整页用的都是<b>向量 / 变换</b>那一套——它直通流形与切空间;
+      而 SLAM 里两套都在场:Gauss-Newton 每一步要<b>解一个线性系统</b>(方程组视角),解出的增量却活在<b>李代数的切空间</b>里(向量视角)。
+      下面把同一道 A x = b 画成两幅图,拖滑块看它们如何<b>同步对齐</b>。</p>
+    </div>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">⊞</span> <b>Ax = b 的两种读法</b> · 行视角 ↔ 列视角</div>
+        <div class="legend"><span>左:两线相交</span><span>右:向量拼接</span></div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_dual"></canvas></div>
+        <div class="controls">
+          <div class="readout" id="dual_sys" style="margin-bottom:2px"></div>
+          <div class="ctl"><label>x₁<span class="v" id="dv_x1">2.60</span></label><input type="range" id="s_dx1" min="-100" max="300" value="260" step="1"></div>
+          <div class="ctl"><label>x₂<span class="v cy" id="dv_x2">0.20</span></label><input type="range" id="s_dx2" class="cy" min="-100" max="300" value="20" step="1"></div>
+          <div class="btnrow"><button class="btn" id="dual_solve">▶ 求解(对齐到解)</button></div>
+          <div class="readout" id="dual_out"></div>
+          <div class="note cy">左边的点同时落在<b>两条线</b>上 ⟺ 右边正好把 <b>b</b> 拼出来 ⟺ 找到解 (x₁,x₂)。同一个答案,两种几何。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="lede reveal" style="margin-top:40px">那<b>特征值、特征向量、秩、行列式</b>又是干嘛的?它们是给一个矩阵「体检」的四个指标,
+    各回答一个「这次变换到底做了什么」的问题。下表顺手写出它们<b>在旋转 R 里的体现</b>——这一栏会一路把伏笔埋到第六章。</p>
+    <table class="cheat reveal">
+      <thead><tr><th>指标</th><th>直观含义</th><th>有什么用</th><th>在旋转 R 里的体现</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-h="指标">特征向量</td>
+          <td data-h="直观含义" class="mut">变换<b style="color:#eaf0fb">只缩放、不偏转</b>的特殊方向：<code>M v = λ v</code></td>
+          <td data-h="有什么用" class="mut">找「<b style="color:#eaf0fb">不被偏转的方向</b>」（3D 旋转里就是那条不动的转轴）：解耦动力学、PCA 主方向、振动模态、稳定性</td>
+          <td data-h="体现" class="mut">2D 旋转把<b style="color:#eaf0fb">每个</b>方向都转走 ⟹ <b style="color:#f6d486">没有实特征向量</b>；而 3D 旋转有一个 λ=1 的实特征向量——<b style="color:#f6d486">它就是旋转轴</b>（第六章）</td>
+        </tr>
+        <tr>
+          <td data-h="指标">特征值 λ</td>
+          <td data-h="直观含义" class="mut">沿特征方向的<b style="color:#eaf0fb">缩放倍数</b></td>
+          <td data-h="有什么用" class="mut">判断放大/收缩、振荡、收敛或发散</td>
+          <td data-h="体现" class="mut">旋转的特征值是复数 <code>e<sup>±iθ</sup></code>：模长 =1（不缩放）、辐角 = 旋转角 θ</td>
+        </tr>
+        <tr>
+          <td data-h="指标">秩 rank</td>
+          <td data-h="直观含义" class="mut">变换后还撑得起<b style="color:#eaf0fb">几个维度</b>（几个独立方向幸存）</td>
+          <td data-h="有什么用" class="mut">满秩 ⟺ 可逆、信息不丢；降秩 = 压扁降维（如投影）</td>
+          <td data-h="体现" class="mut">旋转<b style="color:#f6d486">满秩</b>（秩 2），不丢任何方向 ⟹ 可逆，逆就是 R(−θ)</td>
+        </tr>
+        <tr>
+          <td data-h="指标">行列式 det</td>
+          <td data-h="直观含义" class="mut">面积/体积的<b style="color:#eaf0fb">缩放倍数</b>，符号 = 是否翻转朝向</td>
+          <td data-h="有什么用" class="mut">判可逆（det≠0）、定向、换元积分里的雅可比因子</td>
+          <td data-h="体现" class="mut">旋转 <code>det = 1</code>：既不改变面积，也不翻转朝向——这正是 SO(n) 里那个 <b style="color:#f6d486">「S」(special)</b> 的含义</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="lede reveal" style="margin-top:40px"><b>动手感受 ——</b> 下面是一般 2×2 矩阵的「变换沙盒」。选预设或拖四个分量,
+    看单位圆被压成<b>椭圆</b>、单位方格被拉成<b>平行四边形</b>(它的面积 = |det|);紫色虚线是<b>实特征向量</b>(只缩放、不偏转的方向)。
+    切到「旋转」,圆还是圆、特征向量消失——这就是旋转的特别之处。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">▦</span> <b>线性变换沙盒</b> · 列 / 行列式 / 特征向量</div>
+        <div class="legend">
+          <span><i style="background:var(--red)"></i>第1列</span><span><i style="background:var(--green)"></i>第2列</span>
+          <span><i style="background:var(--violet)"></i>特征向量</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_lin"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>预设变换</label>
+            <div class="seg" id="seg_lin" style="flex-wrap:wrap;width:100%">
+              <button data-p="rot" class="on">旋转</button><button data-p="scale">缩放</button><button data-p="shear">剪切</button><button data-p="proj">投影</button><button data-p="refl">反射</button>
+            </div>
+          </div>
+          <div class="eq" style="gap:6px">M =
+            <span class="mtx gold" style="grid-template-columns:repeat(2,auto)">
+              <b id="m_a" style="color:var(--red)">0.77</b><b id="m_b" style="color:var(--green)">−0.64</b>
+              <b id="m_c" style="color:var(--red)">0.64</b><b id="m_d" style="color:var(--green)">0.77</b>
+            </span>
+          </div>
+          <div class="ctl-grid">
+            <div class="ctl"><label>a<span class="v" id="lv_a">0.77</span></label><input type="range" id="s_la" min="-200" max="200" value="77" step="1"></div>
+            <div class="ctl"><label>b<span class="v" id="lv_b">−0.64</span></label><input type="range" id="s_lb" min="-200" max="200" value="-64" step="1"></div>
+            <div class="ctl"><label>c<span class="v" id="lv_c">0.64</span></label><input type="range" id="s_lc" min="-200" max="200" value="64" step="1"></div>
+            <div class="ctl"><label>d<span class="v" id="lv_d">0.77</span></label><input type="range" id="s_ld" min="-200" max="200" value="77" step="1"></div>
+          </div>
+          <div class="readout" id="lin_out"></div>
+          <div class="note cy">金色填充 = 保向,品红 = 反射(det&lt;0);压成一条线 = 降秩、不可逆。
+          紫色虚线只缩放不偏转,旁边数字是它的特征值 λ。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="lede reveal" style="margin-top:40px"><b>那「不动的轴」到底什么意思?</b> 关键是:特征向量<b>不是不动,而是「不被偏转」</b>——
+    变换后它仍停在<b>自己那条线上</b>,只是被拉长或压短(乘以 λ)。下面拖动紫色向量 v,看它的像 M·v:
+    一般方向会被<b>转到别处</b>(输入、输出不共线);只有转到特定方向,两者才<b>重合成一条线</b>——那就是特征向量。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--violet)">↗</span> <b>不被偏转的方向</b> · 拖动 v,亲手找特征向量</div>
+        <div class="legend"><span><i style="background:var(--violet)"></i>输入 v</span><span><i style="background:var(--gold)"></i>输出 M·v</span><span><i style="background:var(--violet)"></i>不变线</span></div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_eig"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>变换 M</label>
+            <div class="seg" id="seg_eig" style="flex-wrap:wrap;width:100%">
+              <button data-p="scale" class="on">缩放</button><button data-p="shear">剪切</button><button data-p="refl">反射</button><button data-p="rot">旋转</button>
+            </div>
+          </div>
+          <div class="readout" id="eig_out"></div>
+          <div class="note">在画布上<b>拖动</b>来改变向量 v 的方向。当 v 与 M·v <b>共线</b>(夹角 0° 或 180°)时,
+          就找到了一个<b>特征向量</b>,此时 <b>|Mv|/|v| 就是 λ</b>(反向重合则 λ&lt;0)。
+          切到「旋转」会发现<b>怎么转都对不齐</b>——旋转没有实特征向量。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LIE ALGEBRA ============ -->
+<section id="liealgebra" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第四章 · 李代数</div>
+    <h2 class="title reveal">李代数:在<em>单位元</em>处贴一张平面</h2>
+    <p class="lede reveal">流形是弯的,不好直接做加减和求导。李的洞见是:
+    只看群在<b>单位元</b>那一点的<b>切空间</b>,它是一个平直的线性空间——这就是<b>李代数</b> g。
+    对 SO(2),切空间就是过 (1,0) 的那条切线。代数里的元素是「无穷小旋转」,用一个<b>反对称矩阵</b>表示。</p>
+
+    <div class="grid2" style="margin-top:34px">
+      <div class="panel reveal" style="padding:26px">
+        <div class="ic" style="font-family:var(--mono);color:var(--cyan);font-size:12px;letter-spacing:.1em;margin-bottom:14px">SO(2) 的代数 so(2)</div>
+        <p style="color:var(--muted);font-size:14.5px">无穷小旋转只有一个方向。它的生成元是反对称矩阵 G,任何角度的旋转都是它的「指数」。</p>
+        <div style="margin:20px 0" class="eq">
+          G =
+          <span class="mtx" style="grid-template-columns:repeat(2,auto)">
+            <b>0</b><b>−1</b><b>1</b><b>0</b>
+          </span>
+          <span class="lbl" style="margin-left:8px">↦ 旋转的"速度"</span>
+        </div>
+        <p style="color:var(--muted);font-size:14px">一般地,李代数 g 是切空间 + 一个叫<b>李括号</b> [X,Y]=XY−YX 的运算,
+        它度量「两个无穷小变换不可交换的程度」。对 SO(2) 这个括号恒为 0,所以它可交换。</p>
+      </div>
+      <div class="panel reveal" style="padding:26px">
+        <div class="ic" style="font-family:var(--mono);color:var(--gold);font-size:12px;letter-spacing:.1em;margin-bottom:14px">SO(3) 的代数 so(3)</div>
+        <p style="color:var(--muted);font-size:14.5px">三维旋转的无穷小生成元是 3×3 反对称矩阵。
+        一个三维向量 ω=(ω₁,ω₂,ω₃) 通过「帽子算子」 ∧ 变成矩阵,代表绕 ω 轴的瞬时角速度。</p>
+        <div style="margin:20px 0" class="eq">
+          ω<sup>∧</sup> =
+          <span class="mtx gold" style="grid-template-columns:repeat(3,auto)">
+            <b>0</b><b>−ω₃</b><b>ω₂</b>
+            <b>ω₃</b><b>0</b><b>−ω₁</b>
+            <b>−ω₂</b><b>ω₁</b><b>0</b>
+          </span>
+        </div>
+        <p style="color:var(--muted);font-size:14px">这里李括号正是<b>叉乘</b>:[a<sup>∧</sup>,b<sup>∧</sup>] = (a×b)<sup>∧</sup>。
+        三维旋转不可交换,这个非零括号就是原因。</p>
+      </div>
+    </div>
+    <div class="note" style="margin-top:24px;max-width:70ch">
+      <b>一句话记住对偶:</b> 李群 G 是「能做的全部运动」,弯曲、可乘;李代数 g 是「运动的速度」,平直、可加。
+      它们之间靠下一节的 <span style="color:var(--violet)">指数映射 exp</span> 互相往返。
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXP MAP ============ -->
+<section id="exp" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第五章 · 桥梁</div>
+    <h2 class="title reveal">指数映射:把平直<em>卷</em>回弯曲</h2>
+    <p class="lede reveal">代数(直线)和群(圆)之间的桥,就是 <b>exp</b>。
+    你在切空间里走了长度 t 的一步,exp 把这一步「卷」到流形上,落在弧长同样为 t 的点。
+    反过来,<b>log</b> 把流形上的点拉回切空间。下面的动画把这条切线一点点缠绕到圆周上——
+    这就是 exp:so(2) → SO(2) 的全部含义。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--violet)">↻</span> <b>exp / log</b> · 切线缠绕成圆</div>
+        <div class="legend">
+          <span><i style="background:var(--cyan)"></i>切空间(直)</span>
+          <span><i style="background:var(--gold)"></i>群(圆弧)</span>
+          <span><i style="background:var(--violet)"></i>exp 映射</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_exp"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>切空间里走的步长 t<span class="v cy" id="exp_t">1.20</span></label>
+            <input type="range" id="s_exp" class="cy" min="0" max="628" value="120" step="1">
+          </div>
+          <div class="btnrow">
+            <button class="btn cy" id="exp_play">▶ 缠绕动画</button>
+            <button class="btn ghost" id="exp_reset">复位</button>
+          </div>
+          <div class="readout" id="exp_out"></div>
+          <div class="note">关键直觉:<b>切线上的长度 t = 圆上的弧长 = 旋转角 θ</b>。
+          对矩阵而言,exp 就是<b>矩阵指数</b> R = exp(θG) = I + θG + ½(θG)² + …,
+          对 so(2) 恰好收敛成 R(θ)。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SO(3) 3D ============ -->
+<section id="so3" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第六章 · 三维旋转</div>
+    <h2 class="title reveal">SO(3):用<em>一个向量</em>表示任意三维旋转</h2>
+    <p class="lede reveal">三维姿态是机器人的核心。李代数告诉我们:任何三维旋转都能写成
+    <b>绕单位轴 a 转角度 θ</b>,合起来就是一个三维向量 φ = θa ∈ so(3)。
+    经指数映射(著名的 <b>罗德里格斯公式</b>)得到旋转矩阵 R = exp(φ<sup>∧</sup>)。
+    拖动画布可<b>转动视角</b>,用滑块改变旋转轴和角度,看坐标系如何被带动。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">⬡</span> <b>SO(3)</b> · 轴角 = 李代数元素</div>
+        <div class="legend">
+          <span><i style="background:var(--cyan)"></i>旋转轴 a</span>
+          <span><i style="background:var(--red)"></i>x</span><span><i style="background:var(--green)"></i>y</span><span><i style="background:var(--blue)"></i>z</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_so3"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>旋转角 θ<span class="v" id="so3_th">1.05 rad</span></label>
+            <input type="range" id="s_so3_th" min="0" max="314" value="105" step="1">
+          </div>
+          <div class="ctl">
+            <label>轴方位角 (yaw)<span class="v cy" id="so3_az">0.6</span></label>
+            <input type="range" id="s_so3_az" class="cy" min="0" max="628" value="60" step="1">
+          </div>
+          <div class="ctl">
+            <label>轴俯仰角 (pitch)<span class="v cy" id="so3_el">0.7</span></label>
+            <input type="range" id="s_so3_el" class="cy" min="-150" max="150" value="70" step="1">
+          </div>
+          <div class="btnrow"><button class="btn ghost" id="so3_plane">显示旋转平面</button></div>
+          <div class="readout" id="so3_out"></div>
+          <div class="note cy"><b>李代数 φ = θ·a</b>(三个数)↔ <b>李群 R</b>(九个数但只有三自由度)。
+          机器人只存这三个数来优化旋转,既无冗余,又能正确求导。拖动画布旋转观察视角。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:46px">
+      <div class="gd-head">先说人话 · 转轴就是「原地不动的那根线」</div>
+      <p class="gd-intro">最好懂的例子是<b>地球自转</b>。地球转一圈,北京、纽约都跟着往东跑,
+      唯独<b>南极点和北极点</b>站着没挪窝——它们只是在原地打转。穿过两极的那根线,就是地球的<b>自转轴</b>,
+      也就是 λ=1 的那个特征向量。正因为北极星差不多正对着这根轴,它在夜空里看上去「永远不动」。</p>
+      <p class="gd-intro" style="margin-top:14px">把任意一个旋转想成「搅动整个空间」:几乎所有点都被甩着画圈,
+      <b>唯独轴上的点待在原地</b>(这正是 R a = a:转了等于没转)。而<b>欧拉定理</b>更妙——
+      不管你把一个物体怎样翻来覆去地转到新姿态,这套看着复杂的动作,<b>总能等价于「绕某一根固定的线、一次转过某个角」</b>。
+      求那个特征向量,做的就是把这根「看不见的转轴」给找出来。</p>
+      <div class="order-examples" style="margin-top:16px">
+        <span class="oe">地球自转 <i>→</i> 南北极原地不动</span>
+        <span class="oe">陀螺 / 转圈的芭蕾 <i>→</i> 中心竖轴不动</span>
+        <span class="oe">风扇 / 螺旋桨 <i>→</i> 中心轴不动，叶片绕它扫</span>
+        <span class="oe">拧螺丝 / 电钻 <i>→</i> 绕自身长轴转</span>
+        <span class="oe">方向盘 <i>→</i> 中心不动，轮缘转</span>
+      </div>
+      <p class="gd-foot" style="margin-top:20px"><b>动手试一次:</b> 拿起手机,随手把它翻转到一个新方向。
+      欧拉定理说:本来就有一根「竹签」能穿过它,只要绕这根竹签转一次,就能得到一模一样的最终朝向——这根竹签的方向,就是这次旋转的特征向量。
+      所以它的现实用处很直接:它就是物体的<b>自转方向</b>(给陀螺、风扇、电钻装轴的地方),
+      也是「怎么把东西转过去」的<b>最省话的说明书</b>——不必报出每个点的新坐标,只要说一句<b>「绕这根轴转 N 度」</b>。
+      无人机纠正姿态、机械臂把零件摆正、卫星调朝向,控制器算的就是这根轴(往哪扭)与这个角(扭多少)。</p>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:30px">
+      <div class="gd-head">反过来 · 给定 R,怎么求出那条转轴</div>
+      <p class="gd-intro">上面是「轴角 → R」。现在反着问:手里只有一个旋转矩阵 R,如何找出它绕<b>哪条轴</b>转?
+      这条轴,正是上一章那个<b style="color:var(--violet)">特征值 λ=1 的特征向量</b>——满足 <b>R a = a</b> 的方向(轴上的向量被转了等于没转)。
+      <b>欧拉旋转定理</b>保证:任何三维旋转都<b>恰好</b>有这样一条轴。</p>
+      <div class="basis-map">
+        <div class="bm"><span class="bm-h">为什么一定存在</span>
+          R 的特征值必是 { 1, e<sup>iθ</sup>, e<sup>−iθ</sup> }，三者之积 = det R = 1。那个实的 <b style="color:#f6d486">λ=1</b> 对应轴；复数对 e<sup>±iθ</sup> 对应垂直平面内的转角 θ。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--cyan)">解法一 · 解零空间</span>
+          解 <code>(R − I) a = 0</code>：a 就是 (R−I) 的零空间方向（把它任意两行做叉乘即可，因为轴垂直于每一行）。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--gold)">解法二 · 迹 + 反对称（常用）</span>
+          <b>cos θ = (tr R − 1)/2</b>，且 <b>R − Rᵀ = 2 sinθ·[a]<sub>×</sub></b>，于是轴直接读出：a ∝ (R₃₂−R₂₃, R₁₃−R₃₁, R₂₁−R₁₂)。右上演示的读数就在实时这样反求。</div>
+      </div>
+      <p class="gd-foot" style="margin-top:20px"><b>过程的含义：这一步就是 log 映射。</b>
+      把 R 拆成对称部分(给出 cos θ)与反对称部分(给出 sin θ · 轴),正是把李群元素 R <b>拉回到李代数 so(3)</b> 的过程;
+      得到的 <b>φ = θ·a</b> 就是 so(3) 里那个三维向量。也就是说——「求 λ=1 的特征向量」=「取旋转的对数 log R」=「读出无穷小生成元(轴角)」,是同一件事。
+      反对称矩阵 [a]<sub>×</sub> 本身就是 so(3) 的元素,在单位元附近 R ≈ I + θ[a]<sub>×</sub>。
+      (特例:θ=180° 时 sin θ=0,反对称部分为零,这招失效,改用 R+I 的列向量取轴。)</p>
+
+      <div class="cards" style="margin-top:22px">
+        <div class="card"><div class="ic">⌖ 用途一</div><h4>最紧凑的姿态表示</h4>
+          <p>φ = θa 只用 3 个数存一个旋转(= log R),无冗余、无万向锁,还能正确求导——SLAM / VIO 的标配。</p></div>
+        <div class="card cy"><div class="ic">⟿ 用途二</div><h4>插值与误差</h4>
+          <p>两姿态平滑插值(SLERP)= 沿相对旋转的轴转一个比例;优化里姿态误差 = log(R<sub>est</sub>⁻¹R<sub>meas</sub>),<b>轴告诉你往哪扭,角告诉你扭多少</b>。</p></div>
+        <div class="card vi"><div class="ic">↻ 用途三</div><h4>角速度与四元数</h4>
+          <p>瞬时转轴 = 角速度 ω 的方向;四元数 q = [cos(θ/2), sin(θ/2)·a] 也由轴和角直接拼出。</p></div>
+      </div>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:30px">
+      <div class="gd-head">再深一层 · 轴是表象,「平面」才是旋转的本质</div>
+      <p class="gd-intro">那为什么 2D 旋转<b>没有</b>这样一根不动轴?根子在一句话:
+      <b>旋转其实发生在一个「平面」里,而所谓「轴」,只是这平面之外、垂直于它的那点「剩余空间」。</b>
+      轴能不能存在,取决于转完之后还<b>剩不剩</b>维度。</p>
+      <div class="basis-map">
+        <div class="bm"><span class="bm-h" style="color:var(--red)">2D</span>
+          旋转平面就是<b>整个空间</b>,转动「用光」了全部 2 个维度,外面<b>一点剩余都没有</b> ⟹ 无处安放轴 ⟹ 没有实特征向量。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--gold)">3D</span>
+          旋转占掉一个 2D 平面,还<b>剩下 1 个垂直方向</b> ⟹ 这条线就是轴(λ=1)。3 是奇数,所以总能剩出一条轴——这正是欧拉定理。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--cyan)">4D</span>
+          能<b>同时在两个互相垂直的平面里各转各的</b>(称「双旋转」)。一般情况两平面用光全部 4 维 ⟹ <b>一条不动轴都没有</b>;只有「简单旋转」(只转一个平面)时,才剩下一个 <b>2D 不动平面</b>。</div>
+      </div>
+      <p class="gd-foot" style="margin-top:18px"><b>一个干净的规律:</b> 一个一般的 n 维旋转,会把维度<b>两两配对</b>塞进 ⌊n/2⌋ 个独立旋转平面里;
+      剩下没被配对的维度 = <b>n mod 2</b>,它们才是不动方向 ——
+      <b style="color:var(--gold-soft)">n 偶数 → 剩 0 条轴,n 奇数 → 恰好剩 1 条轴</b>。
+      所以「3D 有唯一转轴」不是普遍规律,而是<b>奇数维(且恰好是最小奇数 3)的巧合</b>;2D、4D 这些偶数维,一般旋转<b>一根不动轴都找不到</b>。
+      真正贯穿所有维度的不变量,不是「轴」,而是<b>那一个个旋转平面</b>。</p>
+      <table class="cheat reveal" style="margin-top:20px">
+        <thead><tr><th>维度 n</th><th>独立旋转平面 ⌊n/2⌋</th><th>一般旋转的不动轴 (n mod 2)</th><th>几何图像</th></tr></thead>
+        <tbody>
+          <tr><td data-h="n">2</td><td data-h="平面" class="mut">1</td><td data-h="不动轴"><b style="color:#ff6b6b">0</b></td><td data-h="图像" class="mut">整个平面在转,无不动方向</td></tr>
+          <tr><td data-h="n">3</td><td data-h="平面" class="mut">1</td><td data-h="不动轴"><b style="color:#5be08a">1</b></td><td data-h="图像" class="mut">绕一条线转（欧拉轴）</td></tr>
+          <tr><td data-h="n">4</td><td data-h="平面" class="mut">2</td><td data-h="不动轴"><b style="color:#ff6b6b">0</b></td><td data-h="图像" class="mut">两正交平面各转各的（双旋转）；简单旋转时留一个不动 2D 平面</td></tr>
+          <tr><td data-h="n">5</td><td data-h="平面" class="mut">2</td><td data-h="不动轴"><b style="color:#5be08a">1</b></td><td data-h="图像" class="mut">两个旋转平面 + 一条不动轴</td></tr>
+        </tbody>
+      </table>
+      <p class="gd-foot" style="border:none;padding:0;margin-top:18px">这也顺带量出了李群的「大小」:⌊n/2⌋ 正是 SO(n) 能<b>同时独立转</b>的角度个数(它的秩);
+      而李代数 so(n)(反对称矩阵)的维度 = n(n−1)/2,数的正是「有多少个独立旋转平面方向」——SO(2) 是 1,SO(3) 是 3,SO(4) 是 6。</p>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:30px">
+      <div class="gd-head">那 4D、5D 旋转长什么样 · 在哪儿会遇到</div>
+      <p class="gd-intro"><b>4D 旋转</b>最好想成「<b>两个独立的转盘</b>」:把 4 个坐标分成 (x,y) 与 (z,w) 两组,
+      每组各有一个转盘、各转各的角(称<b>双旋转</b>)。一个点同时在两个圈上跑,轨迹缠在一个<b>甜甜圈(环面)</b>上;
+      一般情况两转盘把 4 维全占满 ⟹ <b>没有任何不动方向</b>。下面这个<b>超立方体(tesseract)</b>正在做这种双旋转——
+      它「翻出又翻回」的怪异感,就来自你看不见的第四维也在转。</p>
+      <div class="cards" style="margin-top:8px">
+        <div class="card"><div class="ic">⬢ 4D 在哪儿</div><h4>四元数与图形</h4>
+          <p><b>单位四元数</b>住在 4 维球面 S³ 上(它是 SO(3) 的双重覆盖)——你做三维旋转插值(SLERP)时,其实在 4D 球面上滑;还有图形学里的超立方体渲染。</p></div>
+        <div class="card cy"><div class="ic">◎ 5D 旋转</div><h4>轴 + 两个转盘</h4>
+          <p>5 是奇数 ⟹ ⌊5/2⌋=2 个独立转盘 + <b>恰好 1 条不动轴</b>。想象就是「3D 的轴 + 转盘」再多挂一个转盘,那条轴始终在。</p></div>
+        <div class="card vi"><div class="ic">∑ 更高维在哪儿</div><h4>数据与状态估计</h4>
+          <p>PCA 把一团 n 维数据云<b>转正、白化</b>,就是在 n 维里做一次旋转 SO(n);SLAM 里高维协方差椭球的转动也是。轴 = 数据里不被搅动的方向。</p></div>
+      </div>
+    </div>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">⬢</span> <b>超立方体的 4D 旋转</b> · 双旋转(两个平面各转各的)</div>
+        <div class="legend"><span><i style="background:var(--gold)"></i>第四维近(亮)</span><span><i style="background:var(--cyan)"></i>顶点</span></div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_4d"></canvas></div>
+        <div class="controls">
+          <div class="btnrow">
+            <button class="btn" id="b4_play">⏸ 暂停</button>
+            <button class="btn ghost" id="b4_mode">切到简单旋转</button>
+            <button class="btn ghost" id="b4_reset">复位视角</button>
+          </div>
+          <div class="readout" id="b4_out"></div>
+          <div class="note cy"><b>双旋转</b>:(x,y) 与 (z,w) 两个平面各转各的 ⟹ 没有一个方向待在原地。
+          切到<b>简单旋转</b>:只转 (x,y)、另一平面冻住 ⟹ 留下一个 <b>2D 不动平面</b>(正是上一节说的「偶数维一般没轴,特殊情况留下不动平面」)。拖动画布可转视角。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="lede reveal" style="margin-top:50px"><b>顺序要紧 ——</b> 三维旋转不可交换,这正是 SO(3) 不是阿贝尔群的几何证据。
+    亲手验证:设两个旋转 A、B,点播放。左边「先 A 后 B」,右边「先 B 后 A」;只要两根轴不同,两个最终姿态就会明显岔开。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">⇄</span> <b>AB ≠ BA</b> · 旋转顺序的几何后果</div>
+        <div class="legend">
+          <span><i style="background:var(--red)"></i>x</span><span><i style="background:var(--green)"></i>y</span><span><i style="background:var(--blue)"></i>z</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_ab"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>旋转 A<span class="v" id="ab_aA">绕 x · 90°</span></label>
+            <div class="seg" id="seg_A"><button data-ax="x" class="on">x</button><button data-ax="y">y</button><button data-ax="z">z</button></div>
+            <input type="range" id="s_ab_angA" min="0" max="180" value="90" step="1">
+          </div>
+          <div class="ctl">
+            <label>旋转 B<span class="v cy" id="ab_aB">绕 y · 90°</span></label>
+            <div class="seg cy" id="seg_B"><button data-ax="x">x</button><button data-ax="y" class="on">y</button><button data-ax="z">z</button></div>
+            <input type="range" id="s_ab_angB" class="cy" min="0" max="180" value="90" step="1">
+          </div>
+          <div class="btnrow">
+            <button class="btn" id="ab_play">▶ 演示顺序差异</button>
+            <button class="btn ghost" id="ab_reset">复位</button>
+          </div>
+          <div class="readout" id="ab_out"></div>
+          <div class="note cy">同一根轴 → Δ=0,可交换;不同轴 → Δ≠0,顺序改变最终姿态。
+          这种「交换失败的程度」,在李代数里正由李括号 [A,B]=AB−BA 精确度量。</div>
+        </div>
+      </div>
+    </div>
+
+    <details class="fold reveal">
+      <summary>选读 · 时空里的「旋转」其实是双曲旋转 <span class="tag">SO(3,1) · 洛伦兹</span></summary>
+      <div class="fold-body">
+        <p style="color:var(--muted);font-size:14.5px;max-width:76ch;margin:6px 0 4px">
+          「3D 空间 + 时间」确实是 4 维,但时间在距离公式里带<b style="color:var(--txt)">减号</b>(<code>s² = x²+y²+z² − (ct)²</code>)。
+          就因为这个减号,混合空间与时间的「旋转」不再走圆,而是走<b style="color:var(--txt)">双曲线</b>——这就是<b style="color:var(--txt)">洛伦兹推动(boost)</b>,
+          物理意义是<b style="color:var(--txt)">改变速度 / 切换参考系</b>。把普通旋转里的 cos / sin 换成 cosh / sinh,就从欧氏的 SO(4) 变成了洛伦兹群 SO(3,1)。下面把两者并排:</p>
+        <div class="demo" style="margin-top:18px">
+          <div class="demo-head">
+            <div class="lbl"><span style="color:var(--gold)">○ vs ⤢</span> <b>圆 vs 双曲线</b> · 欧氏旋转 ↔ 洛伦兹推动</div>
+            <div class="legend"><span><i style="background:var(--red)"></i>空间轴</span><span><i style="background:var(--blue)"></i>时间轴</span><span><i style="background:var(--gold)"></i>光锥(不动)</span></div>
+          </div>
+          <div class="demo-body">
+            <div class="canvas-wrap"><canvas id="cv_lz"></canvas></div>
+            <div class="controls">
+              <div class="ctl"><label>转动量 θ / 快度 φ<span class="v" id="lz_t">0.60</span></label><input type="range" id="s_lz" min="0" max="135" value="60" step="1"></div>
+              <div class="btnrow"><button class="btn" id="lz_play">▶ 动画</button><button class="btn ghost" id="lz_reset">复位</button></div>
+              <div class="readout" id="lz_out"></div>
+              <div class="note cy">左(欧氏):点走<b>圆</b>,两轴整体转、始终垂直,没有「光速」的概念。
+              右(时空):点走<b>双曲线</b>,空间轴与时间轴向<b>光锥</b>剪过去但永不越过(光速不变),角越大 = 速度越快。
+              同一个「转」,在两种度量下长相不同。</div>
+            </div>
+          </div>
+        </div>
+        <p style="color:var(--muted);font-size:13.5px;border-left:2px solid var(--cyan);padding-left:13px;margin-top:18px;max-width:76ch">
+          有趣的是:洛伦兹推动的「不动方向」是<b style="color:var(--txt)">光锥本身</b>(45° 线,特征值 e<sup>±φ</sup>)——光速对谁都一样,正源于此;
+          越靠近光锥越难推动,对应速度越接近 c 越难加速。SO(4) 与 SO(3,1) 参数个数都是 6,是同一<b style="color:var(--txt)">复李代数</b>的两个「实形式」,差别仅在时间那个减号。
+          这也呼应上一段的主题:<b style="color:var(--txt)">旋转长什么样,由空间的度量决定,而不只是维度。</b></p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ SE(2) RIGID MOTION ============ -->
+<section id="se" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第七章 · 刚体运动</div>
+    <h2 class="title reveal">SE(2)/SE(3):旋转 + 平移 = <em>位姿</em></h2>
+    <p class="lede reveal">机器人的「位姿」(位置 + 朝向)是特殊欧氏群 <b>SE(n)</b> 的元素。
+    它的李代数元素叫<b>旋量(twist)</b> ξ = (v, ω):线速度 v + 角速度 ω。
+    保持旋量恒定不变地积分(exp),刚体走出的是一条<b>螺旋线</b>——直行(ω=0)只是它的特例。
+    调节速度,按播放,看小车沿旋量的指数轨迹运动。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">⤳</span> <b>SE(2)</b> · 旋量积分出螺旋运动</div>
+        <div class="legend">
+          <span><i style="background:var(--gold)"></i>轨迹(测地线)</span>
+          <span><i style="background:var(--cyan)"></i>瞬时旋转中心 ICR</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_se2"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>前向速度 v<sub>x</sub><span class="v" id="se_vx">0.90</span></label>
+            <input type="range" id="s_se_vx" min="-150" max="150" value="90" step="1">
+          </div>
+          <div class="ctl">
+            <label>侧向速度 v<sub>y</sub><span class="v" id="se_vy">0.00</span></label>
+            <input type="range" id="s_se_vy" min="-150" max="150" value="0" step="1">
+          </div>
+          <div class="ctl">
+            <label>角速度 ω<span class="v cy" id="se_w">0.70</span></label>
+            <input type="range" id="s_se_w" class="cy" min="-200" max="200" value="70" step="1">
+          </div>
+          <div class="btnrow">
+            <button class="btn" id="se_play">▶ 播放</button>
+            <button class="btn ghost" id="se_reset">复位</button>
+          </div>
+          <div class="note cy"><b>ω = 0</b> → 直线; <b>ω ≠ 0</b> → 绕瞬时旋转中心(ICR)的圆弧。
+          一段恒定旋量积分出的轨迹,就是 SE(2) 上的<b>测地线</b>:机器人最自然的运动基元。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLAM APPLICATION ============ -->
+<section id="slam" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">第八章 · 落地</div>
+    <h2 class="title reveal">SLAM:在<em>切空间</em>里优化,在<em>流形</em>上行走</h2>
+    <p class="lede reveal">SLAM 要从带噪声的里程计与回环观测中,反推一连串位姿。
+    位姿活在弯曲的 SE(2)/SE(3) 上,无法直接做减法和梯度。解决方案正是李理论的杀手锏:
+    <b>误差用 log 拉到李代数里(可加、可求导),增量用 exp 推回流形(始终是合法位姿)</b>。
+    下面是一个真实的<b>位姿图优化(回环闭合)</b>:里程计漂移让回路对不上,优化在切空间反复迭代,把误差摊匀,缝合缺口。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">⬡↺</span> <b>Pose-Graph Optimization</b> · 回环闭合</div>
+        <div class="legend">
+          <span><i style="background:var(--muted2)"></i>里程计漂移轨迹</span>
+          <span><i style="background:var(--gold)"></i>优化后</span>
+          <span><i style="background:var(--cyan)"></i>回环约束</span>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_slam"></canvas></div>
+        <div class="controls">
+          <div class="ctl">
+            <label>里程计漂移强度<span class="v" id="slam_drift">中</span></label>
+            <input type="range" id="s_slam_drift" min="0" max="100" value="55" step="1">
+          </div>
+          <div class="ctl">
+            <label>步长 α(切空间增量)<span class="v cy" id="slam_a">0.18</span></label>
+            <input type="range" id="s_slam_a" class="cy" min="2" max="40" value="18" step="1">
+          </div>
+          <div class="btnrow">
+            <button class="btn" id="slam_opt">▶ 优化(自动迭代)</button>
+            <button class="btn cy" id="slam_step">单步</button>
+            <button class="btn ghost" id="slam_reset">重置漂移</button>
+          </div>
+          <div class="readout" id="slam_out"></div>
+          <div class="note">每一步对每条边 (i,j):残差 <b>r = log( Z⁻¹ · Tᵢ⁻¹Tⱼ ) ∈ se(2)</b>,
+          再用 <b>T ← T·exp(α r)</b> 沿测地线把位姿拉向一致。回环边(虚线)提供闭合约束,误差被摊到整圈。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card reveal"><div class="ic">⌖ 位姿表示</div><h4>无冗余、无奇异</h4>
+        <p>用 se(3) 的六维向量存位姿增量,避免欧拉角的万向锁,也无需像四元数那样反复归一化。</p></div>
+      <div class="card cy reveal"><div class="ic">∂ 雅可比与求导</div><h4>右扰动模型</h4>
+        <p>对 <b>R·exp(δφ<sup>∧</sup>)</b> 关于 δφ 求导,得到解析雅可比——非线性最小二乘(g2o、GTSAM、Ceres)的基石。</p></div>
+      <div class="card vi reveal"><div class="ic">⟿ 插值与预积分</div><h4>平滑且物理一致</h4>
+        <p>轨迹插值走 exp/log 的测地线;IMU 预积分在 SO(3) 上累积,把高频测量压成一条边。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHEAT SHEET ============ -->
+<section id="cheat" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">速查 · 一页纸</div>
+    <h2 class="title reveal">从群到机器人,一张<em>对照表</em></h2>
+    <table class="cheat reveal">
+      <thead><tr><th>李群 G</th><th>含义</th><th>李代数 g</th><th>维度</th><th>机器人中的角色</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-h="李群">SO(2)</td>
+          <td data-h="含义" class="mut">平面旋转(圆)</td>
+          <td data-h="李代数"><code>so(2)</code> · 标量</td>
+          <td data-h="维度">1</td>
+          <td data-h="角色" class="mut">2D 朝向</td>
+        </tr>
+        <tr>
+          <td data-h="李群">SE(2)</td>
+          <td data-h="含义" class="mut">平面刚体运动</td>
+          <td data-h="李代数"><code>se(2)</code> · 旋量 (v,ω)</td>
+          <td data-h="维度">3</td>
+          <td data-h="角色" class="mut">地面机器人位姿</td>
+        </tr>
+        <tr>
+          <td data-h="李群">SO(3)</td>
+          <td data-h="含义" class="mut">三维旋转</td>
+          <td data-h="李代数"><code>so(3)</code> · 轴角 θa</td>
+          <td data-h="维度">3</td>
+          <td data-h="角色" class="mut">姿态、IMU、相机朝向</td>
+        </tr>
+        <tr>
+          <td data-h="李群">SE(3)</td>
+          <td data-h="含义" class="mut">三维刚体运动</td>
+          <td data-h="李代数"><code>se(3)</code> · 旋量 ξ=(v,ω)</td>
+          <td data-h="维度">6</td>
+          <td data-h="角色" class="mut">SLAM/VIO 的核心位姿</td>
+        </tr>
+        <tr>
+          <td data-h="李群">Sim(3)</td>
+          <td data-h="含义" class="mut">刚体 + 尺度</td>
+          <td data-h="李代数"><code>sim(3)</code></td>
+          <td data-h="维度">7</td>
+          <td data-h="角色" class="mut">单目 SLAM 尺度漂移修正</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note cy" style="margin-top:26px;max-width:74ch">
+      <b>三条永远适用的口诀:</b>
+      ① 要表示运动 → 用李群; ② 要做加减/求导/优化 → 用 <b>log</b> 进李代数;
+      ③ 要把增量变回合法状态 → 用 <b>exp</b> 回李群。SLAM 的每一帧,都在这三步之间循环。
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      <div class="brand" style="margin-bottom:12px">
+        <svg class="gly" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="14" stroke="#f0bf4c" stroke-width="2.4"/>
+          <line x1="20" y1="6" x2="38" y2="6" stroke="#46d7cc" stroke-width="2.4"/>
+          <circle cx="20" cy="6" r="3" fill="#46d7cc"/>
+        </svg>
+        <b>李群 · 李代数</b>
+      </div>
+      <p>弯曲的群,平直的代数,exp/log 这座桥——三件事,撑起了现代机器人理解空间运动的全部数学。</p>
+    </div>
+    <div class="refs">
+      延伸阅读<br>
+      Sola, Deray, Atchuthan — A micro Lie theory for state estimation in robotics (2018)<br>
+      Barfoot — State Estimation for Robotics (2017)<br>
+      高翔 等 — 视觉 SLAM 十四讲 · 第 4 讲
+    </div>
+  </div>
+</footer>
+
+<script>
+"use strict";
+/* ============================================================
+   通用工具
+============================================================ */
+const TAU = Math.PI*2;
+function setupCanvas(cv){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(2, r.width), h = Math.max(2, r.height);
+  cv.width = w*dpr; cv.height = h*dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w, h};
+}
+function lerp(a,b,t){return a+(b-a)*t;}
+// 监听画布显示尺寸变化（包括内容把容器撑高这类布局变化），保证缓冲区比例始终正确
+function onResize(cv, cb){
+  if('ResizeObserver' in window){
+    const ro=new ResizeObserver(()=>cb());
+    ro.observe(cv);
+  }
+  window.addEventListener('resize', cb);
+}
+const C = {ink:'#0b0f1a',gold:'#f0bf4c',goldS:'#f6d486',cyan:'#46d7cc',cyanS:'#7ff0e7',
+  violet:'#9d8cff',txt:'#eaf0fb',muted:'#8b9ab8',grid:'#1b2740',
+  red:'#ff6b6b',green:'#5be08a',blue:'#5b9dff'};
+
+/* ============================================================
+   HERO — SO(2) 圆 + 切线背景动画
+============================================================ */
+(function(){
+  const cv = document.getElementById('heroCanvas');
+  let ctx,w,h, t0=0, raf;
+  function size(){const s=setupCanvas(cv);ctx=s.ctx;w=s.w;h=s.h;}
+  size(); onResize(cv,size);
+  function draw(ts){
+    if(!t0)t0=ts; const tt=(ts-t0)/1000;
+    ctx.clearRect(0,0,w,h);
+    // 弯曲的测地网格
+    ctx.save();
+    ctx.strokeStyle='rgba(70,215,204,.05)';ctx.lineWidth=1;
+    const cx=w*0.74, cy=h*0.5;
+    for(let r=60;r<Math.max(w,h)*1.1;r+=58){
+      ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
+    }
+    for(let a=0;a<TAU;a+=TAU/16){
+      ctx.beginPath();ctx.moveTo(cx,cy);
+      ctx.lineTo(cx+Math.cos(a)*Math.max(w,h),cy+Math.sin(a)*Math.max(w,h));ctx.stroke();
+    }
+    ctx.restore();
+    // 主圆(群)
+    const R=Math.min(w,h)*0.26;
+    ctx.lineWidth=2.4;
+    ctx.strokeStyle='rgba(240,191,76,.85)';
+    ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.stroke();
+    // 运动点
+    const th=tt*0.5;
+    const px=cx+Math.cos(th)*R, py=cy-Math.sin(th)*R;
+    // 半径
+    ctx.strokeStyle='rgba(240,191,76,.35)';ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,py);ctx.stroke();
+    // 切向量(代数)
+    const tx=-Math.sin(th), ty=-Math.cos(th);
+    ctx.strokeStyle=C.cyan;ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+tx*70,py+ty*70);ctx.stroke();
+    // 箭头
+    const ang=Math.atan2(ty,tx);
+    ctx.fillStyle=C.cyan;
+    ctx.beginPath();
+    ctx.moveTo(px+tx*70,py+ty*70);
+    ctx.lineTo(px+tx*70-Math.cos(ang-0.4)*10,py+ty*70-Math.sin(ang-0.4)*10);
+    ctx.lineTo(px+tx*70-Math.cos(ang+0.4)*10,py+ty*70-Math.sin(ang+0.4)*10);
+    ctx.closePath();ctx.fill();
+    // 点
+    ctx.fillStyle=C.goldS;ctx.beginPath();ctx.arc(px,py,6,0,TAU);ctx.fill();
+    ctx.strokeStyle='rgba(11,15,26,.8)';ctx.lineWidth=2;ctx.stroke();
+    // 单位元
+    ctx.fillStyle='rgba(157,140,255,.9)';
+    ctx.beginPath();ctx.arc(cx+R,cy,4,0,TAU);ctx.fill();
+    raf=requestAnimationFrame(draw);
+  }
+  raf=requestAnimationFrame(draw);
+})();
+
+/* ============================================================
+   GROUP — 循环群 Zn 时钟
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_group');
+  let ctx,w,h;
+  let n=12,a=3,b=5;
+  const sn=document.getElementById('s_gn'),sa=document.getElementById('s_ga'),sb=document.getElementById('s_gb');
+  function size(){const s=setupCanvas(cv);ctx=s.ctx;w=s.w;h=s.h;draw();}
+  function ptAt(k,R){const cx=w/2,cy=h/2;const ang=-Math.PI/2+k/n*TAU;return [cx+Math.cos(ang)*R,cy+Math.sin(ang)*R];}
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    const cx=w/2,cy=h/2,R=Math.min(w,h)*0.34;
+    ctx.strokeStyle='rgba(240,191,76,.3)';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.stroke();
+    const r=(a+b)%n;
+    for(let k=0;k<n;k++){
+      const [x,y]=ptAt(k,R);
+      let col='rgba(139,154,184,.5)',rad=4.5;
+      if(k===0){col=C.violet;rad=5.5;}
+      if(k===a){col=C.gold;rad=7;}
+      if(k===b){col=C.cyan;rad=7;}
+      if(k===r){col=C.violet;rad=8;}
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,rad,0,TAU);ctx.fill();
+      ctx.fillStyle='rgba(234,240,251,.55)';ctx.font='11px JetBrains Mono, monospace';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      const [lx,ly]=ptAt(k,R+18);ctx.fillText(k,lx,ly);
+    }
+    // a 弧
+    function arc(from,to,col,rr){
+      ctx.strokeStyle=col;ctx.lineWidth=3;
+      ctx.beginPath();
+      const a0=-Math.PI/2+from/n*TAU, a1=-Math.PI/2+to/n*TAU;
+      ctx.arc(cx,cy,rr,a0,a1);ctx.stroke();
+    }
+    arc(0,a,'rgba(240,191,76,.85)',R-12);
+    arc(a,a+b,'rgba(70,215,204,.85)',R-22);
+    // 结果指针
+    const [rx,ry]=ptAt(r,R);
+    ctx.strokeStyle='rgba(157,140,255,.8)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(rx,ry);ctx.stroke();
+    ctx.fillStyle=C.txt;ctx.font='600 13px Inter, sans-serif';
+    ctx.fillText('Z'+'ₙ'.replace('ₙ',''), cx,cy);
+    ctx.fillStyle=C.muted;ctx.font='12px JetBrains Mono, monospace';
+    ctx.fillText('mod '+n,cx,cy+16);
+  }
+  function update(){
+    n=+sn.value;
+    sa.max=n-1; sb.max=n-1;
+    a=Math.min(+sa.value,n-1); b=Math.min(+sb.value,n-1);
+    sa.value=a; sb.value=b;
+    const r=(a+b)%n, inv=(n-a)%n;
+    document.getElementById('g_n').textContent=n;
+    document.getElementById('g_a').textContent=a;
+    document.getElementById('g_b').textContent=b;
+    document.getElementById('g_out').innerHTML=
+      `<span class="g">a</span> ∘ <span class="k">b</span> = (${a}+${b}) mod ${n} = <b style="color:#9d8cff">${r}</b> &nbsp;(封闭 ✓)<br>`+
+      `单位元 e = <b style="color:#9d8cff">0</b>： ${a} ∘ 0 = ${a} ✓<br>`+
+      `逆元定义： 求 a⁻¹ 使 a ∘ a⁻¹ = e=0<br>`+
+      `&nbsp;&nbsp;⟹ (${a} + a⁻¹) mod ${n} = 0 ⟹ a⁻¹ = ${n}−${a} = <b style="color:#f6d486">${inv}</b><br>`+
+      `验证： ${a} ∘ ${inv} = (${a}+${inv}) mod ${n} = <b style="color:#9d8cff">0</b> = e ✓`;
+    draw();
+  }
+  [sn,sa,sb].forEach(s=>s.addEventListener('input',update));
+  onResize(cv,size);
+  size();update();
+})();
+
+/* ============================================================
+   SO(2) — 圆周群
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_so2');
+  let ctx,w,h,th=0.9;
+  const s=document.getElementById('s_so2');
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;draw();}
+  function draw(){
+    if(!ctx)return;
+    ctx.clearRect(0,0,w,h);
+    const cx=w/2,cy=h/2,R=Math.min(w,h)*0.30;
+    const c=Math.cos(th), s=Math.sin(th);
+    const S=(vx,vy)=>[cx+vx*R, cy-vy*R];
+    function vec(a,b,col,lab){
+      ctx.strokeStyle=col;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+      const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);ctx.fillStyle=col;
+      ctx.beginPath();ctx.moveTo(b[0],b[1]);
+      ctx.lineTo(b[0]-Math.cos(ang-0.4)*11,b[1]-Math.sin(ang-0.4)*11);
+      ctx.lineTo(b[0]-Math.cos(ang+0.4)*11,b[1]-Math.sin(ang+0.4)*11);
+      ctx.closePath();ctx.fill();
+      if(lab){ctx.fillStyle=col;ctx.font='600 12px JetBrains Mono';
+        ctx.textAlign=b[0]>=cx?'left':'right';
+        ctx.fillText(lab, b[0]+(b[0]>=cx?9:-9), b[1]+(b[1]<=cy?-7:16));}
+    }
+    // 坐标轴
+    ctx.strokeStyle='rgba(36,49,73,.9)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx-R*1.5,cy);ctx.lineTo(cx+R*1.5,cy);
+    ctx.moveTo(cx,cy-R*1.5);ctx.lineTo(cx,cy+R*1.5);ctx.stroke();
+    // 群圆（流形）
+    ctx.strokeStyle='rgba(240,191,76,.8)';ctx.lineWidth=2.2;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.stroke();
+    // 原始单位正方形 + 原始基（淡，作参照）
+    ctx.strokeStyle='rgba(139,154,184,.16)';ctx.lineWidth=1;
+    const o0=S(0,0);ctx.beginPath();ctx.moveTo(o0[0],o0[1]);
+    [[1,0],[1,1],[0,1],[0,0]].forEach(q=>{const t=S(q[0],q[1]);ctx.lineTo(t[0],t[1]);});ctx.stroke();
+    vec(S(0,0),S(1,0),'rgba(255,107,107,.28)',null);
+    vec(S(0,0),S(0,1),'rgba(91,224,138,.28)',null);
+    // 旋转后的单位正方形（金，半透明填充）——整个平面被刚性地转动
+    const O=S(0,0),e1=S(c,s),e12=S(c-s,s+c),e2=S(-s,c);
+    ctx.fillStyle='rgba(240,191,76,.10)';ctx.strokeStyle='rgba(240,191,76,.45)';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(O[0],O[1]);ctx.lineTo(e1[0],e1[1]);ctx.lineTo(e12[0],e12[1]);ctx.lineTo(e2[0],e2[1]);ctx.closePath();
+    ctx.fill();ctx.stroke();
+    // θ 弧
+    ctx.strokeStyle='rgba(240,191,76,.7)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,R*0.30,0,-th,th>0);ctx.stroke();
+    ctx.fillStyle=C.goldS;ctx.font='600 13px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('θ',cx+Math.cos(th/2)*R*0.44,cy-Math.sin(th/2)*R*0.44);
+    // 旋转后的两根基向量 = 矩阵 R 的两列
+    vec(O,e1,C.red,'ê₁′');
+    vec(O,e2,C.green,'ê₂′');
+    // 单位元
+    ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(cx+R,cy,4,0,TAU);ctx.fill();
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='left';
+    ctx.fillText('e (θ=0)',cx+R+8,cy+15);
+  }
+  function update(){
+    th=+s.value/100;
+    const c=Math.cos(th),sn=Math.sin(th);
+    document.getElementById('so2_t').textContent=th.toFixed(2)+' rad';
+    document.getElementById('r00').textContent=c.toFixed(2);
+    document.getElementById('r01').textContent=(-sn).toFixed(2);
+    document.getElementById('r10').textContent=sn.toFixed(2);
+    document.getElementById('r11').textContent=c.toFixed(2);
+    document.getElementById('so2_out').innerHTML=
+      `θ = <span class="g">${th.toFixed(2)}</span> rad ≈ <span class="g">${(th*180/Math.PI).toFixed(0)}°</span><br>`+
+      `<span style="color:#ff6b6b">ê₁′ = R·(1,0) = ( ${c.toFixed(2)}, ${sn.toFixed(2)} )</span> ← 第 1 列<br>`+
+      `<span style="color:#5be08a">ê₂′ = R·(0,1) = ( ${(-sn).toFixed(2)}, ${c.toFixed(2)} )</span> ← 第 2 列<br>`+
+      `det R = ${(c*c+sn*sn).toFixed(2)}，两列正交且单位长 ⟹ 刚性旋转`;
+    draw();
+  }
+  s.addEventListener('input',update);
+  onResize(cv,size);
+  size();update();
+})();
+
+/* ============================================================
+   线性变换沙盒 — 矩阵本质 / det / 秩 / 特征向量
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_lin');
+  if(!cv)return;
+  let ctx,w,h,U=60;
+  let a=0.766,b=-0.643,c=0.643,d=0.766;
+  const sA=document.getElementById('s_la'),sB=document.getElementById('s_lb'),
+        sC=document.getElementById('s_lc'),sD=document.getElementById('s_ld');
+  const presets={rot:[0.766,-0.643,0.643,0.766],scale:[1.6,0,0,0.7],
+    shear:[1,0.8,0,1],proj:[1,0,0,0],refl:[1,0,0,-1]};
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;U=Math.min(w,h)*0.16;draw();}
+  function S(x,y){return [w/2+x*U, h/2-y*U];}
+  function Mv(x,y){return [a*x+b*y, c*x+d*y];}
+  function norm(v){const n=Math.hypot(v[0],v[1])||1;return [v[0]/n,v[1]/n];}
+  function vec(p,col){
+    const o=S(0,0),q=S(p[0],p[1]);
+    ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+    const ang=Math.atan2(q[1]-o[1],q[0]-o[0]);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(q[0],q[1]);
+    ctx.lineTo(q[0]-Math.cos(ang-0.4)*10,q[1]-Math.sin(ang-0.4)*10);
+    ctx.lineTo(q[0]-Math.cos(ang+0.4)*10,q[1]-Math.sin(ang+0.4)*10);ctx.closePath();ctx.fill();
+  }
+  function eig(){
+    const tr=a+d, det=a*d-b*c, disc=tr*tr-4*det;
+    if(disc<-1e-9)return {complex:true,re:tr/2,im:Math.sqrt(-disc)/2,det,tr};
+    const sq=Math.sqrt(Math.max(0,disc)), l1=(tr+sq)/2, l2=(tr-sq)/2;
+    const ev=l=>{ if(Math.abs(b)>1e-7)return norm([b,l-a]);
+      if(Math.abs(c)>1e-7)return norm([l-d,c]);
+      return Math.abs(a-l)<1e-7?[1,0]:[0,1]; };
+    return {complex:false,l1,l2,v1:ev(l1),v2:ev(l2),det,tr};
+  }
+  function draw(){
+    if(!ctx)return;
+    ctx.clearRect(0,0,w,h);
+    // 原网格
+    ctx.strokeStyle='rgba(36,49,73,.5)';ctx.lineWidth=1;
+    for(let i=-4;i<=4;i++){let p=S(i,-4),q=S(i,4);ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+      p=S(-4,i);q=S(4,i);ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();}
+    // 原单位圆(淡)
+    ctx.strokeStyle='rgba(139,154,184,.22)';ctx.lineWidth=1;ctx.beginPath();
+    for(let k=0;k<=64;k++){const t=k/64*TAU,p=S(Math.cos(t),Math.sin(t));k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);}ctx.stroke();
+    const e=eig(),det=e.det;
+    // |det| 平行四边形(单位方格的像)
+    const O=S(0,0),k1=S(a,c),k12=S(a+b,c+d),k2=S(b,d);
+    ctx.fillStyle=det<0?'rgba(214,93,177,.16)':'rgba(240,191,76,.14)';
+    ctx.strokeStyle=det<0?'rgba(214,93,177,.55)':'rgba(240,191,76,.5)';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(O[0],O[1]);ctx.lineTo(k1[0],k1[1]);ctx.lineTo(k12[0],k12[1]);ctx.lineTo(k2[0],k2[1]);ctx.closePath();ctx.fill();ctx.stroke();
+    // 单位圆的像 -> 椭圆
+    ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.beginPath();
+    for(let k=0;k<=64;k++){const t=k/64*TAU,m=Mv(Math.cos(t),Math.sin(t)),p=S(m[0],m[1]);k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);}ctx.stroke();
+    // 实特征向量
+    if(!e.complex){
+      [[e.v1,e.l1],[e.v2,e.l2]].forEach(([v,l])=>{
+        if(!v)return;const p1=S(v[0]*4.3,v[1]*4.3),p2=S(-v[0]*4.3,-v[1]*4.3);
+        ctx.strokeStyle='rgba(157,140,255,.85)';ctx.lineWidth=2;ctx.setLineDash([6,5]);
+        ctx.beginPath();ctx.moveTo(p2[0],p2[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();ctx.setLineDash([]);
+        const lp=S(v[0]*2.7,v[1]*2.7);ctx.fillStyle=C.violet;ctx.font='600 11px JetBrains Mono';ctx.textAlign='center';
+        ctx.fillText('λ='+l.toFixed(2),lp[0],lp[1]-6);
+      });
+    }
+    // 两列 = 基的像
+    vec([a,c],C.red); vec([b,d],C.green);
+    if(Math.abs(det)<0.04){ctx.fillStyle=C.red;ctx.font='10px JetBrains Mono';ctx.textAlign='left';
+      ctx.fillText('det≈0 → 压成一条线（秩1，不可逆）',12,h-12);}
+  }
+  function out(){
+    const e=eig(),det=e.det;
+    const rank=Math.abs(det)>1e-4?2:((Math.abs(a)+Math.abs(b)+Math.abs(c)+Math.abs(d)<1e-6)?0:1);
+    const eigstr=e.complex
+      ? `<b style="color:#9d8cff">复数</b> ${e.re.toFixed(2)} ± ${e.im.toFixed(2)} i ⟹ <b style="color:#f6d486">无实特征向量</b>（纯旋转成分）`
+      : `λ₁=<b style="color:#9d8cff">${e.l1.toFixed(2)}</b>, λ₂=<b style="color:#9d8cff">${e.l2.toFixed(2)}</b>（紫线方向只缩放不偏转）`;
+    document.getElementById('lin_out').innerHTML=
+      `det = <b style="color:${det<0?'#d65db1':'#f6d486'}">${det.toFixed(2)}</b> ＝ 面积 ×${Math.abs(det).toFixed(2)}，${det<-1e-3?'<b>翻转朝向</b>':det>1e-3?'保持朝向':'压扁'}<br>`+
+      `秩 rank = <b>${rank}</b> ${rank===2?'（满秩，可逆）':rank===1?'（降维，不可逆）':'（零变换）'} &nbsp;·&nbsp; trace = ${(a+d).toFixed(2)}<br>`+
+      `特征值: ${eigstr}`;
+  }
+  function refresh(){
+    const f=x=>x.toFixed(2);
+    document.getElementById('m_a').textContent=f(a);document.getElementById('m_b').textContent=f(b);
+    document.getElementById('m_c').textContent=f(c);document.getElementById('m_d').textContent=f(d);
+    document.getElementById('lv_a').textContent=f(a);document.getElementById('lv_b').textContent=f(b);
+    document.getElementById('lv_c').textContent=f(c);document.getElementById('lv_d').textContent=f(d);
+    draw();out();
+  }
+  function fromSliders(){a=+sA.value/100;b=+sB.value/100;c=+sC.value/100;d=+sD.value/100;refresh();}
+  [sA,sB,sC,sD].forEach(s=>s.addEventListener('input',()=>{
+    document.querySelectorAll('#seg_lin button').forEach(x=>x.classList.remove('on'));fromSliders();}));
+  document.getElementById('seg_lin').addEventListener('click',ev=>{
+    const btn=ev.target.closest('button');if(!btn)return;
+    ev.currentTarget.querySelectorAll('button').forEach(x=>x.classList.remove('on'));btn.classList.add('on');
+    const p=presets[btn.dataset.p]; a=p[0];b=p[1];c=p[2];d=p[3];
+    sA.value=Math.round(a*100);sB.value=Math.round(b*100);sC.value=Math.round(c*100);sD.value=Math.round(d*100);refresh();
+  });
+  onResize(cv,size);
+  size();refresh();
+})();
+
+/* ============================================================
+   Ax = b 两种读法 — 行视角 ↔ 列视角
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_dual'); if(!cv)return;
+  let ctx,w,h,U=40,raf,anim=false;
+  const a11=2,a12=1,a21=1,a22=2, b1=3,b2=3;   // 解 (1,1)
+  let x1=2.6,x2=0.2;
+  const sX1=document.getElementById('s_dx1'),sX2=document.getElementById('s_dx2');
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;U=Math.min(w*0.42,h)*0.16;draw();}
+  function arrow(ax,ay,bx,by,col,lw){ctx.strokeStyle=col;ctx.lineWidth=lw||2.4;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+    const ang=Math.atan2(by-ay,bx-ax);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(bx,by);
+    ctx.lineTo(bx-Math.cos(ang-0.4)*9,by-Math.sin(ang-0.4)*9);
+    ctx.lineTo(bx-Math.cos(ang+0.4)*9,by-Math.sin(ang+0.4)*9);ctx.closePath();ctx.fill();}
+  function star(px,py,col,r){ctx.fillStyle=col;ctx.beginPath();
+    for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5,rr=i%2?r*0.45:r;
+      const X=px+Math.cos(a)*rr,Y=py-Math.sin(a)*rr;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}ctx.closePath();ctx.fill();}
+  function panel(cx){const ox=cx-1.5*U, oy=h/2+1.5*U;return {P:(x,y)=>[ox+x*U, oy-y*U]};}
+  function axes(pn){ctx.strokeStyle='rgba(36,49,73,.85)';ctx.lineWidth=1;
+    const xa=pn.P(-1.3,0),xb=pn.P(3.6,0),ya=pn.P(0,-1.3),yb=pn.P(0,3.8);
+    ctx.beginPath();ctx.moveTo(xa[0],xa[1]);ctx.lineTo(xb[0],xb[1]);ctx.moveTo(ya[0],ya[1]);ctx.lineTo(yb[0],yb[1]);ctx.stroke();}
+  function draw(){
+    if(!ctx)return;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(36,49,73,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(w/2,16);ctx.lineTo(w/2,h-16);ctx.stroke();
+    const lcx=w*0.27, rcx=w*0.73;
+    // ===== 左:行视角 =====
+    ctx.save();ctx.beginPath();ctx.rect(0,0,w/2,h);ctx.clip();
+    const L=panel(lcx);axes(L);
+    function lineEq(c1,c2,rhs,col){
+      ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();
+      const p1=L.P(-1.3,(rhs-c1*(-1.3))/c2), p2=L.P(3.6,(rhs-c1*3.6)/c2);
+      ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.stroke();
+    }
+    lineEq(a11,a12,b1,'rgba(255,107,107,.85)');
+    lineEq(a21,a22,b2,'rgba(91,224,138,.85)');
+    const sol=L.P(1,1);star(sol[0],sol[1],'rgba(240,191,76,.5)',9);
+    const cur=L.P(x1,x2);ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(cur[0],cur[1],6,0,TAU);ctx.fill();
+    ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('行视角:两条方程线的交点',lcx,h-14);
+    ctx.restore();
+    // ===== 右:列视角 =====
+    ctx.save();ctx.beginPath();ctx.rect(w/2,0,w/2,h);ctx.clip();
+    const Rp=panel(rcx);axes(Rp);
+    const O=Rp.P(0,0);
+    const c1t=Rp.P(a11,a21), c2t=Rp.P(a12,a22);
+    arrow(O[0],O[1],c1t[0],c1t[1],'rgba(255,107,107,.3)',2);
+    arrow(O[0],O[1],c2t[0],c2t[1],'rgba(91,224,138,.3)',2);
+    const m1=Rp.P(a11*x1, a21*x1); arrow(O[0],O[1],m1[0],m1[1],C.red,2.6);
+    const m2=Rp.P(a11*x1+a12*x2, a21*x1+a22*x2); arrow(m1[0],m1[1],m2[0],m2[1],C.green,2.6);
+    const bt=Rp.P(b1,b2);star(bt[0],bt[1],C.goldS,9);
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('列视角:x₁·col₁ + x₂·col₂ 去够到 b',rcx,h-14);
+    ctx.restore();
+  }
+  function out(){
+    const Ax1=a11*x1+a12*x2, Ax2=a21*x1+a22*x2, r=Math.hypot(Ax1-b1,Ax2-b2);
+    document.getElementById('dual_out').innerHTML=
+      `当前 (x₁,x₂) = (<span style="color:#9d8cff">${x1.toFixed(2)}</span>, <span style="color:#9d8cff">${x2.toFixed(2)}</span>)<br>`+
+      `A x = (${Ax1.toFixed(2)}, ${Ax2.toFixed(2)})，b = (3, 3)<br>`+
+      `残差 |Ax − b| = <b style="color:${r<0.03?'#5be08a':'#ff6b6b'}">${r.toFixed(2)}</b> ${r<0.03?'✓ 命中解 (1,1)':''}`;
+  }
+  function refresh(){document.getElementById('dv_x1').textContent=x1.toFixed(2);
+    document.getElementById('dv_x2').textContent=x2.toFixed(2);draw();out();}
+  function fromSliders(){x1=+sX1.value/100;x2=+sX2.value/100;refresh();}
+  sX1.addEventListener('input',()=>{anim=false;fromSliders();});
+  sX2.addEventListener('input',()=>{anim=false;fromSliders();});
+  document.getElementById('dual_solve').addEventListener('click',()=>{
+    const sx1=x1,sx2=x2; let t0=0; anim=true;
+    function step(ts){if(!anim)return;if(!t0)t0=ts;const u=Math.min(1,(ts-t0)/900);
+      x1=sx1+(1-sx1)*u; x2=sx2+(1-sx2)*u;
+      sX1.value=Math.round(x1*100);sX2.value=Math.round(x2*100);refresh();
+      if(u<1)raf=requestAnimationFrame(step);else anim=false;}
+    raf=requestAnimationFrame(step);
+  });
+  document.getElementById('dual_sys').innerHTML='方程组: <b style="color:#ff6b6b">2x₁ + x₂ = 3</b> ， <b style="color:#5be08a">x₁ + 2x₂ = 3</b><br>列: col₁=(2,1), col₂=(1,2), b=(3,3)';
+  onResize(cv,size);
+  size();refresh();
+})();
+
+/* ============================================================
+   特征向量 — 拖动 v，找"不被偏转的方向"
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_eig'); if(!cv)return;
+  let ctx,w,h,U=50, ang=Math.PI/5;
+  let a=1.8,b=0,c=0,d=0.6;
+  const presets={scale:[1.8,0,0,0.6],shear:[1,0.9,0,1],refl:[1,0,0,-1],rot:[0.819,-0.574,0.574,0.819]};
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;U=Math.min(w,h)*0.30;out();}
+  function S(x,y){return [w/2+x*U,h/2-y*U];}
+  function eigvecs(){
+    const tr=a+d,det=a*d-b*c,disc=tr*tr-4*det;
+    if(disc<-1e-9)return null;
+    const sq=Math.sqrt(Math.max(0,disc)),l1=(tr+sq)/2,l2=(tr-sq)/2;
+    const ev=l=>{let v;if(Math.abs(b)>1e-7)v=[b,l-a];else if(Math.abs(c)>1e-7)v=[l-d,c];
+      else v=(Math.abs(a-l)<1e-7?[1,0]:[0,1]);const n=Math.hypot(v[0],v[1])||1;return [v[0]/n,v[1]/n];};
+    return [{v:ev(l1),l:l1},{v:ev(l2),l:l2}];
+  }
+  function arrow(p,col,lw,lab){const o=S(0,0),q=S(p[0],p[1]);
+    ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+    const a2=Math.atan2(q[1]-o[1],q[0]-o[0]);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(q[0],q[1]);
+    ctx.lineTo(q[0]-Math.cos(a2-0.4)*11,q[1]-Math.sin(a2-0.4)*11);
+    ctx.lineTo(q[0]-Math.cos(a2+0.4)*11,q[1]-Math.sin(a2+0.4)*11);ctx.closePath();ctx.fill();
+    if(lab){ctx.fillStyle=col;ctx.font='600 12px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText(lab,q[0]+(q[0]>=w/2?13:-13),q[1]-8);}
+  }
+  function draw(){
+    if(!ctx)return null;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(36,49,73,.5)';ctx.lineWidth=1;
+    for(let i=-3;i<=3;i++){let p=S(i,-3),q=S(i,3);ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+      p=S(-3,i);q=S(3,i);ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();}
+    const evs=eigvecs();
+    if(evs){evs.forEach(e=>{const p1=S(e.v[0]*3,e.v[1]*3),p2=S(-e.v[0]*3,-e.v[1]*3);
+      ctx.strokeStyle='rgba(157,140,255,.32)';ctx.lineWidth=1.5;ctx.setLineDash([6,5]);
+      ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.stroke();ctx.setLineDash([]);});}
+    const vx=Math.cos(ang)*1.4, vy=Math.sin(ang)*1.4;
+    const mx=a*vx+b*vy, my=c*vx+d*vy;
+    const vn=Math.hypot(vx,vy), mn=Math.hypot(mx,my)||1e-9;
+    const between=Math.acos(Math.max(-1,Math.min(1,(vx*mx+vy*my)/(vn*mn))))*180/Math.PI;
+    const aligned=evs && Math.min(between,180-between)<2.5;
+    arrow([mx,my], aligned?C.green:C.gold, 3, 'M·v');
+    arrow([vx,vy], aligned?C.green:C.violet, 3.4, 'v');
+    const hp=S(vx,vy);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(hp[0],hp[1],5,0,TAU);ctx.fill();
+    ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+    return {between,ratio:mn/vn,aligned,evs,flip:(vx*mx+vy*my)<0};
+  }
+  function out(){
+    const r=draw(); if(!r)return;
+    let s;
+    if(!r.evs) s=`这是<b style="color:#f6d486">旋转</b>:每个方向都被偏转同样角度 ⟹ <b>没有实特征向量</b>,怎么拖都对不齐。`;
+    else if(r.aligned) s=`<b style="color:#5be08a">✓ 命中特征向量!</b> v 与 M·v 共线,λ = <b>${(r.flip?-r.ratio:r.ratio).toFixed(2)}</b>（=|Mv|/|v|，${r.flip?'反向':'同向'}）。`;
+    else s=`v 被偏转了 <b style="color:#ff6b6b">${r.between.toFixed(0)}°</b>(输入、输出不共线)→ 不是特征向量。把它拖到紫色虚线方向试试。`;
+    document.getElementById('eig_out').innerHTML=
+      `输入方向 θ = ${(ang*180/Math.PI).toFixed(0)}° &nbsp;·&nbsp; |Mv|/|v| = ${r.ratio.toFixed(2)}<br>`+
+      `v 与 M·v 夹角 = <b style="color:${r.aligned?'#5be08a':'#ff6b6b'}">${r.between.toFixed(0)}°</b><br>`+s;
+  }
+  let drag=false;
+  function setFromEvent(e){
+    const rect=cv.getBoundingClientRect();
+    const px=(e.clientX-rect.left)-rect.width/2, py=(rect.height/2)-(e.clientY-rect.top);
+    if(Math.hypot(px,py)<5)return;
+    ang=Math.atan2(py,px); out();
+  }
+  cv.addEventListener('pointerdown',e=>{drag=true;cv.setPointerCapture(e.pointerId);setFromEvent(e);});
+  cv.addEventListener('pointermove',e=>{if(drag)setFromEvent(e);});
+  cv.addEventListener('pointerup',()=>drag=false);
+  cv.addEventListener('pointerleave',()=>drag=false);
+  document.getElementById('seg_eig').addEventListener('click',e=>{
+    const btn=e.target.closest('button');if(!btn)return;
+    e.currentTarget.querySelectorAll('button').forEach(x=>x.classList.remove('on'));btn.classList.add('on');
+    const p=presets[btn.dataset.p];a=p[0];b=p[1];c=p[2];d=p[3];out();
+  });
+  onResize(cv,size);
+  size();
+})();
+
+/* ============================================================
+   超立方体 — 4D 双旋转
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_4d'); if(!cv)return;
+  let ctx,w,h,SC=1,camAz=0.6,camEl=-0.4;
+  let al=0.0,be=0.0,playing=true,simple=false,raf;
+  const V=[];
+  for(let i=0;i<16;i++)V.push([(i&1?1:-1),(i&2?1:-1),(i&4?1:-1),(i&8?1:-1)]);
+  const E=[];
+  for(let i=0;i<16;i++)for(let j=i+1;j<16;j++){let dif=0;for(let k=0;k<4;k++)if(V[i][k]!==V[j][k])dif++;if(dif===1)E.push([i,j]);}
+  function rot4(p){
+    const ca=Math.cos(al),sa=Math.sin(al),cb=Math.cos(be),sb=Math.sin(be);
+    return [p[0]*ca-p[1]*sa, p[0]*sa+p[1]*ca, p[2]*cb-p[3]*sb, p[2]*sb+p[3]*cb];
+  }
+  function cam(p){const x=p[0]*Math.cos(camAz)+p[2]*Math.sin(camAz);
+    const z=-p[0]*Math.sin(camAz)+p[2]*Math.cos(camAz);
+    return [x, p[1]*Math.cos(camEl)-z*Math.sin(camEl), p[1]*Math.sin(camEl)+z*Math.cos(camEl)];}
+  function screen(p4){const D=2.9,k=D/(D-p4[3]),q=cam([p4[0]*k,p4[1]*k,p4[2]*k]);
+    return [w/2+q[0]*SC, h/2-q[1]*SC];}
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;SC=Math.min(w,h)*0.14;draw();}
+  function draw(){
+    if(!ctx)return;ctx.clearRect(0,0,w,h);
+    const rv=V.map(rot4), pts=rv.map(screen);
+    E.forEach(([i,j])=>{const wv=(rv[i][3]+rv[j][3])/2,a=Math.max(0.08,Math.min(1,(wv+1.55)/3.1));
+      ctx.strokeStyle=`rgba(240,191,76,${0.2+0.65*a})`;ctx.lineWidth=0.7+1.8*a;
+      ctx.beginPath();ctx.moveTo(pts[i][0],pts[i][1]);ctx.lineTo(pts[j][0],pts[j][1]);ctx.stroke();});
+    pts.forEach((p,idx)=>{const a=Math.max(0.1,Math.min(1,(rv[idx][3]+1.55)/3.1));
+      ctx.fillStyle=`rgba(126,240,231,${0.5+0.5*a})`;ctx.beginPath();ctx.arc(p[0],p[1],2.3+1.2*a,0,TAU);ctx.fill();});
+  }
+  function out(){
+    document.getElementById('b4_out').innerHTML=
+      `模式：<b style="color:${simple?'#f6d486':'#7ff0e7'}">${simple?'简单旋转（只转 x-y 平面）':'双旋转（x-y 与 z-w 各转各的）'}</b><br>`+
+      `α(x-y) = ${(al%TAU).toFixed(2)} &nbsp; β(z-w) = ${(simple?0:(be%TAU)).toFixed(2)}<br>`+
+      (simple?'z-w 平面冻住 ⟹ 留下一个 <b>2D 不动平面</b>':'两平面用满 4 维 ⟹ <b>没有任何不动方向</b>');
+  }
+  function loop(){if(!playing)return;al+=0.016;if(!simple)be+=0.011;draw();out();raf=requestAnimationFrame(loop);}
+  function setPlay(p){playing=p;document.getElementById('b4_play').textContent=p?'⏸ 暂停':'▶ 播放';if(p)loop();else{draw();out();}}
+  document.getElementById('b4_play').addEventListener('click',()=>setPlay(!playing));
+  document.getElementById('b4_mode').addEventListener('click',()=>{simple=!simple;
+    document.getElementById('b4_mode').textContent=simple?'切回双旋转':'切到简单旋转';if(!playing){draw();out();}});
+  document.getElementById('b4_reset').addEventListener('click',()=>{camAz=0.6;camEl=-0.4;draw();});
+  let drag=false,lx=0,ly=0;
+  cv.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId);});
+  cv.addEventListener('pointermove',e=>{if(!drag)return;camAz+=(e.clientX-lx)*0.01;camEl+=(e.clientY-ly)*0.01;
+    camEl=Math.max(-1.4,Math.min(1.4,camEl));lx=e.clientX;ly=e.clientY;if(!playing)draw();});
+  cv.addEventListener('pointerup',()=>drag=false);cv.addEventListener('pointerleave',()=>drag=false);
+  onResize(cv,size);
+  size();out();setPlay(true);
+})();
+
+/* ============================================================
+   圆 vs 双曲线 — 欧氏旋转 vs 洛伦兹推动
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_lz'); if(!cv)return;
+  let ctx,w,h,U=46,t=0.6,playing=false,dir=1,raf;
+  const sT=document.getElementById('s_lz');
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;U=Math.min(w*0.42,h)*0.155;draw();}
+  function arr(ox,oy,qx,qy,col,lw){ctx.strokeStyle=col;ctx.lineWidth=lw||2.4;
+    ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(qx,qy);ctx.stroke();
+    const a=Math.atan2(qy-oy,qx-ox);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(qx,qy);
+    ctx.lineTo(qx-Math.cos(a-0.4)*9,qy-Math.sin(a-0.4)*9);
+    ctx.lineTo(qx-Math.cos(a+0.4)*9,qy-Math.sin(a+0.4)*9);ctx.closePath();ctx.fill();}
+  function axesFaint(ox,oy){ctx.strokeStyle='rgba(36,49,73,.85)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(ox-U*2.1,oy);ctx.lineTo(ox+U*2.1,oy);ctx.moveTo(ox,oy-U*2.1);ctx.lineTo(ox,oy+U*2.1);ctx.stroke();}
+  function drawLeft(cx){
+    const ox=cx,oy=h/2,th=t,P=(x,y)=>[ox+x*U,oy-y*U];
+    axesFaint(ox,oy);
+    ctx.strokeStyle='rgba(240,191,76,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ox,oy,U,0,TAU);ctx.stroke();
+    ctx.strokeStyle='rgba(240,191,76,.3)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(ox,oy,U,0,-th,th>0);ctx.stroke();
+    const c=Math.cos(th),s=Math.sin(th);
+    const xq=P(c*1.35,s*1.35),yq=P(-s*1.35,c*1.35);
+    arr(ox,oy,xq[0],xq[1],C.red,2.6); arr(ox,oy,yq[0],yq[1],C.blue,2.6);
+    const pt=P(c,s);ctx.fillStyle=C.goldS;ctx.beginPath();ctx.arc(pt[0],pt[1],5,0,TAU);ctx.fill();ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('欧氏旋转：点走圆 (cos, sin)',cx,h-15);ctx.fillText('两轴整体转、始终垂直',cx,h-2);
+  }
+  function drawRight(cx){
+    const ox=cx,oy=h/2,ph=t,P=(x,y)=>[ox+x*U,oy-y*U];
+    axesFaint(ox,oy);
+    // 光锥
+    ctx.strokeStyle='rgba(240,191,76,.5)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+    let a=P(-1.9,-1.9),b=P(1.9,1.9),c1=P(-1.9,1.9),d=P(1.9,-1.9);
+    ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.moveTo(c1[0],c1[1]);ctx.lineTo(d[0],d[1]);ctx.stroke();ctx.setLineDash([]);
+    // 不变双曲线
+    ctx.strokeStyle='rgba(139,154,184,.28)';ctx.lineWidth=1.2;
+    for(const sg of [1,-1]){ctx.beginPath();let f=true;
+      for(let s=-1.7;s<=1.7;s+=0.1){const p=P(sg*Math.cosh(s),Math.sinh(s));f?(ctx.moveTo(p[0],p[1]),f=false):ctx.lineTo(p[0],p[1]);}ctx.stroke();}
+    for(const sg of [1,-1]){ctx.beginPath();let f=true;
+      for(let s=-1.7;s<=1.7;s+=0.1){const p=P(Math.sinh(s),sg*Math.cosh(s));f?(ctx.moveTo(p[0],p[1]),f=false):ctx.lineTo(p[0],p[1]);}ctx.stroke();}
+    const ch=Math.cosh(ph),sh=Math.sinh(ph);
+    const xq=P(ch*1.5,sh*1.5),tq=P(sh*1.5,ch*1.5);
+    arr(ox,oy,xq[0],xq[1],C.red,2.6); arr(ox,oy,tq[0],tq[1],C.blue,2.6);
+    const pt=P(ch,sh);ctx.fillStyle=C.goldS;ctx.beginPath();ctx.arc(pt[0],pt[1],5,0,TAU);ctx.fill();ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('洛伦兹推动：点走双曲线 (cosh, sinh)',cx,h-15);ctx.fillText('两轴向光锥剪、光锥不动',cx,h-2);
+  }
+  function draw(){
+    if(!ctx)return;ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(36,49,73,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(w/2,12);ctx.lineTo(w/2,h-28);ctx.stroke();
+    drawLeft(w*0.27); drawRight(w*0.73);
+  }
+  function out(){
+    const vc=Math.tanh(t),g=Math.cosh(t);
+    document.getElementById('lz_out').innerHTML=
+      `<span style="color:#f6d486">左 · 欧氏</span>：θ = ${t.toFixed(2)} rad，点 =(${Math.cos(t).toFixed(2)}, ${Math.sin(t).toFixed(2)}) 在<b>圆</b>上<br>`+
+      `<span style="color:#7ff0e7">右 · 时空</span>：快度 φ = ${t.toFixed(2)}，v/c = tanh φ = <b>${vc.toFixed(2)}</b>，γ = cosh φ = ${g.toFixed(2)} 在<b>双曲线</b>上<br>`+
+      `cos/sin ↔ cosh/sinh，唯一的差别就是时间那个减号。`;
+  }
+  function refresh(){document.getElementById('lz_t').textContent=t.toFixed(2);draw();out();}
+  sT.addEventListener('input',()=>{playing=false;t=+sT.value/100;refresh();});
+  document.getElementById('lz_play').addEventListener('click',()=>{
+    if(playing)return;playing=true;
+    function step(){if(!playing)return;t+=dir*0.012;if(t>=1.35){t=1.35;dir=-1;}if(t<=0){t=0;dir=1;}
+      sT.value=Math.round(t*100);refresh();raf=requestAnimationFrame(step);}
+    raf=requestAnimationFrame(step);
+  });
+  document.getElementById('lz_reset').addEventListener('click',()=>{playing=false;t=0.6;dir=1;sT.value=60;refresh();});
+  onResize(cv,size);
+  size();refresh();
+})();
+
+/* ============================================================
+   EXP MAP — 切线缠绕成圆
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_exp');
+  let ctx,w,h,t=1.2,playing=false,raf,anim=1;
+  const s=document.getElementById('s_exp');
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;draw();}
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    const cx=w*0.42,cy=h/2,R=Math.min(w,h)*0.30;
+    // 圆(群)
+    ctx.strokeStyle='rgba(240,191,76,.45)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.stroke();
+    // 切线(代数) 在单位元 (R,0) 竖直
+    const ex=cx+R, ey=cy;
+    ctx.strokeStyle='rgba(70,215,204,.35)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(ex,cy-R*1.3);ctx.lineTo(ex,cy+R*1.3);ctx.stroke();
+    ctx.fillStyle=C.cyan;ctx.font='11px JetBrains Mono';ctx.textAlign='left';
+    ctx.fillText('so(2) 切线',ex+10,cy-R*1.25);
+    // 当前可视化的总角度
+    const tShow=t*anim;
+    // 切线上走过的长度(用刻度点表现)
+    ctx.strokeStyle=C.cyan;ctx.lineWidth=4;
+    const upY=cy-tShow*R/ (1) ; // 1 rad 对应 R 像素长度
+    const upClamp=Math.max(cy-R*1.3, cy - tShow*R);
+    ctx.beginPath();ctx.moveTo(ex,cy);ctx.lineTo(ex,cy - Math.min(tShow,1.3)*R);ctx.stroke();
+    // 缠绕的弧(群上从 e 开始,长度=tShow*R)
+    ctx.strokeStyle=C.gold;ctx.lineWidth=4;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,-tShow, tShow>0?true:false);
+    // arc with anticlockwise to go upward (negative angle = up since y down)
+    ctx.stroke();
+    // 末端点
+    const px=cx+Math.cos(tShow)*R, py=cy-Math.sin(tShow)*R;
+    ctx.fillStyle=C.goldS;ctx.beginPath();ctx.arc(px,py,6,0,TAU);ctx.fill();
+    ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+    // 连接虚线:切线末端 -> 圆上末端 (示意"卷")
+    const tipY=cy-Math.min(tShow,1.3)*R;
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(157,140,255,.6)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(ex,tipY);ctx.lineTo(px,py);ctx.stroke();
+    ctx.setLineDash([]);
+    // 单位元
+    ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(ex,ey,5,0,TAU);ctx.fill();
+    ctx.fillStyle=C.muted;ctx.textAlign='left';ctx.font='11px JetBrains Mono';
+    ctx.fillText('e',ex+8,ey+14);
+    // 标签
+    ctx.fillStyle=C.gold;ctx.textAlign='center';ctx.font='600 12px JetBrains Mono';
+    ctx.fillText('exp', (ex+px)/2+14,(tipY+py)/2);
+    ctx.fillStyle=C.cyanS;ctx.textAlign='right';
+    ctx.fillText('t = '+(tShow).toFixed(2), ex-10, (cy+tipY)/2);
+  }
+  function update(){
+    t=+s.value/100; anim=1;
+    document.getElementById('exp_t').textContent=t.toFixed(2);
+    const c=Math.cos(t),sn=Math.sin(t);
+    document.getElementById('exp_out').innerHTML=
+      `exp(t·G) = R(<span class="k">${t.toFixed(2)}</span>) → 落在圆上角度 <span class="g">${(t*180/Math.PI).toFixed(0)}°</span><br>`+
+      `弧长 = t = ${t.toFixed(2)} （切线长度 = 圆弧长度）<br>`+
+      `log 反过来：从圆上的点取回 t = <span class="k">${t.toFixed(2)}</span>`;
+    draw();
+  }
+  s.addEventListener('input',update);
+  document.getElementById('exp_play').addEventListener('click',()=>{
+    if(playing)return; playing=true; anim=0; let t0=0;
+    function step(ts){if(!t0)t0=ts;anim=Math.min(1,(ts-t0)/1300);draw();
+      if(anim<1)raf=requestAnimationFrame(step);else playing=false;}
+    raf=requestAnimationFrame(step);
+  });
+  document.getElementById('exp_reset').addEventListener('click',()=>{s.value=120;update();});
+  onResize(cv,size);
+  size();update();
+})();
+
+/* ============================================================
+   SO(3) — 手写 3D 旋转 (罗德里格斯 + 可拖拽视角)
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_so3');
+  let ctx,w,h;
+  let camAz=0.7, camEl=-0.5; // 视角
+  let th=1.05, axAz=0.6, axEl=0.7, showPlane=false;
+  // 罗德里格斯
+  function expSO3(x,y,z,a){
+    const c=Math.cos(a),s=Math.sin(a),C1=1-c;
+    return [
+      [c+x*x*C1, x*y*C1-z*s, x*z*C1+y*s],
+      [y*x*C1+z*s, c+y*y*C1, y*z*C1-x*s],
+      [z*x*C1-y*s, z*y*C1+x*s, c+z*z*C1]
+    ];
+  }
+  function mv(M,v){return [
+    M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2],
+    M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2],
+    M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2]];}
+  function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+  function norm3(v){const n=Math.hypot(v[0],v[1],v[2])||1;return [v[0]/n,v[1]/n,v[2]/n];}
+  function cam(p){
+    let x=p[0]*Math.cos(camAz)+p[2]*Math.sin(camAz);
+    let z=-p[0]*Math.sin(camAz)+p[2]*Math.cos(camAz);
+    let y=p[1];
+    let y2=y*Math.cos(camEl)-z*Math.sin(camEl);
+    let z2=y*Math.sin(camEl)+z*Math.cos(camEl);
+    return [x,y2,z2];
+  }
+  let SC=1,CX=0,CY=0;
+  function proj(p){const q=cam(p);return [CX+q[0]*SC, CY-q[1]*SC, q[2]];}
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;SC=Math.min(w,h)*0.26;CX=w/2;CY=h/2;draw();}
+  function line(a,b,col,lw){const p=proj(a),q=proj(b);ctx.strokeStyle=col;ctx.lineWidth=lw||1.5;
+    ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();}
+  function arrow(o,d,col,label){
+    const p=proj(o),q=proj(d);ctx.strokeStyle=col;ctx.lineWidth=2.6;
+    ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+    const ang=Math.atan2(q[1]-p[1],q[0]-p[0]);ctx.fillStyle=col;
+    ctx.beginPath();ctx.moveTo(q[0],q[1]);
+    ctx.lineTo(q[0]-Math.cos(ang-0.4)*10,q[1]-Math.sin(ang-0.4)*10);
+    ctx.lineTo(q[0]-Math.cos(ang+0.4)*10,q[1]-Math.sin(ang+0.4)*10);
+    ctx.closePath();ctx.fill();
+    if(label){ctx.fillStyle=col;ctx.font='600 12px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText(label,q[0]+ (q[0]>CX?10:-10),q[1]-8);}
+  }
+  // 立方体顶点
+  const cube=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]].map(v=>v.map(c=>c*0.7));
+  const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    // 世界坐标(暗)
+    line([-1.5,0,0],[1.5,0,0],'rgba(36,49,73,.8)',1);
+    line([0,-1.5,0],[0,1.5,0],'rgba(36,49,73,.8)',1);
+    line([0,0,-1.5],[0,0,1.5],'rgba(36,49,73,.8)',1);
+    const ax=[Math.cos(axEl)*Math.cos(axAz),Math.sin(axEl),Math.cos(axEl)*Math.sin(axAz)];
+    const R=expSO3(ax[0],ax[1],ax[2],th);
+    // 旋转后的立方体
+    ctx.strokeStyle='rgba(240,191,76,.55)';
+    edges.forEach(e=>line(mv(R,cube[e[0]]),mv(R,cube[e[1]]),'rgba(240,191,76,.5)',1.4));
+    // 旋转轴(代数方向)
+    line([-ax[0]*1.6,-ax[1]*1.6,-ax[2]*1.6],[ax[0]*1.6,ax[1]*1.6,ax[2]*1.6],'rgba(70,215,204,.45)',1.5);
+    arrow([0,0,0],[ax[0]*1.5,ax[1]*1.5,ax[2]*1.5],C.cyan,'a');
+    // 旋转平面（垂直于轴的那张盘面，旋转真正发生的地方）
+    if(showPlane){
+      const ref=Math.abs(ax[1])<0.9?[0,1,0]:[1,0,0];
+      const u=norm3(cross(ax,ref)), v=norm3(cross(ax,u)), Rd=1.2;
+      ctx.fillStyle='rgba(240,191,76,.10)';ctx.strokeStyle='rgba(240,191,76,.5)';ctx.lineWidth=1.4;
+      ctx.beginPath();
+      for(let k=0;k<=48;k++){const t=k/48*TAU;
+        const p=[(u[0]*Math.cos(t)+v[0]*Math.sin(t))*Rd,(u[1]*Math.cos(t)+v[1]*Math.sin(t))*Rd,(u[2]*Math.cos(t)+v[2]*Math.sin(t))*Rd];
+        const s=proj(p);k?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1]);}
+      ctx.closePath();ctx.fill();ctx.stroke();
+      const w0=u.map(c=>c*Rd), w1=mv(R,w0);
+      line([0,0,0],w0,'rgba(246,212,134,.5)',2);
+      arrow([0,0,0],w1,C.goldS,'转 θ');
+    }
+    // 物体坐标系(旋转后)
+    arrow([0,0,0],mv(R,[1.25,0,0]),C.red,'x′');
+    arrow([0,0,0],mv(R,[0,1.25,0]),C.green,'y′');
+    arrow([0,0,0],mv(R,[0,0,1.25]),C.blue,'z′');
+    return R;
+  }
+  function update(){
+    th=+document.getElementById('s_so3_th').value/100;
+    axAz=+document.getElementById('s_so3_az').value/100;
+    axEl=+document.getElementById('s_so3_el').value/100;
+    const ax=[Math.cos(axEl)*Math.cos(axAz),Math.sin(axEl),Math.cos(axEl)*Math.sin(axAz)];
+    const R=draw();
+    const phi=ax.map(c=>c*th);
+    document.getElementById('so3_th').textContent=th.toFixed(2)+' rad';
+    document.getElementById('so3_az').textContent=axAz.toFixed(2);
+    document.getElementById('so3_el').textContent=axEl.toFixed(2);
+    const f=x=>x.toFixed(2);
+    const det=R[0][0]*(R[1][1]*R[2][2]-R[1][2]*R[2][1])-
+        R[0][1]*(R[1][0]*R[2][2]-R[1][2]*R[2][0])+
+        R[0][2]*(R[1][0]*R[2][1]-R[1][1]*R[2][0]);
+    // 反求：从 R 取回轴角（= log 映射 / λ=1 的特征向量）
+    const tr=R[0][0]+R[1][1]+R[2][2];
+    const thRec=Math.acos(Math.max(-1,Math.min(1,(tr-1)/2)));
+    let axr=[R[2][1]-R[1][2],R[0][2]-R[2][0],R[1][0]-R[0][1]];
+    const nn=Math.hypot(axr[0],axr[1],axr[2]);
+    let recAxis;
+    if(nn>1e-4){axr=axr.map(v=>v/nn);recAxis=`(${f(axr[0])}, ${f(axr[1])}, ${f(axr[2])}) <span style="color:#5be08a">✓ 与输入一致</span>`;}
+    else recAxis='恒等旋转（θ≈0），转轴不确定';
+    document.getElementById('so3_out').innerHTML=
+      `轴 a = (<span class="k">${f(ax[0])}</span>, <span class="k">${f(ax[1])}</span>, <span class="k">${f(ax[2])}</span>)<br>`+
+      `李代数 φ = θ·a = (<span class="g">${f(phi[0])}</span>, <span class="g">${f(phi[1])}</span>, <span class="g">${f(phi[2])}</span>)<br>`+
+      `R = exp(φ<sup>∧</sup>)，det R = ${det.toFixed(2)} (=1)<br>`+
+      `<span style="color:#5f6f8e">——— 反求 log R（从 R 拎出转轴）———</span><br>`+
+      `tr R = ${tr.toFixed(2)} ⟹ θ = arccos((tr−1)/2) = <span class="g">${thRec.toFixed(2)}</span> rad<br>`+
+      `轴 = (R₃₂−R₂₃, …)/2sinθ = ${recAxis}`;
+  }
+  ['s_so3_th','s_so3_az','s_so3_el'].forEach(id=>document.getElementById(id).addEventListener('input',update));
+  document.getElementById('so3_plane').addEventListener('click',()=>{showPlane=!showPlane;
+    document.getElementById('so3_plane').textContent=showPlane?'隐藏旋转平面':'显示旋转平面';draw();});
+  // 拖拽视角
+  let drag=false,lx=0,ly=0;
+  cv.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId);});
+  cv.addEventListener('pointermove',e=>{if(!drag)return;camAz+=(e.clientX-lx)*0.01;camEl+=(e.clientY-ly)*0.01;
+    camEl=Math.max(-1.4,Math.min(1.4,camEl));lx=e.clientX;ly=e.clientY;draw();});
+  cv.addEventListener('pointerup',()=>drag=false);
+  cv.addEventListener('pointerleave',()=>drag=false);
+  onResize(cv,size);
+  size();update();
+})();
+
+/* ============================================================
+   SO(3) 非交换 — AB ≠ BA（旋转顺序的几何后果）
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_ab');
+  if(!cv)return;
+  let ctx,w,h, camAz=0.6, camEl=-0.5, SC=1;
+  const A={ax:'x',ang:Math.PI/2}, B={ax:'y',ang:Math.PI/2};
+  let anim=null;
+  const AX={x:[1,0,0],y:[0,1,0],z:[0,0,1]};
+  function expSO3(x,y,z,a){const c=Math.cos(a),s=Math.sin(a),C1=1-c;return[
+    [c+x*x*C1,x*y*C1-z*s,x*z*C1+y*s],
+    [y*x*C1+z*s,c+y*y*C1,y*z*C1-x*s],
+    [z*x*C1-y*s,z*y*C1+x*s,c+z*z*C1]];}
+  function mul3(P,Q){const R=[[0,0,0],[0,0,0],[0,0,0]];
+    for(let i=0;i<3;i++)for(let j=0;j<3;j++){let s=0;for(let k=0;k<3;k++)s+=P[i][k]*Q[k][j];R[i][j]=s;}return R;}
+  function mv(M,v){return[M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2],
+    M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2],M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2]];}
+  function cam(p){let x=p[0]*Math.cos(camAz)+p[2]*Math.sin(camAz);
+    let z=-p[0]*Math.sin(camAz)+p[2]*Math.cos(camAz);let y=p[1];
+    return[x, y*Math.cos(camEl)-z*Math.sin(camEl), y*Math.sin(camEl)+z*Math.cos(camEl)];}
+  function proj(p,cx,cy){const q=cam(p);return[cx+q[0]*SC,cy-q[1]*SC];}
+  const cube=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]].map(v=>v.map(c=>c*0.6));
+  const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  function line(a,b,cx,cy,col,lw){const p=proj(a,cx,cy),q=proj(b,cx,cy);ctx.strokeStyle=col;ctx.lineWidth=lw||1.5;
+    ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();}
+  function arrow(o,d,cx,cy,col,label){const p=proj(o,cx,cy),q=proj(d,cx,cy);
+    ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+    const ang=Math.atan2(q[1]-p[1],q[0]-p[0]);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(q[0],q[1]);
+    ctx.lineTo(q[0]-Math.cos(ang-0.4)*9,q[1]-Math.sin(ang-0.4)*9);
+    ctx.lineTo(q[0]-Math.cos(ang+0.4)*9,q[1]-Math.sin(ang+0.4)*9);ctx.closePath();ctx.fill();
+    if(label){ctx.fillStyle=col;ctx.font='600 11px JetBrains Mono';ctx.textAlign='center';ctx.fillText(label,q[0],q[1]-7);}}
+  function drawFrame(R,cx,cy,title){
+    line([-1.25,0,0],[1.25,0,0],cx,cy,'rgba(36,49,73,.7)',1);
+    line([0,-1.25,0],[0,1.25,0],cx,cy,'rgba(36,49,73,.7)',1);
+    line([0,0,-1.25],[0,0,1.25],cx,cy,'rgba(36,49,73,.7)',1);
+    edges.forEach(e=>line(mv(R,cube[e[0]]),mv(R,cube[e[1]]),cx,cy,'rgba(240,191,76,.42)',1.3));
+    arrow([0,0,0],mv(R,[1.02,0,0]),cx,cy,C.red,'x');
+    arrow([0,0,0],mv(R,[0,1.02,0]),cx,cy,C.green,'y');
+    arrow([0,0,0],mv(R,[0,0,1.02]),cx,cy,C.blue,'z');
+    ctx.fillStyle=C.muted;ctx.font='600 12px Inter, sans-serif';ctx.textAlign='center';
+    ctx.fillText(title,cx,cy+SC*1.5+8);
+  }
+  function curRots(){
+    const a=AX[A.ax], b=AX[B.ax];
+    const RA=expSO3(a[0],a[1],a[2],A.ang), RB=expSO3(b[0],b[1],b[2],B.ang);
+    let Rl,Rr;
+    if(anim){const t=anim.t;
+      if(t<1){Rl=expSO3(a[0],a[1],a[2],A.ang*t); Rr=expSO3(b[0],b[1],b[2],B.ang*t);}
+      else{const u=Math.min(1,t-1);
+        Rl=mul3(expSO3(b[0],b[1],b[2],B.ang*u),RA);   // 先A后B
+        Rr=mul3(expSO3(a[0],a[1],a[2],A.ang*u),RB);}  // 先B后A
+    }else{Rl=mul3(RB,RA); Rr=mul3(RA,RB);}
+    return {Rl,Rr};
+  }
+  function angleBetween(P,Q){
+    const Pt=[[P[0][0],P[1][0],P[2][0]],[P[0][1],P[1][1],P[2][1]],[P[0][2],P[1][2],P[2][2]]];
+    const M=mul3(Pt,Q); const tr=M[0][0]+M[1][1]+M[2][2];
+    return Math.acos(Math.max(-1,Math.min(1,(tr-1)/2)));
+  }
+  function draw(){
+    if(!ctx)return;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(36,49,73,.55)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(w/2,18);ctx.lineTo(w/2,h-18);ctx.stroke();
+    const {Rl,Rr}=curRots();
+    drawFrame(Rl,w*0.27,h*0.46,'先 A 后 B  =  B·A');
+    drawFrame(Rr,w*0.73,h*0.46,'先 B 后 A  =  A·B');
+  }
+  function fmt(ax,ang){return '绕 '+ax+' · '+Math.round(ang*180/Math.PI)+'°';}
+  function out(){
+    const {Rl,Rr}=curRots();
+    const d=angleBetween(Rl,Rr)*180/Math.PI, same=(A.ax===B.ax);
+    document.getElementById('ab_out').innerHTML=
+      `先 A 后 B = <span class="g">B·A</span> &nbsp;|&nbsp; 先 B 后 A = <span class="g">A·B</span><br>`+
+      `两姿态夹角 Δ = <b style="color:${d<1?'#5be08a':'#ff6b6b'}">${d.toFixed(1)}°</b> `+
+      (d<1?'（重合 → 这一对可交换）':'（岔开 → 不可交换！）')+'<br>'+
+      (same?'两旋转同轴 ⟹ 必然 Δ = 0':'两旋转异轴 ⟹ 一般 Δ ≠ 0');
+  }
+  function labels(){document.getElementById('ab_aA').textContent=fmt(A.ax,A.ang);
+    document.getElementById('ab_aB').textContent=fmt(B.ax,B.ang);}
+  function seg(id,which){document.getElementById(id).addEventListener('click',e=>{
+    const btn=e.target.closest('button'); if(!btn)return;
+    e.currentTarget.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    btn.classList.add('on'); which.ax=btn.dataset.ax; anim=null; labels();draw();out();});}
+  seg('seg_A',A); seg('seg_B',B);
+  document.getElementById('s_ab_angA').addEventListener('input',e=>{A.ang=+e.target.value*Math.PI/180;anim=null;labels();draw();out();});
+  document.getElementById('s_ab_angB').addEventListener('input',e=>{B.ang=+e.target.value*Math.PI/180;anim=null;labels();draw();out();});
+  let raf;
+  document.getElementById('ab_play').addEventListener('click',()=>{
+    if(anim&&anim.running)return; anim={t:0,running:true}; let t0=0;
+    function step(ts){if(!t0)t0=ts; const el=(ts-t0)/1000;
+      let tt; if(el<1.1)tt=Math.min(1,el); else if(el<1.5)tt=1; else tt=1+Math.min(1,(el-1.5)/1.0);
+      anim.t=tt; draw();
+      if(tt>=2){anim.running=false;anim=null;draw();out();} else raf=requestAnimationFrame(step);
+    }
+    raf=requestAnimationFrame(step);
+  });
+  document.getElementById('ab_reset').addEventListener('click',()=>{anim=null;draw();out();});
+  let drag=false,lx=0,ly=0;
+  cv.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId);});
+  cv.addEventListener('pointermove',e=>{if(!drag)return;camAz+=(e.clientX-lx)*0.01;camEl+=(e.clientY-ly)*0.01;
+    camEl=Math.max(-1.4,Math.min(1.4,camEl));lx=e.clientX;ly=e.clientY;draw();});
+  cv.addEventListener('pointerup',()=>drag=false); cv.addEventListener('pointerleave',()=>drag=false);
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;SC=Math.min(w*0.42,h)*0.30;draw();}
+  onResize(cv,size);
+  labels(); size(); out();
+})();
+
+/* ============================================================
+   SE(2) — 旋量积分(螺旋运动)
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_se2');
+  let ctx,w,h;
+  let vx=0.9,vy=0,om=0.7;
+  let state={x:0,y:0,th:0}, trail=[], playing=false, raf, scale=46;
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;draw();}
+  function toScreen(x,y){return [w/2+x*scale, h/2 - y*scale];}
+  function reset(){state={x:0,y:0,th:0};trail=[[0,0]];draw();}
+  function robot(x,y,th,col,alpha){
+    const [sx,sy]=toScreen(x,y);
+    ctx.save();ctx.translate(sx,sy);ctx.rotate(-th);
+    ctx.globalAlpha=alpha||1;
+    ctx.fillStyle=col;ctx.strokeStyle=C.ink;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(-9,8);ctx.lineTo(-5,0);ctx.lineTo(-9,-8);ctx.closePath();
+    ctx.fill();ctx.stroke();ctx.restore();ctx.globalAlpha=1;
+  }
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    // 网格
+    ctx.strokeStyle='rgba(27,39,64,.7)';ctx.lineWidth=1;
+    for(let gx=-6;gx<=6;gx++){const [a]=toScreen(gx,0);ctx.beginPath();ctx.moveTo(a,0);ctx.lineTo(a,h);ctx.stroke();}
+    for(let gy=-4;gy<=4;gy++){const [,b]=toScreen(0,gy);ctx.beginPath();ctx.moveTo(0,b);ctx.lineTo(w,b);ctx.stroke();}
+    ctx.strokeStyle='rgba(36,49,73,1)';ctx.lineWidth=1.4;
+    const [ox,oy]=toScreen(0,0);
+    ctx.beginPath();ctx.moveTo(0,oy);ctx.lineTo(w,oy);ctx.moveTo(ox,0);ctx.lineTo(ox,h);ctx.stroke();
+    // ICR(瞬时旋转中心)
+    if(Math.abs(om)>1e-3){
+      // ICR 在机体左侧距离 |v|/ω 处
+      const speed=Math.hypot(vx,vy);
+      const rad=speed/om;
+      // 机体坐标下 ICR 在 (-vy/om, vx/om)
+      const icx=state.x + Math.cos(state.th)*(-vy/om) - Math.sin(state.th)*(vx/om);
+      const icy=state.y + Math.sin(state.th)*(-vy/om) + Math.cos(state.th)*(vx/om);
+      const [ix,iy]=toScreen(icx,icy);
+      ctx.fillStyle='rgba(70,215,204,.9)';ctx.beginPath();ctx.arc(ix,iy,4,0,TAU);ctx.fill();
+      ctx.strokeStyle='rgba(70,215,204,.3)';ctx.setLineDash([3,4]);ctx.lineWidth=1.2;
+      const [rx,ry]=toScreen(state.x,state.y);
+      ctx.beginPath();ctx.moveTo(ix,iy);ctx.lineTo(rx,ry);ctx.stroke();
+      ctx.beginPath();ctx.arc(ix,iy,Math.abs(rad)*scale,0,TAU);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(70,215,204,.8)';ctx.font='10px JetBrains Mono';ctx.textAlign='left';
+      ctx.fillText('ICR',ix+6,iy-6);
+    }
+    // 轨迹
+    if(trail.length>1){
+      ctx.strokeStyle=C.gold;ctx.lineWidth=2.5;ctx.beginPath();
+      trail.forEach((p,i)=>{const [a,b]=toScreen(p[0],p[1]);i?ctx.lineTo(a,b):ctx.moveTo(a,b);});
+      ctx.stroke();
+    }
+    robot(state.x,state.y,state.th,C.goldS,1);
+  }
+  function tick(){
+    const dt=0.03;
+    // 机体旋量 -> 世界速度
+    const wx=Math.cos(state.th)*vx - Math.sin(state.th)*vy;
+    const wy=Math.sin(state.th)*vx + Math.cos(state.th)*vy;
+    state.x+=wx*dt; state.y+=wy*dt; state.th+=om*dt;
+    trail.push([state.x,state.y]);
+    if(trail.length>900)trail.shift();
+    // 越界回卷
+    if(Math.abs(state.x)>6.2||Math.abs(state.y)>4.2){reset();}
+    draw();
+  }
+  function loop(){if(!playing)return;tick();raf=requestAnimationFrame(loop);}
+  function readVals(){
+    vx=+document.getElementById('s_se_vx').value/100;
+    vy=+document.getElementById('s_se_vy').value/100;
+    om=+document.getElementById('s_se_w').value/100;
+    document.getElementById('se_vx').textContent=vx.toFixed(2);
+    document.getElementById('se_vy').textContent=vy.toFixed(2);
+    document.getElementById('se_w').textContent=om.toFixed(2);
+  }
+  ['s_se_vx','s_se_vy','s_se_w'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{readVals();if(!playing)draw();}));
+  const playBtn=document.getElementById('se_play');
+  playBtn.addEventListener('click',()=>{
+    playing=!playing;playBtn.textContent=playing?'⏸ 暂停':'▶ 播放';
+    if(playing)loop();
+  });
+  document.getElementById('se_reset').addEventListener('click',()=>{playing=false;playBtn.textContent='▶ 播放';reset();});
+  onResize(cv,size);
+  readVals();size();reset();
+})();
+
+/* ============================================================
+   SLAM — 位姿图优化(SE(2) 回环闭合)
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_slam');
+  let ctx,w,h,scale=40;
+  // ---- se(2) 工具 ----
+  const SE2={
+    make:(x,y,th)=>({c:Math.cos(th),s:Math.sin(th),x,y,th}),
+    fromCS:(c,s,x,y)=>({c,s,x,y,th:Math.atan2(s,c)}),
+    compose(A,B){
+      return SE2.fromCS(
+        A.c*B.c-A.s*B.s, A.s*B.c+A.c*B.s,
+        A.x+A.c*B.x-A.s*B.y, A.y+A.s*B.x+A.c*B.y);
+    },
+    inverse(A){
+      return SE2.fromCS(A.c,-A.s, -(A.c*A.x+A.s*A.y), -(-A.s*A.x+A.c*A.y));
+    },
+    log(A){ // -> [rx,ry,th]
+      const th=A.th; let Aa,Bb;
+      if(Math.abs(th)<1e-6){Aa=1-th*th/6;Bb=th/2;}
+      else{Aa=Math.sin(th)/th;Bb=(1-Math.cos(th))/th;}
+      const det=Aa*Aa+Bb*Bb;
+      const rx=(Aa*A.x+Bb*A.y)/det, ry=(-Bb*A.x+Aa*A.y)/det;
+      return [rx,ry,th];
+    },
+    exp(v){ // [rx,ry,th] -> SE2
+      const th=v[2]; let Aa,Bb;
+      if(Math.abs(th)<1e-6){Aa=1-th*th/6;Bb=th/2;}
+      else{Aa=Math.sin(th)/th;Bb=(1-Math.cos(th))/th;}
+      const x=Aa*v[0]-Bb*v[1], y=Bb*v[0]+Aa*v[1];
+      return SE2.make(x,y,th);
+    }
+  };
+  // ---- 真值回路:圆角方形 ----
+  let GT=[], Z=[], est=[], driftScale=0.55, alpha=0.18;
+  function buildGT(){
+    GT=[];
+    const N=16, Rr=2.6;
+    for(let i=0;i<N;i++){
+      const a=i/N*TAU;
+      const x=Math.cos(a)*Rr, y=Math.sin(a)*Rr*0.72;
+      // 朝向沿切线
+      const th=a+Math.PI/2;
+      GT.push(SE2.make(x,y,th));
+    }
+  }
+  // 伪随机(可复现)
+  let seed=12345; function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff*2-1;}
+  function buildMeasAndInit(){
+    seed=98765;
+    const N=GT.length;
+    Z=[];
+    // 边: 连续 0->1..N-1->0(最后一条是回环)
+    for(let i=0;i<N;i++){
+      const j=(i+1)%N;
+      const rel=SE2.compose(SE2.inverse(GT[i]),GT[j]);
+      // 给里程计(非回环边)加漂移噪声;回环边噪声很小
+      const isLoop=(j===0);
+      const nx=isLoop?0:rnd()*0.05*driftScale*4;
+      const ny=isLoop?0:rnd()*0.05*driftScale*4;
+      const nth=isLoop?0:(0.04*driftScale*4 + rnd()*0.02);
+      const noisy=SE2.compose(rel,SE2.exp([nx,ny,nth]));
+      Z.push({i,j,rel:noisy,loop:isLoop});
+    }
+    // 初始估计:锚定 0,沿里程计积分(不含回环)
+    est=new Array(N);
+    est[0]=SE2.make(GT[0].x,GT[0].y,GT[0].th);
+    for(let i=0;i<N-1;i++){
+      est[i+1]=SE2.compose(est[i],Z[i].rel);
+    }
+  }
+  function geoStep(A,B,a){
+    const rel=SE2.compose(SE2.inverse(A),B);
+    const l=SE2.log(rel);
+    return SE2.compose(A,SE2.exp([l[0]*a,l[1]*a,l[2]*a]));
+  }
+  function sweep(){
+    // Gauss-Seidel:遍历每条边,把两端朝约束拉近;锚定 0
+    for(const e of Z){
+      const Ti=est[e.i], Tj=est[e.j];
+      const targetJ=SE2.compose(Ti,e.rel);
+      est[e.j]=geoStep(Tj,targetJ,e.j===0?0:alpha);
+      const targetI=SE2.compose(Tj,SE2.inverse(e.rel));
+      est[e.i]=geoStep(Ti,targetI,e.i===0?0:alpha);
+    }
+  }
+  function totalErr(){
+    let s=0;
+    for(const e of Z){
+      const pred=SE2.compose(SE2.inverse(est[e.i]),est[e.j]);
+      const err=SE2.compose(SE2.inverse(e.rel),pred);
+      const l=SE2.log(err); s+=l[0]*l[0]+l[1]*l[1]+l[2]*l[2];
+    }
+    return s;
+  }
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;scale=Math.min(w,h)*0.135;draw();}
+  function ts(x,y){return [w/2+x*scale, h/2 - y*scale];}
+  function drawPoses(arr,col,lw,dashLoop){
+    ctx.strokeStyle=col;ctx.lineWidth=lw;
+    ctx.beginPath();
+    for(let i=0;i<arr.length;i++){const [a,b]=ts(arr[i].x,arr[i].y);i?ctx.lineTo(a,b):ctx.moveTo(a,b);}
+    ctx.stroke();
+    // 回环边
+    if(dashLoop){
+      ctx.setLineDash([5,5]);ctx.strokeStyle=C.cyan;ctx.lineWidth=2;
+      const [a,b]=ts(arr[arr.length-1].x,arr[arr.length-1].y);
+      const [c,d]=ts(arr[0].x,arr[0].y);
+      ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.stroke();ctx.setLineDash([]);
+    }
+    // 节点(小三角)
+    for(let i=0;i<arr.length;i++){
+      const [a,b]=ts(arr[i].x,arr[i].y);
+      ctx.save();ctx.translate(a,b);ctx.rotate(-arr[i].th);
+      ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,4);ctx.lineTo(-5,-4);ctx.closePath();ctx.fill();
+      ctx.restore();
+    }
+  }
+  let initEst=[];
+  function draw(){
+    if(!ctx||!est.length)return;
+    ctx.clearRect(0,0,w,h);
+    // 网格
+    ctx.strokeStyle='rgba(27,39,64,.5)';ctx.lineWidth=1;
+    for(let gx=-5;gx<=5;gx++){const [a]=ts(gx,0);ctx.beginPath();ctx.moveTo(a,0);ctx.lineTo(a,h);ctx.stroke();}
+    for(let gy=-4;gy<=4;gy++){const [,b]=ts(0,gy);ctx.beginPath();ctx.moveTo(0,b);ctx.lineTo(w,b);ctx.stroke();}
+    // 初始漂移轨迹(灰,作参照)
+    if(initEst.length)drawPoses(initEst,'rgba(95,111,142,.55)',1.6,true);
+    // 当前估计
+    drawPoses(est,C.gold,2.4,true);
+    // 锚点
+    const [ax,ay]=ts(est[0].x,est[0].y);
+    ctx.strokeStyle=C.violet;ctx.lineWidth=2;ctx.beginPath();ctx.arc(ax,ay,9,0,TAU);ctx.stroke();
+    ctx.fillStyle=C.violet;ctx.font='10px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('锚定',ax,ay-13);
+    // 缺口标注
+    const last=est[est.length-1], first=est[0];
+    const gap=Math.hypot(last.x-first.x,last.y-first.y);
+    if(gap>0.06){
+      const [lx,ly]=ts(last.x,last.y);
+      ctx.fillStyle=C.red;ctx.beginPath();ctx.arc(lx,ly,4,0,TAU);ctx.fill();
+    }
+  }
+  let running=false,raf;
+  function out(){
+    const e=totalErr();
+    const last=est[est.length-1], first=est[0];
+    const gap=Math.hypot(last.x-first.x,last.y-first.y);
+    document.getElementById('slam_out').innerHTML=
+      `回路节点数 = ${GT.length} ，边数 = ${Z.length}（含 1 条回环）<br>`+
+      `回环缺口 = <span class="g">${gap.toFixed(3)}</span> m &nbsp; 总残差 χ² = <span class="k">${e.toFixed(3)}</span><br>`+
+      `迭代：T ← T·exp(α·log(误差)) ，α = ${alpha.toFixed(2)}`;
+  }
+  function loop(){if(!running)return;for(let k=0;k<2;k++)sweep();draw();out();
+    if(totalErr()<1e-4){running=false;document.getElementById('slam_opt').textContent='▶ 优化(自动迭代)';}
+    raf=requestAnimationFrame(loop);}
+  function rebuild(){
+    buildGT();buildMeasAndInit();
+    initEst=est.map(p=>SE2.make(p.x,p.y,p.th));
+    draw();out();
+  }
+  document.getElementById('s_slam_drift').addEventListener('input',e=>{
+    driftScale=+e.target.value/100*0.9+0.1;
+    document.getElementById('slam_drift').textContent=driftScale<0.4?'小':driftScale<0.75?'中':'大';
+    running=false;document.getElementById('slam_opt').textContent='▶ 优化(自动迭代)';rebuild();
+  });
+  document.getElementById('s_slam_a').addEventListener('input',e=>{
+    alpha=+e.target.value/100;document.getElementById('slam_a').textContent=alpha.toFixed(2);out();
+  });
+  document.getElementById('slam_opt').addEventListener('click',e=>{
+    running=!running;e.target.textContent=running?'⏸ 暂停':'▶ 优化(自动迭代)';if(running)loop();
+  });
+  document.getElementById('slam_step').addEventListener('click',()=>{sweep();draw();out();});
+  document.getElementById('slam_reset').addEventListener('click',()=>{
+    running=false;document.getElementById('slam_opt').textContent='▶ 优化(自动迭代)';rebuild();
+  });
+  onResize(cv,size);
+  rebuild();size();
+})();
+
+// 兜底：组件初始化失败也不影响下面独立脚本里的内容显示
+</script>
+<script>
+"use strict";
+/* ============================================================
+   滚动揭示（独立 script：与上面的组件互不影响）
+============================================================ */
+(function(){
+  const els=document.querySelectorAll('.reveal');
+  function showAll(){els.forEach(el=>el.classList.add('in'));}
+  if(!('IntersectionObserver' in window)){showAll();return;}
+  try{
+    const io=new IntersectionObserver((es)=>{
+      es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+    },{threshold:0.1, rootMargin:'0px 0px -8% 0px'});
+    els.forEach((el,i)=>{
+      el.style.transitionDelay=(Math.min(i%4,3)*0.06)+'s';io.observe(el);
+    });
+    // 兜底：3.5s 后仍未触发的，强制显示，绝不把内容永久藏起来
+    setTimeout(showAll,3500);
+  }catch(err){showAll();}
+})();
+</script>
+</body>
+</html>

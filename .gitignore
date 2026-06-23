@@ -1,0 +1,19 @@
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 生成的中间产物（脚本可重新生成；如需纳入版本管理可删除对应行）
+tools/apple/*.npy
+tools/apple/*.csv
+
+# 私有内容：内部技术分享，绝不进入本（公开）仓库
+private/
