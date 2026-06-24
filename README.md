@@ -20,6 +20,7 @@ Technology/
 │  ├─ relu-vs-sigmoid.html             神经网络    ReLU vs Sigmoid
 │  ├─ 强化学习_GRPO_可视化讲解.html      强化学习    强化学习与 GRPO
 │  ├─ lie-groups-slam.html             机器人/SLAM 流形与李群李代数
+│  ├─ robotics-autonomous-driving-stack.html 机器人/SLAM ROS·Simulink·CarSim·CARLA 与路径规划全景
 │  └─ fourier-series.html              数学基础    傅里叶级数
 ├─ tools/              # 生成脚本与中间产物（不参与页面渲染）
 │  ├─ two-clouds/      点云 GIF 生成脚本 + 产物

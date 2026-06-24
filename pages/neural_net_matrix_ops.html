@@ -100,8 +100,10 @@
   /* CNN 配色规范: 输入(激活值)=绿, 卷积核权重=蓝；两通道用深浅两档 */
   .cell.inp { background:rgba(34,192,139,.14) }
   .cell.inp2{ background:rgba(34,192,139,.28) }
+  .cell.inp3{ background:rgba(34,192,139,.44) }
   .cell.ker { background:rgba(79,140,255,.16) }
   .cell.ker2{ background:rgba(79,140,255,.30) }
+  .cell.ker3{ background:rgba(79,140,255,.48) }
 
   /* highlight states (放在上面之后，激活时覆盖底色) */
   .cell.row-hi{background:rgba(79,140,255,.28);color:#cfe0ff;box-shadow:inset 0 0 0 1px rgba(79,140,255,.6)}
@@ -314,11 +316,25 @@
 
   <div class="note"><b>但有两点不能忽略，否则会说反：</b><br>
   ① <b>不是“多个不同的 MLP 拼接”，而是“同一个 MLP 被复用很多次”。</b> 9 个输出位置共用一套权重，不是 9 个独立的全连接层。<br>
-  ② <b>反过来不成立：MLP ≠ CNN。</b> 卷积是 MLP 的<b>特例 / 受限版</b>（加了局部 + 共享约束），而不是更一般。任何卷积都能写成一个稀疏、参数绑定的全连接；但任意全连接不能写成卷积。</div>
+  ② <b>反过来要分情况：</b> 卷积（指<b>小核滑动</b>那种）是 MLP 的<b>特例 / 受限版</b>（加了局部 + 共享约束）。任何卷积都能写成一个稀疏、参数绑定的全连接；反过来，任意全连接也能写成一个<b>核 = 整图</b>的卷积（见下方"反过来想"），只是写不成<b>小核滑动</b>的那种卷积。</div>
 
   <p class="lead">所以更精确的一句话是 ——
   <b style="color:var(--cnn)">“卷积 = 一个共享权重的小 MLP，在输入上滑动复用”</b>；
   而当 kernel 大到覆盖整张图、且每个位置不再共享权重时，CNN 就退化回了普通 MLP。这条线索其实贯穿全篇：CNN 沿空间复用、RNN 沿时间复用、Transformer 把复用换成”一次性两两点积”，但<b>最底层都是同一种矩阵乘法</b>。</p>
+
+  <h3>反过来想：MLP 就是“核 = 整张图”的卷积</h3>
+  <p>既然"卷积是受限的 MLP"，那反过来呢？<b>一个全连接层，严格等于把卷积核放大到和输入一样大、只剩一个窗口（M=1）的卷积</b> —— 不是"类似"，是<b>逐项相等</b>：<span class="pill">Linear(N→C)</span> 与 <span class="pill">Conv(核=整图)</span> 的权重一一对应。</p>
+  <p>原因：CNN 的两个约束（<b>局部</b> + <b>共享</b>）会随核变大而<b>同时失效</b> —— 核盖住整图，"局部"就等于"全局"；只剩一个窗口，就没有别的位置可"共享"。两个开关一起关掉，每个输出就连到了全部像素 = MLP。拖动核大小 k 同步看两张图：<b>①</b> 卷积 <span class="pill">输入 ✲ 核 = 输出</span>（核长大→输出从 5×5=25 个神经元塌成 1 个、感受野涨满整图）；<b>②</b> 它<b>等价的 MLP 权重矩阵 W</b>——直接回答"一个 k×k 卷积写成全连接到底长什么样"。核越大，W 越稠密；k=5 时 W 塌成<b>一行 25 个独立权重</b>，就是 MLP：</p>
+  <div id="spectrum-demo"></div>
+  <p class="muted" style="text-align:center;font-size:13px;margin-top:4px">（全 2D。①里绿=输入/输出神经元、蓝框=当前输出感受野、蓝=核；②里每行是一个输出神经元的全部 25 个权重，蓝=非零（各行共享同一套核）、暗=0。这张 W 就是第①节"等价全连接"的真身。）</p>
+
+  <div class="note"><b>所以"谁是谁的特例"别用 X⊂Y 硬套，而是一根连续的轴：</b><br>
+  <span class="pill">核 1×1</span> —— 最受限的 CNN（局部+共享最强）—— …… —— <span class="pill">核 = 整图</span> 完全自由 = MLP。<br>
+  · <b>小核滑动卷积</b>（M&gt;1、真共享）是 MLP 的<b>严格子集</b> —— 这种卷积 MLP 写不成；<br>
+  · <b>整图核卷积</b>（M=1）与 MLP <b>完全重合</b>。<br>
+  于是"卷积是受限 MLP"和"MLP 是整图核 CNN"<b>两句都对</b>，只是指着这根轴的两端，并不矛盾。</div>
+
+  <div class="note"><b>这不只是理论：</b> 把全连接层重写成"核 = 特征图大小"的卷积，正是 <b>全卷积网络 FCN</b>（Long 等, 2015）和 <b>OverFeat</b> 的核心技巧 —— 换成卷积后再喂进<b>更大的图</b>，它会自动滑动、输出一张<b>类别热力图</b>而不是单个向量，直接拿去做分割 / 检测。</div>
 </div></section>
 
 <!-- ============ Why not flatten ============ -->
@@ -367,7 +383,7 @@
   <p class="lead">一句话精确版：<b style="color:var(--cnn)">在每个(重叠)窗口上，用同一个共享的 Linear(C_in·kH·kW → C_out)，再把结果按空间位置摆回去。</b></p>
 
   <h3>卷积核怎么扫多通道输入？（C_in / C_out 的来历）</h3>
-  <p>先看真实的卷积过程，再回到矩阵。设输入有 <b>2 个通道</b>(C_in=2)，那么<b>一个 filter 内部就有 2 个 2×2 子核</b>——每个子核盯一个输入通道。窗口停在某处时：<b>每个通道各自 ⊙ 求和，再把所有通道的结果加到一起</b>，得到输出的一个数。点"滑动一格"，看这个跨通道相加：</p>
+  <p>先看真实的卷积过程，再回到矩阵。设输入有 <b>3 个通道</b>(C_in=3，就像 RGB)，那么<b>一个 filter 内部就有 3 个 2×2 子核</b>——每个子核盯一个输入通道。窗口停在某处时：<b>每个通道各自 ⊙ 求和，再把所有通道的结果加到一起</b>，得到输出的一个数。点"滑动一格"，看这个跨通道相加：</p>
   <div id="conv-process"></div>
   <p>关键就在那个 <b style="color:var(--cnn)">跨通道相加</b>：一个 filter 不管输入有多少通道，最后都<b>塌成一个数 → 一张输出图（一个输出通道）</b>。两个维度的来历就清楚了：</p>
   <ul style="margin:6px 0 14px;padding-left:22px;color:var(--ink-dim);font-size:14.5px;line-height:1.9">
@@ -375,10 +391,10 @@
     <li><b style="color:var(--mlp)">filter 的个数 = C_out</b> → 决定输出有<b>几个通道</b>。换一组权重不同的 filter，就多扫出一张输出图：</li>
   </ul>
   <div id="cout-maps"></div>
-  <p class="muted" style="text-align:center;font-size:13px;margin-top:6px">↑ 同一份 2 通道输入，3 个不同 filter → 3 张输出图，堆成 H_out × W_out × <b>C_out=3</b> 的输出张量</p>
+  <p class="muted" style="text-align:center;font-size:13px;margin-top:6px">↑ 同一份 3 通道输入，3 个不同 filter → 3 张输出图，堆成 H_out × W_out × <b>C_out=3</b> 的输出张量</p>
 
   <h3>回到矩阵：把"位置 (0,0)"摊平</h3>
-  <p>沿用上面<b>同一份输入和同样 3 个 filter</b>，我们就取卷积过程里 <b>位置 (0,0)</b> 的那个窗口（含 2 个通道）。分四步：① 取窗口 → ② 把 2 个通道的窗口拉平成向量 <b>x</b> → ③ 把 3 个 filter 各自拉平成 <b>W</b> 的 3 行 → ④ 算 <span class="pill">W·x = y</span>。最后你会看到 <b>y = [5, 3, 3] 正好等于上面 3 张输出图在 (0,0) 的值</b>——前后对得上：</p>
+  <p>沿用上面<b>同一份输入和同样 3 个 filter</b>，我们就取卷积过程里 <b>位置 (0,0)</b> 的那个窗口（含 3 个通道）。分四步：① 取窗口 → ② 把 3 个通道的窗口拉平成向量 <b>x</b> → ③ 把 3 个 filter 各自拉平成 <b>W</b> 的 3 行 → ④ 算 <span class="pill">W·x = y</span>。最后你会看到 <b>y = [7, 6, 7] 正好等于上面 3 张输出图在 (0,0) 的值</b>——前后对得上：</p>
   <div id="channel-demo"></div>
   <table class="cmp">
     <tr><th>维度</th><th>是什么</th><th>在"小 MLP"里对应</th></tr>
@@ -390,6 +406,44 @@
   <div class="note"><b>具体例子：</b> RGB 图进第一层卷积，<b>C_in=3</b>；用 <b>64</b> 个 3×3 核，则 <b>C_out=64</b>，权重形状 <span class="pill">(64,3,3,3)</span>，每个核 3×3×3=27 个权重。等价于在每个像素位置共享一个 <span class="pill">Linear(27 → 64)</span>：输入维 27、输出维 64。<b>特征维度从 3 升到 64。</b></div>
 
   <div class="note"><b>最干净的特例 —— 1×1 卷积：</b> 当 kH=kW=1，n = C_in，每个位置就是一个不折不扣的 <span class="pill">Linear(C_in → C_out)</span>，<b>逐像素</b>独立过同一个 MLP。这正是"每个子图(这里=单像素)过同一个 MLP"的最纯粹形态：<b>输入通道→MLP 输入维，卷积核个数→MLP 输出维</b>，一目了然。</div>
+
+  <h3>那"RGB 是 3×H×W、是不是更像 MLP 了"？——对，但只在通道维</h3>
+  <p>有了多通道（RGB=3 通道），确实更像 MLP 了，但"像"只发生在<b>通道这一维</b>。看完整求和式就清楚了：</p>
+  <div class="formula"><span class="muted">output[</span>c<sub>o</sub>,i,j<span class="muted">] = Σ</span><sub>c<sub>i</sub>,a,b</sub>　<span class="v-cnn">input[c<sub>i</sub>, i+a, j+b]</span> · <span class="v-mlp">W[c<sub>o</sub>, c<sub>i</sub>, a, b]</span></div>
+  <table class="cmp">
+    <tr><th>维度</th><th>怎么处理</th><th>像什么</th></tr>
+    <tr><td><b>通道 c<sub>i</sub></b></td><td>每个 filter 对<b>全部</b>输入通道求和（稠密、全连接）</td><td><b style="color:var(--mlp)">MLP</b></td></tr>
+    <tr><td><b>空间 (a,b)</b></td><td>只看 kH×kW <b>局部</b>，且每个位置<b>共享同一套 W</b></td><td><b style="color:var(--cnn)">卷积</b></td></tr>
+  </table>
+  <p class="lead">所以一句话：<b style="color:var(--cnn)">卷积 = 通道维上是 MLP（稠密混合），空间维上是卷积（局部 + 共享）。</b>RGB 只是<b>把"通道维的 MLP"激活了</b>（灰度图时它是平凡的），但<b>空间维仍是卷积</b>。</p>
+  <div class="note"><b>关键别混："摊平窗口" ≠ "摊平整图"。</b><br>
+  · <b>卷积</b>摊平的是<b>每个局部窗口</b>（含所有通道 C_in·kH·kW），所有位置<b>共享</b>同一个 MLP —— 保留了空间局部性。<br>
+  · <b>纯 MLP</b>摊平的是<b>整张 3×H×W 图</b>成一根巨向量，接一个<b>不共享</b>的大 W —— 丢掉空间结构。<br>
+  RGB 是 3×H×W 只让<b>通道维变稠密</b>，并没有让空间维也摊平。卷积始终是"摊平窗口、滑动复用"，不是"摊平整图"。<b>1×1 卷积</b>就是把空间那一半砍掉、只剩通道 MLP → 退化成逐像素纯 MLP。</div>
+
+  <h3>落到地面：RGB→灰度，就是一个写死权重的 1×1 卷积</h3>
+  <p>前面说"1×1 卷积 = 逐像素的通道 MLP"。最日常的例子就是 <b>RGB 转灰度</b>：</p>
+  <div class="formula big">灰度 = <span class="v-mlp">0.299</span>·R + <span class="v-mlp">0.587</span>·G + <span class="v-mlp">0.114</span>·B</div>
+  <p>这<b>就是</b>一个 <span class="pill">C_in=3 → C_out=1</span> 的 1×1 卷积，核权重 = <span class="pill">(0.299, 0.587, 0.114)</span>。灰度转换不是"像"卷积，它<b>本身就是卷积的一个特例</b>——只不过权重<b>写死</b>、且<b>和为 1</b>（保亮度的加权平均）。点"看下一个像素"，看每个像素怎么被三通道加权合成：</p>
+  <div id="gray-demo"></div>
+  <p class="muted" style="text-align:center;font-size:13px;margin-top:4px">（这里特意用 R/G/B 三色显示三个输入通道，比统一绿色更直观；×系数=核权重）</p>
+
+  <p>所以"CNN 处理 RGB 是把通道相加"这句话，精确版是 <b>加权相加</b>（每通道先乘自己的核权重再求和），和灰度公式是<b>同一个操作</b>，只差三点：</p>
+  <table class="cmp">
+    <tr><th></th><th>RGB→灰度</th><th>CNN 的通道处理</th></tr>
+    <tr><td>权重</td><td><b>固定</b>（感知系数，和=1）</td><td><b>可学习</b>，任意值</td></tr>
+    <tr><td>输出通道数</td><td><b>1</b>（一张灰度图）</td><td><b>C_out</b> 个（多组不同的加权组合）</td></tr>
+    <tr><td>空间范围</td><td>1×1（逐像素）</td><td>1×1 或 kH×kW（可带邻域）</td></tr>
+  </table>
+  <p class="lead"><b style="color:var(--cnn)">灰度转换 = 最简单的"通道 MLP"（3→1、权重写死）；一个卷积层 = 可学习的"通道 MLP"（C_in→C_out），在每个像素共享、外加一点空间邻域。</b></p>
+
+  <div class="note"><b>历史小注：这种"每个输入通道一套核、再求和"是从一开始就有的吗？——基本是。</b><br>
+  · <b>1980 Neocognitron（福岛邦彦）</b>：已让一个细胞平面综合<b>多个前层平面</b>——多通道相加的雏形（非反向传播学习）。<br>
+  · <b>1989 LeCun 手写邮编 CNN</b>（首个反向传播训练的卷积网）：隐层特征图已<b>对多个前层特征图各用一套核、求和</b>。只是<b>第一层</b>面对单通道灰度数字（C_in=1），跨通道求和到<b>第二层</b>才启动。<br>
+  · <b>1998 LeNet-5</b>：正式化——C3 层用一张<b>连接表</b>挑选 S2 的若干特征图、各自卷积再相加。<br>
+  · <b>第一层直接吃 3 通道 RGB</b> 成标配，是到 <b>2012 AlexNet</b>（11×11×3 的核对 RGB 求和）；机制与 LeNet 的层间通道求和完全一样，只是搬到输入层。<br>
+  · 把<b>纯通道混合</b>显式当 1×1 卷积用，则是 <b>2013 Network-in-Network</b> 与 <b>2014 Inception</b> 的事。<br>
+  <b>一句话：跨通道加权求和，从 1989 第一个反向传播 CNN 起就是内建机制；只是手写数字第一层是单通道、看不到它，深层才用得上。</b></div>
 </div></section>
 
 <footer>
@@ -817,39 +871,41 @@ function eqSpan(s){ const e=el('div','eq'); e.textContent=s; return e; }
   slider.addEventListener('input',update); update();
 })();
 
-/* ---------------- ⑧d 回到矩阵：把位置(0,0)摊平（与⑧b/⑧c同一套数字）---------------- */
+/* ---------------- ⑧d 回到矩阵：把位置(0,0)摊平（3 通道，与⑧b/⑧c同一套数字）---------------- */
 (function(){
   const host=document.getElementById('channel-demo');
   if(!host) return;
-  // 与 conv-process / cout-maps 完全一致的输入和 filter
-  const w0=[[1,0],[3,1]];          // 通道0 在 (0,0) 的窗口
-  const w1=[[0,1],[2,0]];          // 通道1 在 (0,0) 的窗口
-  const xCol=[[1],[0],[3],[1],[0],[1],[2],[0]];   // [通道0 4个 | 通道1 4个]
-  const W=[[1,0,0,1, 0,1,1,0],     // filter0 = 卷积过程那个 filter
-           [0,1,1,0, 1,0,0,1],     // filter1
-           [1,1,0,0, 0,0,1,1]];    // filter2
-  const yVal=[5,3,3];              // = 3 张输出图在 (0,0) 的值
+  const w0=[[1,0],[3,1]];   // 通道0 在 (0,0) 的窗口
+  const w1=[[0,1],[2,0]];   // 通道1
+  const w2=[[2,1],[0,2]];   // 通道2
+  const xCol=[[1],[0],[3],[1], [0],[1],[2],[0], [2],[1],[0],[2]];  // 3 通道各 4 个
+  const W=[[1,0,0,1, 0,1,1,0, 1,0,1,0],   // filter0 = 卷积过程那个 filter
+           [0,1,1,0, 1,0,0,1, 0,1,0,1],   // filter1
+           [1,1,0,0, 0,0,1,1, 1,0,0,1]];  // filter2
+  const yVal=[7,6,7];
 
-  // 第一行：位置(0,0)的两个通道窗口
   const winLabel=el('div','matlabel'); winLabel.style.textAlign='center';
-  winLabel.innerHTML='取卷积过程里 <b>位置 (0,0)</b> 的窗口';
+  winLabel.innerHTML='取卷积过程里 <b>位置 (0,0)</b> 的窗口（3 个通道）';
   const winRow=el('div','mathline'); winRow.style.margin='4px 0 2px';
   const mw0=makeMatrix(w0,'<b>通道0</b> 窗口');
   const mw1=makeMatrix(w1,'<b>通道1</b> 窗口');
-  winRow.append(mw0.root, mw1.root);
-  mw0.cells.flat().forEach(c=>c.classList.add('inp'));    // 通道0 窗口 = 浅绿
-  mw1.cells.flat().forEach(c=>c.classList.add('inp2'));   // 通道1 窗口 = 深绿
+  const mw2=makeMatrix(w2,'<b>通道2</b> 窗口');
+  winRow.append(mw0.root, mw1.root, mw2.root);
+  mw0.cells.flat().forEach(c=>c.classList.add('inp'));
+  mw1.cells.flat().forEach(c=>c.classList.add('inp2'));
+  mw2.cells.flat().forEach(c=>c.classList.add('inp3'));
 
-  const flat=el('div','stepinfo'); flat.innerHTML='↓ 拉平：[通道0 的 4 个 → 通道1 的 4 个] ↓';
+  const flat=el('div','stepinfo'); flat.innerHTML='↓ 拉平：[通道0 的 4 个 → 通道1 的 4 个 → 通道2 的 4 个] ↓';
 
-  // 第二行：W · x = y
-  const mW=makeMatrix(W,'<b>W</b> = 3 个 filter 各自拉平 · 3×8');
-  const mx=makeMatrix(xCol,'<b>x</b> = 窗口拉平 · 8×1');
+  const mW=makeMatrix(W,'<b>W</b> = 3 个 filter 各自拉平 · 3×12');
+  const mx=makeMatrix(xCol,'<b>x</b> = 窗口拉平 · 12×1');
   const my=makeMatrix([[''],[''],['']],'<b>y</b> = (0,0) 的输出 · 3×1');
   const mmRow=el('div','mathline');
   mmRow.append(mW.root, opSpan('·'), mx.root, eqSpan('='), my.root);
-  mW.cells.forEach(r=>r.forEach((c,j)=>{c.classList.add(j<4?'ker':'ker2'); c.style.fontSize='12px';}));  // 卷积核权重 = 蓝(两通道深浅)
-  mx.cells.forEach((r,i)=>r[0].classList.add(i<4?'inp':'inp2'));   // 输入向量 = 绿(两通道深浅)
+  const kcl=j=> j<4?'ker':(j<8?'ker2':'ker3');
+  const icl=i=> i<4?'inp':(i<8?'inp2':'inp3');
+  mW.cells.forEach(r=>r.forEach((c,j)=>{c.classList.add(kcl(j)); c.style.fontSize='11px'; c.style.width='30px'; c.style.height='28px';}));  // 核权重=蓝(三通道深浅)
+  mx.cells.forEach((r,i)=>r[0].classList.add(icl(i)));   // 输入向量=绿(三通道深浅)
 
   const ctrl=el('div','controls');
   const next=el('button','btn accent'); next.textContent='下一步 ▶';
@@ -857,24 +913,24 @@ function eqSpan(s){ const e=el('div','eq'); e.textContent=s; return e; }
   ctrl.append(next,reset);
   const info=el('div','stepinfo');
   const cap=el('div','stepinfo');
-  cap.innerHTML='<span class="muted">W 的 3 行 = 3 个 filter = <b>C_out</b>；8 列 = C_in·kH·kW = <b>输入维度</b>；深浅 = 2 个输入通道</span>';
+  cap.innerHTML='<span class="muted">W 的 3 行 = 3 个 filter = <b>C_out</b>；12 列 = C_in·kH·kW = 3×2×2 = <b>输入维度</b>；深浅 = 3 个输入通道</span>';
 
   host.append(winLabel, winRow, flat, mmRow, ctrl, info, cap);
 
   let step=0;
   function render(){
-    clearHi(mw0.cells); clearHi(mw1.cells); clearHi(mW.cells); clearHi(mx.cells);
+    [mw0,mw1,mw2,mW,mx].forEach(m=>clearHi(m.cells));
     my.cells.forEach(r=>r[0].classList.remove('out-hi'));
-    if(step===0){ info.innerHTML='这就是卷积过程里 <b>位置(0,0)</b> 的窗口（2 通道各一个 2×2）。点"下一步"。'; return; }
-    if(step>=1){ mw0.cells.flat().forEach(c=>c.classList.add('win')); mw1.cells.flat().forEach(c=>c.classList.add('win')); mx.cells.forEach(r=>r[0].classList.add('win')); }
-    if(step===1){ info.innerHTML='① 两通道窗口按顺序拉平 → <b>x</b>（长度 8 = C_in·kH·kW=2×2×2）。前 4 个来自通道0、后 4 个来自通道1。'; return; }
-    if(step>=2){ mW.cells.flat().forEach(c=>c.classList.add('row-hi')); }   // 核高亮 = 蓝
+    if(step===0){ info.innerHTML='这就是卷积过程里 <b>位置(0,0)</b> 的窗口（3 通道各一个 2×2）。点"下一步"。'; return; }
+    if(step>=1){ [mw0,mw1,mw2].forEach(m=>m.cells.flat().forEach(c=>c.classList.add('win'))); mx.cells.forEach(r=>r[0].classList.add('win')); }
+    if(step===1){ info.innerHTML='① 三通道窗口按顺序拉平 → <b>x</b>（长度 12 = C_in·kH·kW = 3×2×2）。每 4 个来自一个通道。'; return; }
+    if(step>=2){ mW.cells.flat().forEach(c=>c.classList.add('row-hi')); }
     if(step===2){ mx.cells.forEach(r=>r[0].classList.remove('win')); info.innerHTML='② 上面 3 个 filter 各自拉平 → <b>W 的 3 行</b>（第 0 行就是卷积过程用的那个 filter）。'; return; }
     if(step===3){
       mx.cells.forEach(r=>r[0].classList.add('win'));
       mW.cells.flat().forEach(c=>c.classList.remove('row-hi'));
       yVal.forEach((v,i)=>{ my.cells[i][0].textContent=v; my.cells[i][0].classList.remove('empty'); my.cells[i][0].classList.add('out-hi'); });
-      info.innerHTML='③ W·x = <b>y = [5, 3, 3]</b> —— 正是上面 3 张输出图在 <b>(0,0)</b> 的值！其中 y₀=5 就是卷积过程那个 filter 在(0,0)算出的数。闭环了。';
+      info.innerHTML='③ W·x = <b>y = [7, 6, 7]</b> —— 正是上面 3 张输出图在 <b>(0,0)</b> 的值！其中 y₀=7 就是卷积过程那个 filter 在(0,0)算出的数。闭环了。';
       return;
     }
   }
@@ -883,89 +939,193 @@ function eqSpan(s){ const e=el('div','eq'); e.textContent=s; return e; }
   render();
 })();
 
-/* ---------------- ⑧b multi-channel conv process ---------------- */
+/* ---------------- ⑧b multi-channel conv process (3 通道) ---------------- */
 (function(){
   const host=document.getElementById('conv-process');
   if(!host) return;
-  const Ch0=[[1,0,2],[3,1,0],[0,2,1]];
-  const Ch1=[[0,1,1],[2,0,1],[1,1,0]];
-  const K0=[[1,0],[0,1]];
-  const K1=[[0,1],[1,0]];
+  const CH=[ [[1,0,2],[3,1,0],[0,2,1]], [[0,1,1],[2,0,1],[1,1,0]], [[2,1,0],[0,2,1],[1,0,2]] ];
+  const KS=[ [[1,0],[0,1]], [[0,1],[1,0]], [[1,0],[1,0]] ];   // filter0 的 3 个子核
+  const inpc=['inp','inp2','inp3'], kerc=['ker','ker2','ker3'], sub=['₀','₁','₂'];
   function c2(C,K,oi,oj){let s=0;for(let a=0;a<2;a++)for(let b=0;b<2;b++)s+=C[oi+a][oj+b]*K[a][b];return s;}
 
-  const m0=makeMatrix(Ch0,'<b>输入·通道0</b> 3×3');
-  const mk0=makeMatrix(K0,'核·对通道0');
-  const sa=makeMatrix([['']],'= Σ₀');
-  const rowA=el('div','mathline'); rowA.style.margin='6px 0';
-  rowA.append(m0.root,opSpan('⊙'),mk0.root,eqSpan('='),sa.root);
+  const Rw=[];
+  CH.forEach((Ch,ci)=>{
+    const m=makeMatrix(Ch,'<b>输入·通道'+ci+'</b> 3×3');
+    const mk=makeMatrix(KS[ci],'核·对通道'+ci);
+    const s=makeMatrix([['']],'= Σ'+sub[ci]);
+    m.cells.flat().forEach(c=>c.classList.add(inpc[ci]));
+    mk.cells.flat().forEach(c=>c.classList.add(kerc[ci]));
+    const row=el('div','mathline'); row.style.margin='5px 0';
+    row.append(m.root,opSpan('⊙'),mk.root,eqSpan('='),s.root);
+    Rw.push({m,mk,s,row,Ch,K:KS[ci]});
+  });
+  function plusDiv(){ const p=el('div'); p.textContent='+'; p.style.cssText='text-align:center;font-size:20px;color:var(--ink-dim);margin:0'; return p; }
 
-  const plus=el('div'); plus.textContent='+'; plus.style.cssText='text-align:center;font-size:22px;color:var(--ink-dim);margin:2px 0';
-
-  const m1=makeMatrix(Ch1,'<b>输入·通道1</b> 3×3');
-  const mk1=makeMatrix(K1,'核·对通道1');
-  const sb=makeMatrix([['']],'= Σ₁');
-  const rowB=el('div','mathline'); rowB.style.margin='6px 0';
-  rowB.append(m1.root,opSpan('⊙'),mk1.root,eqSpan('='),sb.root);
-
-  const down=el('div','stepinfo'); down.innerHTML='↓ <b>跨通道相加</b>：Σ₀ + Σ₁ ↓';
+  const down=el('div','stepinfo'); down.innerHTML='↓ <b>跨通道相加</b>：Σ₀ + Σ₁ + Σ₂ ↓';
   const out=makeMatrix([['',''],['','']],'<b>输出·这个 filter</b> 2×2');
   const rowOut=el('div','mathline'); rowOut.append(out.root);
-
-  // 配色：输入通道 = 绿(深浅两档)，卷积核 = 蓝(深浅两档)
-  m0.cells.flat().forEach(c=>c.classList.add('inp'));
-  m1.cells.flat().forEach(c=>c.classList.add('inp2'));
-  mk0.cells.flat().forEach(c=>c.classList.add('ker'));
-  mk1.cells.flat().forEach(c=>c.classList.add('ker2'));
 
   const ctrl=el('div','controls');
   const next=el('button','btn accent'); next.textContent='滑动一格 ▶';
   const reset=el('button','btn'); reset.textContent='重置';
   ctrl.append(next,reset);
   const info=el('div','stepinfo');
-  host.append(rowA, plus, rowB, down, rowOut, ctrl, info);
+  host.append(Rw[0].row, plusDiv(), Rw[1].row, plusDiv(), Rw[2].row, down, rowOut, ctrl, info);
 
   function blankBox(b){b.cells[0][0].textContent='·';b.cells[0][0].classList.add('empty');b.cells[0][0].classList.remove('out-hi');}
   let step=0;
   function render(){
-    [m0,m1,mk0,mk1].forEach(m=>clearHi(m.cells));
-    blankBox(sa); blankBox(sb);
+    Rw.forEach(o=>{clearHi(o.m.cells);clearHi(o.mk.cells);blankBox(o.s);});
     out.cells.flat().forEach(c=>c.classList.remove('out-hi'));
-    if(step===0){info.innerHTML='一个 filter 内有 2 个子核（各盯一个输入通道）。点按钮，绿窗从左上角开始滑。';return;}
+    if(step===0){info.innerHTML='一个 filter 内有 <b>3 个子核</b>（各盯一个输入通道）。点按钮，绿窗从左上角开始滑。';return;}
     const idx=step-1, oi=Math.floor(idx/2), oj=idx%2;
-    for(let a=0;a<2;a++)for(let b=0;b<2;b++){m0.cells[oi+a][oj+b].classList.add('win');m1.cells[oi+a][oj+b].classList.add('win');}
-    mk0.cells.flat().forEach(c=>c.classList.add('row-hi'));
-    mk1.cells.flat().forEach(c=>c.classList.add('row-hi'));
-    const s0=c2(Ch0,K0,oi,oj), s1=c2(Ch1,K1,oi,oj), o=s0+s1;
-    sa.cells[0][0].textContent=s0; sa.cells[0][0].classList.remove('empty'); sa.cells[0][0].classList.add('out-hi');
-    sb.cells[0][0].textContent=s1; sb.cells[0][0].classList.remove('empty'); sb.cells[0][0].classList.add('out-hi');
-    out.cells[oi][oj].textContent=o; out.cells[oi][oj].classList.remove('empty'); out.cells[oi][oj].classList.add('out-hi');
-    info.innerHTML='位置('+oi+','+oj+')：通道0 ⊙ 核 = <span class="k">'+s0+'</span>，通道1 ⊙ 核 = <span class="k">'+s1+'</span>，<b>跨通道相加</b> = <span class="k">'+o+'</span>';
+    let tot=0; const parts=[];
+    Rw.forEach((o,ci)=>{
+      for(let a=0;a<2;a++)for(let b=0;b<2;b++){ o.m.cells[oi+a][oj+b].classList.add('win'); }
+      o.mk.cells.flat().forEach(c=>c.classList.add('row-hi'));
+      const s=c2(o.Ch,o.K,oi,oj); tot+=s;
+      o.s.cells[0][0].textContent=s; o.s.cells[0][0].classList.remove('empty'); o.s.cells[0][0].classList.add('out-hi');
+      parts.push('Σ'+sub[ci]+'=<span class="k">'+s+'</span>');
+    });
+    out.cells[oi][oj].textContent=tot; out.cells[oi][oj].classList.remove('empty'); out.cells[oi][oj].classList.add('out-hi');
+    info.innerHTML='位置('+oi+','+oj+')：'+parts.join(', ')+'，<b>跨通道相加</b> = <span class="k">'+tot+'</span>';
   }
   next.onclick=()=>{if(step<4){step++;render();if(step===4)next.disabled=true;}};
   reset.onclick=()=>{step=0;next.disabled=false;out.cells.flat().forEach(c=>{c.textContent='·';c.classList.add('empty');});render();};
   render();
 })();
 
-/* ---------------- ⑧c C_out filters → C_out output maps ---------------- */
+/* ---------------- ⑧c C_out filters → C_out output maps (3 通道) ---------------- */
 (function(){
   const host=document.getElementById('cout-maps');
   if(!host) return;
-  const Ch0=[[1,0,2],[3,1,0],[0,2,1]];
-  const Ch1=[[0,1,1],[2,0,1],[1,1,0]];
+  const CH=[ [[1,0,2],[3,1,0],[0,2,1]], [[0,1,1],[2,0,1],[1,1,0]], [[2,1,0],[0,2,1],[1,0,2]] ];
   function c2(C,K,oi,oj){let s=0;for(let a=0;a<2;a++)for(let b=0;b<2;b++)s+=C[oi+a][oj+b]*K[a][b];return s;}
-  function full(K0,K1){const o=[];for(let oi=0;oi<2;oi++){o.push([]);for(let oj=0;oj<2;oj++)o[oi].push(c2(Ch0,K0,oi,oj)+c2(Ch1,K1,oi,oj));}return o;}
+  function full(ks){const o=[];for(let oi=0;oi<2;oi++){o.push([]);for(let oj=0;oj<2;oj++){let v=0;for(let ci=0;ci<3;ci++)v+=c2(CH[ci],ks[ci],oi,oj);o[oi].push(v);}}return o;}
   const filters=[
-    {k0:[[1,0],[0,1]],k1:[[0,1],[1,0]]},
-    {k0:[[0,1],[1,0]],k1:[[1,0],[0,1]]},
-    {k0:[[1,1],[0,0]],k1:[[0,0],[1,1]]},
+    [[[1,0],[0,1]],[[0,1],[1,0]],[[1,0],[1,0]]],   // filter0 = 卷积过程那个 filter
+    [[[0,1],[1,0]],[[1,0],[0,1]],[[0,1],[0,1]]],
+    [[[1,1],[0,0]],[[0,0],[1,1]],[[1,0],[0,1]]],
   ];
   const line=el('div','mathline');
-  filters.forEach((f,i)=>{
-    const m=makeMatrix(full(f.k0,f.k1),'<b>filter'+i+'</b> → 输出通道'+i);
+  filters.forEach((ks,i)=>{
+    const m=makeMatrix(full(ks),'<b>filter'+i+'</b> → 输出通道'+i);
     m.cells.flat().forEach(c=>{ c.style.boxShadow='inset 0 0 0 1.5px rgba(34,192,139,.6)'; c.style.background='rgba(34,192,139,.14)'; });  // 输出 = 绿(激活值)
     line.appendChild(m.root);
   });
   host.appendChild(line);
+})();
+
+/* ---------------- ⑥b MLP↔CNN 光谱：核扩张（全2D）+ 等价MLP权重矩阵 ---------------- */
+(function(){
+  const host=document.getElementById('spectrum-demo');
+  if(!host) return;
+  const N=5;
+
+  const ctrl=el('div'); ctrl.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:12px';
+  const lab=el('div','matlabel'); lab.innerHTML='拖动核大小 k：';
+  const slider=document.createElement('input');
+  slider.type='range'; slider.min='1'; slider.max='5'; slider.step='1'; slider.value='2';
+  slider.style.cssText='flex:0 0 180px;accent-color:#4f8cff';
+  const kval=el('span','pill');
+  ctrl.append(lab, slider, kval);
+
+  const t1=el('div','matlabel'); t1.style.cssText='text-align:center;margin-top:4px';
+  t1.innerHTML='① 卷积视角：<b>输入 ✲ 核 = 输出</b>（核长大 → 输出塌小，感受野涨满）';
+  const stage1=el('div');
+  const cap1=el('div','stepinfo');
+
+  const t2=el('div','matlabel'); t2.style.cssText='text-align:center;margin-top:18px';
+  t2.innerHTML='② 它等价的 <b>MLP 权重矩阵 W</b>（行 = 输出神经元，列 = 25 个输入像素）';
+  const stage2=el('div'); stage2.style.cssText='display:flex;justify-content:center';
+  const cap2=el('div','stepinfo');
+
+  host.append(ctrl, t1, stage1, cap1, t2, stage2, cap2);
+
+  function fillBlank(m, cls){ m.cells.flat().forEach(c=>{c.textContent='';c.classList.remove('empty');c.classList.add(cls);}); }
+
+  function build(){
+    const k=+slider.value, M=N-k+1;
+    kval.textContent='k = '+k;
+
+    // ① 卷积视角：输入 ✲ 核 = 输出
+    stage1.innerHTML='';
+    const inp=makeMatrix(Array.from({length:N},()=>Array(N).fill('')), '<b>输入</b> 5×5');
+    fillBlank(inp,'inp');
+    inp.cells.forEach((row,i)=>row.forEach((c,j)=>{ if(i<k&&j<k){c.classList.add('win'); c.style.boxShadow='inset 0 0 0 2px var(--mlp)';} }));
+    const ker=makeMatrix(Array.from({length:k},()=>Array(k).fill('')), '<b>核</b> '+k+'×'+k);
+    fillBlank(ker,'ker');
+    const out=makeMatrix(Array.from({length:M},()=>Array(M).fill('')), '<b>输出</b> '+M+'×'+M);
+    fillBlank(out,'inp'); out.cells[0][0].classList.add('win');
+    const line=el('div','mathline'); line.append(inp.root, opSpan('✲'), ker.root, eqSpan('='), out.root);
+    stage1.appendChild(line);
+    cap1.innerHTML='<span class="muted">输出神经元数 = M×M = '+M+'×'+M+' = <b>'+(M*M)+'</b>　·　每个只看一个 '+k+'×'+k+' 窗口（高亮的是左上角那个）</span>';
+
+    // ② 等价 MLP 权重矩阵 W：R=M² 个输出神经元 × 25 个输入像素
+    stage2.innerHTML='';
+    const R=M*M, Cc=N*N, W=[];
+    for(let oi=0;oi<M;oi++)for(let oj=0;oj<M;oj++){
+      const row=new Array(Cc).fill('');
+      for(let a=0;a<k;a++)for(let b=0;b<k;b++){ row[(oi+a)*N+(oj+b)]='x'; }
+      W.push(row);
+    }
+    const mW=makeMatrix(W, '');
+    const br=mW.root.querySelector('.bracket'); if(br){ br.style.gap='2px'; }
+    mW.cells.forEach((row,r)=>row.forEach((c,cc)=>{
+      c.style.cssText='width:13px;height:13px;font-size:0;border-radius:2px';
+      if(W[r][cc]==='x'){ c.style.background = (r===0) ? 'rgba(79,140,255,.62)' : 'rgba(79,140,255,.28)'; }
+      else { c.style.background='var(--panel-2)'; c.style.opacity='.2'; }
+    }));
+    stage2.appendChild(mW.root);
+    const m2 = (k===N)
+      ? 'W = <b>1×25</b>：只剩 1 行、25 个权重<b>全部非零且各自独立</b> → 这就是一个 <b>5×5 卷积对应的 MLP 权重</b>：一个连到全部 25 像素的神经元。'
+      : 'W = <b>'+R+'×25</b>：每行只有 <b>'+(k*k)+'</b> 个非零（蓝=核权重，<b>所有行共享同一套</b>），其余为 0（=局部连接）。<b style="color:#9cc0ff">亮蓝那行</b> = 左图高亮输出(0,0)的权重。';
+    cap2.innerHTML='<span class="muted">'+m2+'</span>';
+  }
+  slider.addEventListener('input', build); build();
+})();
+
+/* ---------------- ⑧e RGB→灰度 = 固定权重的 1×1 卷积 ---------------- */
+(function(){
+  const host=document.getElementById('gray-demo');
+  if(!host) return;
+  const R=[[8,2,5],[1,7,3],[4,6,0]];
+  const G=[[3,9,1],[6,2,8],[0,5,7]];
+  const B=[[1,4,6],[2,0,3],[8,1,2]];
+  const wR=0.299, wG=0.587, wB=0.114;
+  const gray=R.map((row,i)=>row.map((_,j)=>Math.round(wR*R[i][j]+wG*G[i][j]+wB*B[i][j])));
+
+  const mR=makeMatrix(R,'<b>R</b> 红'), mG=makeMatrix(G,'<b>G</b> 绿'), mB=makeMatrix(B,'<b>B</b> 蓝');
+  const mGray=makeMatrix(gray,'<b>灰度</b>');
+  function tint(m,rgb){ m.cells.forEach((row,i)=>row.forEach((c,j)=>{ const v=m.data[i][j]; c.style.background='rgba('+rgb+','+(0.12+v/9*0.5).toFixed(2)+')'; })); }
+  tint(mR,'255,90,90'); tint(mG,'70,210,130'); tint(mB,'80,150,255');
+  mGray.cells.forEach((row,i)=>row.forEach((c,j)=>{ const v=gray[i][j]; c.style.background='rgba(232,236,246,'+(0.10+v/9*0.72).toFixed(2)+')'; c.style.color='#0f1117'; }));
+
+  function wpill(t){ const p=el('span','pill'); p.textContent=t; p.style.cssText='font-size:12.5px;color:#cfe0ff;border-color:rgba(79,140,255,.5)'; return p; }
+  const rowR=el('div','mathline'); rowR.style.margin='4px 0'; rowR.append(mR.root, wpill('× 0.299'));
+  const rowG=el('div','mathline'); rowG.style.margin='4px 0'; rowG.append(mG.root, wpill('× 0.587'));
+  const rowB=el('div','mathline'); rowB.style.margin='4px 0'; rowB.append(mB.root, wpill('× 0.114'));
+  const down=el('div','stepinfo'); down.innerHTML='↓ <b>加权相加</b>（这就是一次 1×1 卷积，3 → 1）↓';
+  const rowOut=el('div','mathline'); rowOut.append(mGray.root);
+
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='看下一个像素 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  host.append(rowR,rowG,rowB,down,rowOut,ctrl,info);
+
+  let p=-1;
+  function show(){
+    [mR,mG,mB,mGray].forEach(m=>m.cells.flat().forEach(c=>{c.style.boxShadow='';}));
+    if(p<0){ info.innerHTML='点"看下一个像素"，逐个看 R/G/B 怎么加权合成灰度。'; return; }
+    const i=Math.floor(p/3), j=p%3, raw=wR*R[i][j]+wG*G[i][j]+wB*B[i][j];
+    [mR,mG,mB,mGray].forEach(m=>{ m.cells[i][j].style.boxShadow='inset 0 0 0 2px var(--hi)'; });
+    info.innerHTML='像素('+i+','+j+')：0.299×'+R[i][j]+' + 0.587×'+G[i][j]+' + 0.114×'+B[i][j]+' = <span class="k">'+raw.toFixed(2)+'</span> ≈ <span class="k">'+gray[i][j]+'</span>';
+  }
+  next.onclick=()=>{ p=(p+1)%9; show(); };
+  reset.onclick=()=>{ p=-1; show(); };
+  show();
 })();
 </script>
 </body>
