@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>线性代数公共基础 · 矩阵 / 秩 / 特征 / 奇异值</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel-2:#1f232f; --ink:#e7eaf0; --ink-dim:#9aa3b2; --line:#2c3242;
+    --green:#22c08b; --blue:#4f8cff; --violet:#b07cff; --gold:#f2c14e; --red:#ff8a8a; --hi:#ffd34d;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  header.hero{padding:64px 22px 44px;text-align:center;border-bottom:1px solid var(--line);
+    background:radial-gradient(1100px 380px at 50% -10%,rgba(176,124,255,.16),transparent 60%),radial-gradient(900px 340px at 80% 0%,rgba(79,140,255,.13),transparent 55%)}
+  header.hero h1{font-size:clamp(26px,5vw,40px);margin:0 0 12px;font-weight:800;letter-spacing:.5px}
+  header.hero p{color:var(--ink-dim);max-width:680px;margin:0 auto;font-size:15.5px}
+  .src{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .src a{font-family:var(--mono);font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);text-decoration:none}
+  .src a:hover{color:var(--ink);border-color:var(--violet)}
+  nav.toc{position:sticky;top:0;z-index:50;background:rgba(15,17,23,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding:10px 22px}
+  nav.toc a{font-size:13.5px;color:var(--ink-dim);text-decoration:none;padding:7px 12px;border-radius:8px;white-space:nowrap;transition:.15s}
+  nav.toc a:hover{color:var(--ink);background:var(--panel)}
+  section{padding:52px 0 8px;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2.sec{font-size:25px;margin:0 0 6px;display:flex;align-items:center;gap:12px}
+  h2.sec .dot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+  .sub{color:var(--ink-dim);margin:0 0 24px;font-size:15px}
+  h3{font-size:18px;margin:28px 0 10px}
+  p{margin:0 0 14px}
+  .lead{font-size:15.5px}
+  .formula{font-family:var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:14px 0;font-size:15px;overflow-x:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .muted{color:var(--ink-dim)}
+  .note{background:var(--panel-2);border-left:3px solid var(--line);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;color:var(--ink-dim);font-size:14.5px}
+  .note b{color:var(--ink)}
+  .pill{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h4{margin:0 0 6px;font-size:16px}
+  .demo{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+  canvas{width:100%;max-width:520px;display:block;margin:0 auto;border-radius:10px;background:#0c0e14;border:1px solid var(--line);touch-action:none}
+  .ctl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin:12px 0 4px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{font-family:var(--sans);font-size:13px;color:var(--ink-dim);background:transparent;border:0;padding:7px 12px;cursor:pointer}
+  .seg button.on{background:var(--panel-2);color:var(--ink);font-weight:600}
+  input[type=range]{accent-color:var(--violet)}
+  .info{font-family:var(--mono);font-size:13px;color:var(--ink-dim);text-align:center;min-height:22px;margin-top:8px}
+  .info .k{color:var(--hi)}
+  table.cmp{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  table.cmp th{background:var(--panel-2);font-weight:700}
+  table.cmp td:first-child{color:var(--ink-dim);white-space:nowrap}
+  .bar-row{display:flex;align-items:center;gap:8px;margin:5px 0;justify-content:center}
+  .bar-name{width:150px;font-size:12px;color:var(--ink-dim);text-align:right}
+  .bar-track{flex:0 0 240px;height:16px;background:var(--panel-2);border-radius:8px;border:1px solid var(--line);overflow:hidden}
+  .bar-fill{height:100%;border-radius:8px;transition:width .2s}
+  .bar-num{width:54px;font-size:12px;color:var(--ink)}
+  footer{padding:38px 22px 70px;text-align:center;color:var(--ink-dim);font-size:13px}
+  footer a{color:var(--violet);text-decoration:none}
+  .v-g{color:var(--green)} .v-b{color:var(--blue)} .v-v{color:var(--violet)} .v-gd{color:var(--gold)} .v-r{color:var(--red)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>线性代数这台机器</h1>
+  <p>把《李群 · SLAM》和《神经网络里的矩阵运算》两页<b>共用的线性代数基础</b>抽出来,单独讲清楚:矩阵就是一次变换,秩是它"像空间的维数",再到乘法压秩 / 加法升秩 / 夹逼,以及<b>秩和特征向量到底什么关系</b>。</p>
+  <div class="src">
+    <a href="lie-groups-slam.html">← 李群 · SLAM</a>
+    <a href="neural_net_matrix_ops.html">神经网络 · 矩阵运算 →</a>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#machine">① 矩阵=变换机器</a>
+  <a href="#rank">② 秩=像维数</a>
+  <a href="#rules">③ 乘法压秩/加法升秩</a>
+  <a href="#eigen">④ 特征值/特征向量</a>
+  <a href="#rank-eigen">⑤ 秩↔特征向量</a>
+  <a href="#cheat">⑥ 体检表</a>
+</div></nav>
+
+<!-- ① -->
+<section id="machine"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--green)"></span>① 矩阵 = 一台线性变换机器</h2>
+  <p class="sub">一个矩阵,本质上是把整个空间映成新空间的一次<b>线性变换</b>:直线仍是直线、网格仍均匀、原点不动。</p>
+  <div class="grid2">
+    <div class="card"><h4 class="v-g">本质一:列就是答案</h4><p style="margin:0;font-size:13.5px;color:var(--ink-dim)"><b>第 i 列 = 第 i 根坐标轴变换后的落点</b>。知道了两列,就知道整个平面怎么动。</p></div>
+    <div class="card"><h4 class="v-b">本质二:列的重新组合</h4><p style="margin:0;font-size:13.5px;color:var(--ink-dim)"><b>M·v = v₁·(第1列) + v₂·(第2列)</b>。矩阵乘向量,就是用分量加权叠加它的列。</p></div>
+  </div>
+  <p>拖动 / 切换,看 2×2 矩阵怎么搬动整个网格。<b>红 = 第1列(ê₁ 的去向)、绿 = 第2列(ê₂ 的去向)</b>。注意"<b>投影</b>"那档——它把整个平面<b>压成一条线</b>,这正是下一节"降秩"的几何。</p>
+  <div class="demo">
+    <div class="ctl"><span style="font-size:13px;color:var(--ink-dim)">选一个变换:</span>
+      <span class="seg" id="seg-tf">
+        <button data-p="rot" class="on">旋转</button><button data-p="scale">缩放</button><button data-p="shear">剪切</button><button data-p="proj">投影(降维)</button>
+      </span>
+    </div>
+    <canvas id="cv-tf" height="380"></canvas>
+    <div class="info" id="tf-info"></div>
+  </div>
+</div></section>
+
+<!-- ② -->
+<section id="rank"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--blue)"></span>② 秩 = 像空间(列空间)的维数</h2>
+  <p class="sub">一句话:<b>秩 = 变换之后,空间还剩几维"活着"</b>。</p>
+  <p>把矩阵作用到整个平面,得到的所有落点构成<b>像空间(= 列张成的空间)</b>。它的维数就是<b>秩</b>:</p>
+  <ul style="color:var(--ink-dim);font-size:14.5px;line-height:1.9">
+    <li><b>满秩(2 维)</b>:像还是整个平面——上面的旋转 / 缩放 / 剪切,网格仍铺满平面,秩 = 2。</li>
+    <li><b>降秩(1 维)</b>:像被压成<b>一条线</b>——上面的"投影",整个平面塌到一条直线上,秩 = 1。有一整个方向被<b>碾成了零</b>(这条信息第⑤节会变成"λ=0 的特征向量")。</li>
+  </ul>
+  <div class="note"><b>等价的三种说法(行秩 = 列秩,总相等):</b> 秩 = 列空间维数 = 行空间维数 = 线性无关的列(或行)的个数 = 非零奇异值的个数。</div>
+</div></section>
+
+<!-- ③ -->
+<section id="rules"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--violet)"></span>③ 秩的运算法则:乘法压秩 / 加法升秩 / 夹逼</h2>
+  <p class="sub">两个关于秩的铁律,以及它们怎么"夹"出一个精确的秩。</p>
+
+  <h3>乘法压秩:rank(AB) ≤ min(rank A, rank B)</h3>
+  <p><b>乘法绝不会让秩变大</b>。几何:<code>im(AB) ⊆ im(A)</code>(像只会缩),所以 rank(AB) ≤ rank A;又因 AB 只作用在 im(B) 上,rank(AB) ≤ rank B。<b>像穿不过比它窄的瓶颈。</b></p>
+  <h3>加法升秩:rank(A+B) ≤ rank A + rank B</h3>
+  <p><b>加法能让秩变大</b>(最多到两者之和)。几何:<code>(A+B)v = Av + Bv ∈ im(A)+im(B)</code>,两个子空间的"和"的维数 ≤ 维数之和。</p>
+  <h3>夹逼:为什么 M = W₁W₂ᵀ 的秩恰好 = d_k</h3>
+  <p>当 <span class="pill">A 是 d×d_k、B 是 d×d_k</span>(神经网络那页里的 W_Q、W_K),<code>M = A Bᵀ</code> 是 d×d 却被 d_k 维"细腰"卡住:</p>
+  <div class="formula" style="justify-content:center">d_k <span class="muted">(下界·Sylvester 秩不等式)</span> ≤ rank(M) ≤ d_k <span class="muted">(上界·乘法压秩 min)</span> ⟹ <b>rank(M) = d_k</b></div>
+  <div class="demo">
+    <div class="ctl"><span style="font-size:13px;color:var(--ink-dim)">拖动 d_k（ambient d = 8）:</span>
+      <input type="range" id="rk-slider" min="1" max="8" step="1" value="2" style="flex:0 0 170px">
+      <span class="pill" id="rk-kv">d_k = 2</span>
+    </div>
+    <div id="rk-bars"></div>
+    <div class="info" id="rk-info"></div>
+  </div>
+  <div class="note"><b>串到神经网络那页:</b> 单头注意力 <code>M = W_QW_Kᵀ</code> 是<b>乘法</b>,秩被压死在 d_k;多头则是把 h 个 rank-d_k 的头<b>相加</b>,秩升回 h·d_k = d。<b>乘法压秩 → 低秩瓶颈;加法升秩 → 多头补回。</b></div>
+</div></section>
+
+<!-- ④ -->
+<section id="eigen"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--gold)"></span>④ 特征值 / 特征向量:不被偏转的方向</h2>
+  <p class="sub">特征向量是变换里<b>只被缩放、不被偏转</b>的特殊方向:<code>M v = λ v</code>。</p>
+  <p>拖动角度滑块,绿色是输入方向 <b>v</b>,金色是它的像 <b>Mv</b>。当 <b>Mv 和 v 共线</b>(金色与绿色重合)时,v 就是<b>特征向量</b>,此时 Mv = λv,λ 是缩放倍数。切换两个矩阵:</p>
+  <div class="demo">
+    <div class="ctl"><span style="font-size:13px;color:var(--ink-dim)">矩阵:</span>
+      <span class="seg" id="seg-eig">
+        <button data-p="sym" class="on">对称(满秩,2 个特征向量)</button><button data-p="proj">投影(秩1,有 λ=0)</button>
+      </span>
+    </div>
+    <canvas id="cv-eig" height="380"></canvas>
+    <div class="ctl"><span style="font-size:12.5px;color:var(--ink-dim)">方向角 θ</span><input type="range" id="eig-th" min="0" max="360" step="1" value="20" style="flex:0 0 220px"></div>
+    <div class="info" id="eig-info"></div>
+  </div>
+</div></section>
+
+<!-- ⑤ -->
+<section id="rank-eigen"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--red)"></span>⑤ 秩 ↔ 特征向量:谁存活,谁被碾平</h2>
+  <p class="sub">把第②节的"还剩几维活着"和第④节的特征向量接起来。</p>
+  <p>核心桥梁是<b>秩-零化度定理</b>加上一个观察:<b>零空间就是 λ=0 的特征空间</b>。</p>
+  <div class="formula" style="justify-content:center">rank(M) = n − dim(零空间)，　而 零空间 = { v : Mv = 0 } = <b>λ=0 的特征空间</b></div>
+  <p>所以:</p>
+  <ul style="color:var(--ink-dim);font-size:14.5px;line-height:1.9">
+    <li><b>每个 λ=0 的特征向量 = 一个被碾成零的方向</b>(信息没了)。它把秩拉低 1。</li>
+    <li><b>rank = n −（λ=0 特征空间的维数）= 存活下来的维数。</b> 上面"投影(秩1)"那档:y 轴方向 λ=0 被拍扁到原点,x 轴方向 λ=1 保留 → 1 个活方向 → 秩 = 1。</li>
+    <li><b>满秩 ⟺ 0 不是特征值 ⟺ M 可逆 ⟺ det(M) ≠ 0。</b>(det = 所有特征值之积。)</li>
+  </ul>
+  <div class="note"><b>三句精确话(别记错):</b><br>
+  · <b>永远成立</b>:rank = <b>非零奇异值</b>的个数(σ = √(MᵀM 的特征值))。<br>
+  · <b>只对可对角化(尤其对称 / 正规)矩阵</b>:rank = <b>非零特征值</b>的个数。<br>
+  · <b>一般矩阵不成立!</b> 反例:幂零 <span class="pill">[[0,1],[0,0]]</span> 秩 = 1,但<b>特征值全是 0</b>(它把平面剪成一条线,却没有"被缩放不偏转"的非零特征方向)。所以"秩 = 非零特征值个数"这句话<b>只在可对角化时安全</b>,通用版要用奇异值。</div>
+</div></section>
+
+<!-- ⑥ -->
+<section id="cheat"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--ink)"></span>⑥ 一张体检表:四个指标在说什么</h2>
+  <p class="sub">给一个矩阵"体检"的四个量,各回答"这次变换到底做了什么"。</p>
+  <table class="cmp">
+    <thead><tr><th>指标</th><th>直观含义</th><th>和秩的关系</th></tr></thead>
+    <tbody>
+      <tr><td>秩 rank</td><td>变换后<b>还剩几维活着</b>(像空间维数)</td><td>—(本表主角)</td></tr>
+      <tr><td>特征向量</td><td>只被缩放、<b>不被偏转</b>的方向:Mv=λv</td><td>λ=0 的特征向量 = 被碾平的方向;它们撑起<b>零空间</b></td></tr>
+      <tr><td>特征值 λ</td><td>对应方向的<b>缩放倍数</b></td><td>可对角化时:rank = <b>非零 λ</b> 的个数;有 λ=0 ⟺ 降秩</td></tr>
+      <tr><td>奇异值 σ</td><td>变换在主轴上的<b>拉伸量</b>(σ=√(MᵀM 的特征值))</td><td><b>永远</b>:rank = <b>非零 σ</b> 的个数</td></tr>
+      <tr><td>行列式 det</td><td>变换对<b>面积/体积的缩放</b>(带符号)</td><td>det = ∏λ;<b>det=0 ⟺ 不满秩 ⟺ 0 是特征值</b></td></tr>
+    </tbody>
+  </table>
+  <p class="lead"><b>一句话收口:</b> <span class="v-b">秩</span>数"几维活着",<span class="v-gd">特征向量</span>找"不被偏转的方向",被碾平的方向(<span class="v-r">λ=0</span>)正好是丢掉的那几维;通用地数活方向用<b>奇异值</b>,体积是否塌缩看<b>行列式</b>。这套语言,《李群》用它读懂旋转(λ=1 的轴),《神经网络》用它读懂注意力(rank = d_k 的低秩瓶颈)。</p>
+</div></section>
+
+<footer>
+  本页整合自 <a href="lie-groups-slam.html">李群·SLAM</a> 与 <a href="neural_net_matrix_ops.html">神经网络·矩阵运算</a> 两页共用的线代基础。<br>
+  纯静态 HTML,可离线打开。拖滑块 / 切按钮交互。
+</footer>
+
+<script>
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+
+/* 通用画布:世界坐标(原点居中,y 向上) */
+function fitCanvas(cv){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||480, h=cv.height;
+  cv.width=w*dpr; cv.height=h*dpr;
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function mkWorld(w,h,scale){ const cx=w/2, cy=h/2; return {
+  X:x=>cx+x*scale, Y:y=>cy-y*scale, cx, cy, scale }; }
+function grid(ctx,W,w,h,scale){
+  ctx.lineWidth=1;
+  for(let i=-6;i<=6;i++){
+    ctx.strokeStyle = i===0 ? 'rgba(154,163,178,.45)' : 'rgba(154,163,178,.12)';
+    ctx.beginPath(); ctx.moveTo(W.X(i),0); ctx.lineTo(W.X(i),h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,W.Y(i)); ctx.lineTo(w,W.Y(i)); ctx.stroke();
+  }
+}
+function arrow(ctx,W,x,y,color,lw){
+  const x0=W.X(0),y0=W.Y(0),x1=W.X(x),y1=W.Y(y);
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=lw||2.5;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  const a=Math.atan2(y1-y0,x1-x0), s=8;
+  ctx.beginPath(); ctx.moveTo(x1,y1);
+  ctx.lineTo(x1-s*Math.cos(a-0.4),y1-s*Math.sin(a-0.4));
+  ctx.lineTo(x1-s*Math.cos(a+0.4),y1-s*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+/* ① 矩阵变换 */
+(function(){
+  const cv=document.getElementById('cv-tf'); if(!cv) return;
+  const info=document.getElementById('tf-info');
+  const mats={
+    rot:  {M:[[Math.cos(0.6),-Math.sin(0.6)],[Math.sin(0.6),Math.cos(0.6)]], t:'旋转 ≈ 34°：长度角度都不变,秩 = 2(满秩)。两列正是旋转后的坐标轴。'},
+    scale:{M:[[1.6,0],[0,0.6]], t:'缩放:x 方向拉 1.6 倍、y 方向压 0.6 倍。秩 = 2,网格仍铺满平面。'},
+    shear:{M:[[1,0.8],[0,1]], t:'剪切:把竖线推斜。秩 = 2(满秩),但不再保持角度。'},
+    proj: {M:[[1,0.5],[0,0]], t:'投影(降维):第2列被压平,整个平面塌成一条线 → 秩 = 1。有一整个方向被碾成零。'}
+  };
+  let cur='rot';
+  function draw(){
+    const {ctx,w,h}=fitCanvas(cv); const W=mkWorld(w,h,42);
+    ctx.clearRect(0,0,w,h); grid(ctx,W,w,h,42);
+    const M=mats[cur].M;
+    // 变换后的网格(只画 -3..3 区域的线,体现像)
+    ctx.lineWidth=1.4; ctx.strokeStyle='rgba(79,140,255,.35)';
+    for(let i=-3;i<=3;i++){
+      // 水平线 y=i
+      ctx.beginPath();
+      for(let j=-3;j<=3;j++){ const x=M[0][0]*j+M[0][1]*i, y=M[1][0]*j+M[1][1]*i; (j===-3?ctx.moveTo:ctx.lineTo).call(ctx,W.X(x),W.Y(y)); }
+      ctx.stroke();
+      // 竖线 x=i
+      ctx.beginPath();
+      for(let j=-3;j<=3;j++){ const x=M[0][0]*i+M[0][1]*j, y=M[1][0]*i+M[1][1]*j; (j===-3?ctx.moveTo:ctx.lineTo).call(ctx,W.X(x),W.Y(y)); }
+      ctx.stroke();
+    }
+    // 列向量
+    arrow(ctx,W,M[0][0],M[1][0],'#ff8a8a',3);   // 第1列(ê1 去向)
+    arrow(ctx,W,M[0][1],M[1][1],'#22c08b',3);   // 第2列(ê2 去向)
+    info.innerHTML='<span style="color:#ff8a8a">第1列=ê₁去向</span> · <span style="color:#22c08b">第2列=ê₂去向</span><br>'+mats[cur].t;
+  }
+  document.getElementById('seg-tf').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    [...e.currentTarget.children].forEach(x=>x.classList.remove('on')); b.classList.add('on');
+    cur=b.dataset.p; draw();
+  });
+  draw(); window.addEventListener('resize',draw);
+})();
+
+/* ③ 秩法则:乘法压秩 / 加法升秩 / 夹逼 */
+(function(){
+  const host=document.getElementById('rk-bars'); if(!host) return;
+  const d=8, sl=document.getElementById('rk-slider'), kv=document.getElementById('rk-kv'), info=document.getElementById('rk-info');
+  function bar(name){ const r=el('div','bar-row'); const n=el('div','bar-name'); n.innerHTML=name;
+    const tr=el('div','bar-track'); const f=el('div','bar-fill'); tr.appendChild(f); const num=el('div','bar-num');
+    r.append(n,tr,num); host.appendChild(r); return {f,num}; }
+  const b1=bar('输入空间 ℝ^d'), b2=bar('细腰 ℝ^{d_k}'), b3=bar('<b>M 的像 = 秩</b>');
+  const sp=el('div'); sp.style.height='8px'; host.appendChild(sp);
+  const bm=bar('乘 A·B ≤ min(a,b)'), ba=bar('加 A+B ≤ a+b');
+  function set(b,v,c){ b.f.style.width=(v/d*100)+'%'; b.f.style.background=c; b.num.textContent=v+' 维'; }
+  function update(){
+    const dk=+sl.value; kv.textContent='d_k = '+dk;
+    const g='rgba(34,192,139,.55)', v='rgba(176,124,255,.75)';
+    set(b1,d,g); set(b2,dk,v); set(b3,dk,g); b3.num.innerHTML='<b>'+dk+'</b>';
+    set(bm,Math.min(dk,dk),v); set(ba,Math.min(2*dk,d),'rgba(242,193,78,.8)');
+    info.innerHTML='夹逼:上界 min = 下界 Sylvester = <span class="k">'+dk+'</span> → rank(M) = '+dk+'　|　两个秩 '+dk+' 的阵:乘 ≤ <span class="k">'+Math.min(dk,dk)+'</span>(压秩)、加 ≤ <span class="k">'+Math.min(2*dk,d)+'</span>(升秩)';
+  }
+  sl.addEventListener('input',update); update();
+})();
+
+/* ④⑤ 特征向量 + 秩关系 */
+(function(){
+  const cv=document.getElementById('cv-eig'); if(!cv) return;
+  const info=document.getElementById('eig-info'), th=document.getElementById('eig-th');
+  const mats={ sym:[[1.5,0.5],[0.5,1.5]], proj:[[1,0],[0,0]] };
+  let cur='sym';
+  function draw(){
+    const {ctx,w,h}=fitCanvas(cv); const W=mkWorld(w,h,70);
+    ctx.clearRect(0,0,w,h); grid(ctx,W,w,h,70);
+    const M=mats[cur], a=+th.value*Math.PI/180, r=2.0;
+    const vx=r*Math.cos(a), vy=r*Math.sin(a);
+    const mx=M[0][0]*vx+M[0][1]*vy, my=M[1][0]*vx+M[1][1]*vy;
+    // 标出特征方向(虚线):对称→(1,1)&(1,-1);投影→x轴(λ1)& y轴(λ0)
+    ctx.setLineDash([5,5]); ctx.lineWidth=1.4;
+    const dirs = cur==='sym' ? [[1,1,'#7fe0c0'],[1,-1,'#7fe0c0']] : [[1,0,'#7fe0c0'],[0,1,'#ff8a8a']];
+    dirs.forEach(dr=>{ const L=3.2,nx=dr[0],ny=dr[1],nn=Math.hypot(nx,ny);
+      ctx.strokeStyle=dr[2]; ctx.beginPath();
+      ctx.moveTo(W.X(-L*nx/nn),W.Y(-L*ny/nn)); ctx.lineTo(W.X(L*nx/nn),W.Y(L*ny/nn)); ctx.stroke(); });
+    ctx.setLineDash([]);
+    arrow(ctx,W,vx,vy,'#22c08b',3);       // v 绿
+    arrow(ctx,W,mx,my,'#f2c14e',3);       // Mv 金
+    // 是否共线(特征向量)?
+    const cross=vx*my-vy*mx, vlen=Math.hypot(vx,vy), mlen=Math.hypot(mx,my);
+    const parallel = Math.abs(cross) < 0.06*vlen*(mlen+0.01) || mlen<0.04;
+    let lam = (vx*mx+vy*my)/(vx*vx+vy*vy);
+    let msg='<span style="color:#22c08b">v</span> → <span style="color:#f2c14e">Mv</span>';
+    if(parallel){ msg += '　✅ <b>特征向量!</b> Mv = <span class="k">'+lam.toFixed(2)+'</span>·v'+(Math.abs(lam)<0.05?'　(λ=0 → 这个方向被碾成零,贡献了"降秩")':''); }
+    else { msg += '　(Mv 偏转了,不是特征向量——转动 θ 让金线压到虚线上)'; }
+    const rk = cur==='sym'? 2:1;
+    info.innerHTML = msg + '<br><span class="muted">虚线 = 特征方向　·　此矩阵 rank = '+rk+(cur==='proj'?'(x轴 λ=1 存活、y轴 λ=0 被压扁)':'(两个非零特征值,满秩)')+'</span>';
+  }
+  document.getElementById('seg-eig').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+    [...e.currentTarget.children].forEach(x=>x.classList.remove('on')); b.classList.add('on'); cur=b.dataset.p; draw(); });
+  th.addEventListener('input',draw); draw(); window.addEventListener('resize',draw);
+})();
+</script>
+</body>
+</html>

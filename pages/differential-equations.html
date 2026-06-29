@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微分方程的故事 · ODE 与 PDE</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel-2:#1f232f; --ink:#e7eaf0; --ink-dim:#9aa3b2; --line:#2c3242;
+    --blue:#4f8cff; --green:#22c08b; --amber:#f2a33c; --violet:#b07cff; --pink:#ff7eb6; --teal:#2dd4bf; --hi:#ffd34d;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+  header.hero{padding:60px 22px 40px;text-align:center;border-bottom:1px solid var(--line);
+    background:radial-gradient(1100px 380px at 50% -10%,rgba(79,140,255,.16),transparent 60%),radial-gradient(900px 340px at 80% 0%,rgba(242,163,60,.12),transparent 55%)}
+  header.hero h1{font-size:clamp(26px,5vw,40px);margin:0 0 12px;font-weight:800;letter-spacing:.5px}
+  header.hero p{color:var(--ink-dim);max-width:680px;margin:0 auto;font-size:15.5px}
+  .src{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .src a{font-family:var(--mono);font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);text-decoration:none}
+  .src a:hover{color:var(--ink);border-color:var(--blue)}
+
+  nav.toc{position:sticky;top:0;z-index:30;background:rgba(15,17,23,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:10px 0}
+  nav.toc .wrap{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  nav.toc a{font-size:13px;color:var(--ink-dim);text-decoration:none}
+  nav.toc a:hover{color:var(--ink)}
+
+  section{padding:40px 0 8px}
+  h2.sec{font-size:23px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  h3{font-size:18px;margin:26px 0 8px}
+  h4{font-size:15.5px;margin:18px 0 6px;font-weight:700}
+  p{margin:10px 0}
+  .sub{color:var(--ink-dim);font-size:14.5px;margin:2px 0 16px}
+  b{color:var(--ink)} .muted{color:var(--ink-dim)}
+  code{font-family:var(--mono);font-size:.92em;background:var(--panel-2);padding:1px 5px;border-radius:5px;color:#cdd6e6}
+  .pill{display:inline-block;font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:3px 9px;color:#cdd6e6}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:13px 16px;margin:16px 0;font-size:14px;color:var(--ink-dim)}
+  ul{margin:8px 0;padding-left:22px} li{margin:5px 0;color:var(--ink-dim);font-size:14.5px} li b{color:var(--ink)}
+
+  .demo{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:16px 0}
+  canvas{display:block;max-width:100%;height:auto;background:var(--panel-2);border:1px solid var(--line);border-radius:10px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .btn{font-size:13px;padding:6px 13px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--blue)} .btn.on{background:var(--blue);color:#0f1117;border-color:var(--blue);font-weight:700}
+  .cap{font-size:13px;color:var(--ink-dim);margin-top:10px;min-height:20px}
+  input[type=range]{accent-color:var(--blue)}
+
+  table.cmp{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  table.cmp th{background:var(--panel-2);font-weight:700}
+  table.cmp td:first-child{font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);white-space:nowrap}
+
+  footer{padding:34px 22px 70px;text-align:center;color:var(--ink-dim);font-size:13px;border-top:1px solid var(--line);margin-top:30px}
+  footer a{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>微分方程的故事</h1>
+  <p>它不是某人某天为某个问题突然"发明"的,而是 17 世纪研究<b>运动、天体、曲线</b>时,随<b>微积分</b>一起长出来的。核心动机只有一句:<b>已知自然在每一瞬间的变化规律,反推整个系统的过去与未来。</b></p>
+  <div class="src">
+    <a href="neural_net_matrix_ops.html#ode">→ 神经网络里的 Neural ODE</a>
+    <a href="linear-algebra-foundations.html">线性代数基础</a>
+    <a href="lie-groups-slam.html">李群 · SLAM</a>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#idea">核心思想</a>
+  <a href="#before">之前的困难</a>
+  <a href="#newton">牛顿·运动</a>
+  <a href="#leibniz">莱布尼茨·曲线</a>
+  <a href="#problems">最初的名题</a>
+  <a href="#odepde">ODE vs PDE</a>
+  <a href="#yangmills">杨–米尔斯</a>
+  <a href="#euler">欧拉·系统化</a>
+  <a href="#timeline">发展线</a>
+  <a href="#prediction">理论先行</a>
+  <a href="#twocultures">两种文化</a>
+  <a href="#conclusion">结语</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- ===== 核心思想 ===== -->
+<section id="idea">
+  <h2 class="sec"><span class="dot" style="background:var(--hi)"></span>核心思想:求一个"函数",不是一个"数"</h2>
+  <p>普通方程(<code>2x+3=7</code>)的未知量是一个<b>数</b>,解出一个点。<b>微分方程</b>的未知量是一个<b>函数</b>,它给的不是函数本身,而是"<b>函数和它的变化率(导数)之间的关系</b>",解出来是<b>一整条曲线</b>。</p>
+  <p>为什么需要它?——自然界往往只告诉我们"<b>每一刻怎么变</b>"(速度、加速度、增长率),不直接给结果。微分方程把"<b>变化的规律</b>"写成数学,"<b>解</b>"它就还原出实际的轨迹。最经典的例子:已知一条曲线<b>每点的斜率</b> <code>dy/dx = 2x</code>,求整条曲线。点画布选一个起点,看它顺着斜率长出来:</p>
+  <div class="demo"><canvas id="d-slope" width="460" height="300"></canvas>
+    <div class="controls"><button class="btn" id="slope-clear">清空</button><span class="muted" style="font-size:12.5px">点画布任意处 = 选一个过它的解</span></div>
+    <div class="cap" id="slope-cap"></div></div>
+  <div class="note"><b>"解"微分方程 = 积分 = 由各点局部斜率拼回整条曲线。</b><code>dy/dx=2x</code> 积分得到 <code>y = x² + C</code> —— 同一套斜率规律对应<b>一族</b>曲线(差一个常数 C),<b>初始条件(你点的那个点)挑中其中一条</b>。</div>
+
+  <h4>换个角度①:解是"一个点" vs 解是"一条曲线"</h4>
+  <p>最直接的区别——点"解一下":左边普通方程收敛成<b>一个数(一个点)</b>;右边微分方程长成<b>一个函数(一条曲线)</b>。</p>
+  <div class="demo"><canvas id="d-point-vs-curve" width="460" height="240"></canvas>
+    <div class="controls"><button class="btn" id="pvc-solve">解一下 ▶</button><button class="btn" id="pvc-reset">重置</button></div></div>
+
+  <h4>换个角度②:求解 = 由"变化率"重建"量本身"(速度 → 路程)</h4>
+  <p>微分方程给你<b>每一刻的变化率</b>(这里是速度 <code>dy/dt = v(t)</code>);<b>解它 = 积分 = 把变化率一点点累加</b>,重建出量本身(路程 / 位置)。点播放:<b style="color:var(--teal)">阴影面积</b>(∫v)就是车<b>走过的路程</b>。</p>
+  <div class="demo"><canvas id="d-speedo" width="460" height="260"></canvas>
+    <div class="controls"><button class="btn on" id="sp-play">⏸ 暂停</button><button class="btn" id="sp-reset">重置</button></div></div>
+  <div class="note"><b>这就是"求解的意义":</b>现实只给我们"<b>怎么变</b>"(速度、增长率、加速度),微分方程把它写下来;"解"它就是把"变化的规律"<b>积分</b>回"<b>实际的轨迹 / 数值</b>"——从速度重建路程、从加速度重建运动、从斜率重建曲线。</div>
+</section>
+
+<!-- ===== 之前的困难 ===== -->
+<section id="before">
+  <h2 class="sec"><span class="dot" style="background:var(--green)"></span>在它之前:静止的代数,挡不住"连续变化"</h2>
+  <p>古代数学擅长"<b>静止</b>"的问题——<code>2x+3=7</code> 求一个固定的数。但 16–17 世纪,科学家开始大量面对"<b>连续变化</b>":</p>
+  <ul>
+    <li>行星为什么沿某条轨道运动?</li>
+    <li>物体受力后,位置怎样随时间变化?炮弹飞出怎样的轨迹?</li>
+    <li>一条悬挂的绳索会形成什么曲线?</li>
+    <li>已知一条曲线每点的切线方向,如何反推出整条曲线?</li>
+  </ul>
+  <p>困难在于:<b>未知的不是一个数,而是一个不断变化的函数。</b>研究行星不能只问"它在哪",还要问"<b>位置如何随时间变化</b>"。而速度是位置的变化率 <code>v = dx/dt</code>,加速度又是速度的变化率 <code>a = d²x/dt²</code>。<b>一旦把物理规律和速度、加速度挂钩,就自然得到含导数的方程 —— 微分方程。</b></p>
+</section>
+
+<!-- ===== 牛顿 ===== -->
+<section id="newton">
+  <h2 class="sec"><span class="dot" style="background:var(--blue)"></span>牛顿:从运动与天体出发</h2>
+  <p>牛顿在 1660 年代发展了自己的微积分,称<b>"流数法"</b>:随时间变化的量叫"<b>流量</b>"(今天的函数),它的变化速度叫"<b>流数</b>"(今天的导数)。他的目标是<b>描述运动</b>。牛顿第二定律写成现代形式:</p>
+  <p style="text-align:center"><span class="pill" style="font-size:15px">m · d²x/dt² = F</span></p>
+  <p>物体位置 <code>x(t)</code> 的<b>二阶</b>变化率,由它受的力决定 —— 这就是一个典型的<b>常微分方程</b>。再结合万有引力 <code>F = GMm/r²</code>,就得到关于位置的微分方程;解它,就能<b>解释并预测天体轨道</b>。点"发射"看一颗行星在引力下绕转(拖滑杆改初速:圆 → 椭圆 → 逃逸):</p>
+  <div class="demo"><canvas id="d-orbit" width="460" height="320"></canvas>
+    <div class="controls"><button class="btn on" id="orbit-play">⏸ 暂停</button><button class="btn" id="orbit-reset">重置</button>
+      <label style="font-size:13px;color:var(--ink-dim)">初速 <b id="orbit-v" style="color:var(--blue)">1.00</b></label><input id="orbit-slider" type="range" min="0.5" max="1.42" step="0.01" value="1.0" style="flex:1;min-width:130px"></div>
+    <div class="cap" id="orbit-cap"></div></div>
+  <div class="note">对牛顿,微分方程的核心任务:<b>由作用力 + 初始状态(位置、速度),推算物体未来怎样运动。</b>这套"力 → 加速度 → 数值积分 → 轨迹"的思路,正是今天物理引擎、航天轨道、乃至 Neural ODE 的雏形。</div>
+
+  <h3>牛顿是怎么"求出"这条轨道的?—— 四步</h3>
+  <p>整个过程是个固定套路,后来所有物理都照着走:<b>受力 → 写出微分方程 → 降阶 → 求解 → 轨迹</b>。</p>
+
+  <h4>① 受力:万有引力,永远指向地心</h4>
+  <p>地球(质量 M)在原点,卫星位置矢量 <code><b style="color:var(--hi)">r</b>=(x,y)</code>(有方向)、距离 <code>r=|<b style="color:var(--hi)">r</b>|=√(x²+y²)</code>(一个数)。引力大小 <code>GMm/r²</code>,方向始终<b>朝向地心</b>:</p>
+  <p style="text-align:center"><span class="pill" style="font-size:15px"><b style="color:var(--hi)">F</b> = −GMm · <b style="color:var(--hi)">r</b>/r³</span></p>
+  <div class="note" style="border-left-color:var(--amber)"><b>这两个 r 别混了(你眼尖):</b><code><b style="color:var(--hi)">r</b></code>(<b style="color:var(--hi)">金色加粗</b>)是矢量 = 位置 (x,y),<b>有方向</b>;<code>r</code>(普通白色)是<b>标量</b> = 距离 √(x²+y²),<b>就是一个数</b>。于是 <code><b style="color:var(--hi)">r</b>/r³ = (<b style="color:var(--hi)">r</b>/r) × (1/r²)</code> = <b>"指向地心的单位方向" × "1/r² 的大小"</b> —— 一个式子同时给了引力的<b>方向</b>与<b>大小</b>。</div>
+
+  <h4>② F = ma:得到二阶微分方程(卫星质量 m 被约掉)</h4>
+  <p style="text-align:center"><span class="pill" style="font-size:15px">m·d²<b style="color:var(--hi)">r</b>/dt² = −GMm·<b style="color:var(--hi)">r</b>/r³　⟹　d²<b style="color:var(--hi)">r</b>/dt² = −GM·<b style="color:var(--hi)">r</b>/r³</span></p>
+  <p>m 消失 = <b>轻重一起落</b>。拆成两个分量(有心力 → 运动恒在一个平面内,二维足够;下面 <code>r</code> 都是<b>标量距离</b> √(x²+y²)):</p>
+  <p style="text-align:center"><span class="pill">d²x/dt² = −GM·x/r³ 　,　 d²y/dt² = −GM·y/r³</span></p>
+  <p>这是<b>二阶</b>方程:加速度由位置决定,只给"规律"。要解它,还需<b>初始条件</b>:t=0 的位置 r₀ 和速度 v₀。</p>
+
+  <h4>③ 降阶:位置 + 速度 = "状态",变成能一步步算的形式</h4>
+  <p>引入速度 <code><b style="color:var(--hi)">v</b>=d<b style="color:var(--hi)">r</b>/dt</code> 当新变量,二阶就拆成<b>一阶方程组</b>,状态 = <code>(x, y, vₓ, v_y)</code>:</p>
+  <p style="text-align:center"><span class="pill">dx/dt=vₓ , dy/dt=v_y 　|　 dvₓ/dt=−GM·x/r³ , dv_y/dt=−GM·y/r³</span></p>
+
+  <h4>④ 一步步算出来:看引力如何"掰弯"速度</h4>
+  <p>每个时间步 Δt 做四件事:<b>① 算 r　② 算加速度 a(指向地心)　③ v += a·Δt　④ x += v·Δt</b>。点"走一步",看 <b style="color:var(--green)">绿 = 速度方向</b> 被 <b style="color:var(--pink)">红 = 引力 a(永远指向地心)</b> 一点点拐弯,轨迹就弯成了轨道:</p>
+  <div class="demo"><canvas id="d-orbit-step" width="460" height="340"></canvas>
+    <div class="controls"><button class="btn" id="os-step">走一步 ▶</button><button class="btn" id="os-auto">自动 ▶▶</button><button class="btn" id="os-reset">重置</button></div>
+    <div class="cap" id="os-cap"></div></div>
+  <div class="note">这就是<b>数值积分</b>(演示用稳定的"半隐式欧拉":先更新速度、再用新速度更新位置)。<b>步子 Δt 越小,折线越接近真实光滑椭圆</b> —— 和"欧拉法 → Neural ODE"完全一个道理。</div>
+
+  <h4>⑤ 牛顿的解析胜利:轨道一定是"圆锥曲线"</h4>
+  <p>数值能"算出"轨道,但牛顿还<b>证明了它必是圆锥曲线</b>,从而推出开普勒定律。靠两个<b>守恒量</b>:<b>角动量</b> <code>L=x·v_y−y·vₓ</code>(→ 开普勒第二定律,等面积)和<b>能量</b> <code>E=½v²−GM/r</code>。用代换 <code>u=1/r</code>,方程化成线性的,解出:</p>
+  <p style="text-align:center"><span class="pill" style="font-size:15px">r(θ) = p / (1 + e·cosθ)</span></p>
+  <p>这正是<b>圆锥曲线</b>,地球在<b>焦点</b>上(开普勒第一定律)。<b>离心率 e</b> 由初速决定。拖滑杆改 e,看同一个焦点上"圆 → 椭圆 → 抛物线 → 双曲线"的连续变形:</p>
+  <div class="demo"><canvas id="d-conic" width="460" height="300"></canvas>
+    <div class="controls"><label style="font-size:13px;color:var(--ink-dim)">离心率 e = <b id="conic-e" style="color:var(--hi)">0.50</b></label><input id="conic-slider" type="range" min="0" max="1.8" step="0.02" value="0.5" style="flex:1;min-width:140px"></div>
+    <div class="cap" id="conic-cap"></div></div>
+  <table class="cmp">
+    <tr><th>离心率 e</th><th>轨道</th><th>初速 v₀</th></tr>
+    <tr><td>e = 0</td><td>圆</td><td>= √(GM/r)(圆速度)</td></tr>
+    <tr><td>0 &lt; e &lt; 1</td><td><b>椭圆</b>(卫星 / 行星,束缚)</td><td>&lt; 逃逸速度</td></tr>
+    <tr><td>e = 1</td><td>抛物线(恰好逃逸)</td><td>= √2 · 圆速度</td></tr>
+    <tr><td>e &gt; 1</td><td>双曲线(逃逸 / 掠过)</td><td>&gt; 逃逸速度</td></tr>
+  </table>
+  <div class="note">回到本节顶部那个<b>整轨道演示</b>:滑杆调的初速,就是在改 E、L → 改 e → 圆 / 椭圆 / 逃逸,临界<b>逃逸速度 = √2 × 圆速度 ≈ 1.41 倍</b>(所以它滑到 1.42 就飞走)。</div>
+</section>
+
+<!-- ===== 莱布尼茨 ===== -->
+<section id="leibniz">
+  <h2 class="sec"><span class="dot" style="background:var(--violet)"></span>莱布尼茨:从曲线与符号出发</h2>
+  <p>几乎同时,德国数学家莱布尼茨<b>独立</b>发展了微积分。今天我们熟悉的符号 <code>dx</code>、<code>dy</code>、<code>dy/dx</code>、<code>∫</code> 主要来自他。他关注的是:<b>求曲线切线、由切线反求曲线、求面积、描述两个变化量的关系</b>。</p>
+  <p>比如一条未知曲线满足 <code>dy/dx = 2x</code>——它没直接告诉你曲线,而是说"<b>每点斜率 = 2x</b>";积分得 <code>y = x² + C</code>(就是上面第一个演示)。<b>微分方程能由各点的局部斜率,恢复整条曲线。</b>莱布尼茨约 1676 年用拉丁文首次使用"<b>微分方程</b>"一词。</p>
+  <table class="cmp">
+    <tr><th>视角</th><th>牛顿</th><th>莱布尼茨</th></tr>
+    <tr><td>出发点</td><td>时间、运动、力学</td><td>曲线、几何、符号运算</td></tr>
+    <tr><td>关心</td><td>物体未来怎么动</td><td>由斜率反推曲线、变量间关系</td></tr>
+    <tr><td>留下</td><td>"流数法"、运动方程</td><td><code>dx,dy,dy/dx,∫</code> 符号、"微分方程"一词</td></tr>
+  </table>
+  <p class="muted">两人之路不同,却共同奠定了微积分与微分方程的基础。</p>
+</section>
+
+<!-- ===== 最初的名题 ===== -->
+<section id="problems">
+  <h2 class="sec"><span class="dot" style="background:var(--amber)"></span>最初的一批名题:把"局部规律"变成"整体形状/轨迹"</h2>
+
+  <h3>① 悬链线(1690,雅各布·伯努利提出)</h3>
+  <p>把一根<b>均匀绳索</b>两端固定,它自然下垂会形成什么曲线?人们一度猜是<b>抛物线</b>,其实不是。绳索每点都要<b>受力平衡</b>,由此建立关于斜率的微分方程,解得<b>悬链线</b> <code>y = a·cosh(x/a)</code>。下图对比:悬链线(实) vs 抛物线(虚),两端相同却不重合:</p>
+  <div class="demo"><canvas id="d-catenary" width="460" height="240"></canvas>
+    <div class="controls"><label style="font-size:13px;color:var(--ink-dim)">绳长 / 张力 a <input id="cat-slider" type="range" min="40" max="120" step="1" value="70" style="vertical-align:middle"></label></div>
+    <div class="cap" id="cat-cap"></div></div>
+
+  <h3>② 最速降线(1696,约翰·伯努利提出)</h3>
+  <p>一个小球只受重力,从高处滑到低处,<b>什么形状的轨道最快到达?</b>直觉以为直线最短所以最快——<b>错</b>。答案是一条<b>摆线(cycloid)</b>。点"发射",看摆线球(金)反超直线球(蓝):</p>
+  <div class="demo"><canvas id="d-brach" width="460" height="260"></canvas>
+    <div class="controls"><button class="btn" id="brach-go">发射 ▶</button><button class="btn" id="brach-reset">重置</button></div>
+    <div class="cap" id="brach-cap"></div></div>
+  <div class="note">为什么更快?<b>摆线一开始更陡 → 先把势能换成速度</b>,虽然路更长,却因为"早早跑得快"而总用时更短。这类"求最优曲线"的问题催生了<b>变分法</b>,也和微分方程紧密相连。</div>
+
+  <h3>③ 单摆</h3>
+  <p>设摆角 <code>θ(t)</code>,理想单摆满足 <span class="pill">d²θ/dt² + (g/L)·sinθ = 0</span>。它回答:<b>已知初始角度和速度,之后怎样摆?</b>当摆角很小,<code>sinθ ≈ θ</code>,近似成 <code>θ'' + (g/L)θ = 0</code>,解是 sin/cos,解释了周期运动。下图:<b style="color:var(--amber)">真实(sinθ)</b> vs <b style="color:var(--blue)">小角度近似(θ)</b>,大角度时明显分道扬镳:</p>
+  <div class="demo"><canvas id="d-pendulum" width="460" height="260"></canvas>
+    <div class="controls"><button class="btn on" id="pen-play">⏸ 暂停</button><button class="btn" id="pen-reset">重置</button>
+      <label style="font-size:13px;color:var(--ink-dim)">初始角度 <b id="pen-a" style="color:var(--amber)">140°</b></label><input id="pen-slider" type="range" min="10" max="170" step="5" value="140" style="flex:1;min-width:120px"></div>
+    <div class="cap" id="pen-cap"></div></div>
+</section>
+
+<!-- ===== ODE vs PDE ===== -->
+<section id="odepde">
+  <h2 class="sec"><span class="dot" style="background:var(--teal)"></span>常微分 vs 偏微分:"常"字是后来才加的</h2>
+  <p>这里要澄清一个常见误解:<b>"常微分方程"并不是后来另一个人重新发明的。</b>最早的微分方程,<b>大多就是今天的常微分方程</b>——只有一个自变量,如 <code>dy/dx = f(x,y)</code>。牛顿、莱布尼茨、伯努利兄弟早期研究的,基本都是这一类。当时<b>不必</b>加"常"字,因为另一类还没成熟。</p>
+  <p>后来人们研究"<b>未知函数同时依赖多个变量</b>"的问题。比如一根<b>琴弦</b>的位移 <code>u(x,t)</code>,既依赖位置 x、又依赖时间 t,满足<b>波动方程</b>:</p>
+  <p style="text-align:center"><span class="pill" style="font-size:15px">∂²u/∂t² = c² · ∂²u/∂x²</span></p>
+  <p>它含<b>偏导数</b>(对一个变量、按住其余),所以叫<b>偏微分方程</b>。18 世纪欧拉、达朗贝尔、拉格朗日研究弦振动、流体、连续介质,PDE 才逐步发展(达朗贝尔用波动方程研究振动弦是代表性工作)。<b>为了区分,才有了"常 / 偏"的叫法。</b>点"拨动",看整根弦(一整片场)随时间振动:</p>
+  <div class="demo"><canvas id="d-wave" width="460" height="220"></canvas>
+    <div class="controls"><button class="btn" id="wave-pluck">拨动 ▶</button><button class="btn" id="wave-reset">重置</button></div>
+    <div class="cap" id="wave-cap"></div></div>
+  <table class="cmp">
+    <tr><th></th><th>常微分 ODE</th><th>偏微分 PDE</th></tr>
+    <tr><td>自变量</td><td><b>1 个</b>(如时间 t)</td><td><b>2+ 个</b>(空间 x + 时间 t)</td></tr>
+    <tr><td>导数</td><td>普通导数 <code>dy/dt</code></td><td>偏导 <code>∂u/∂t、∂u/∂x</code></td></tr>
+    <tr><td>解</td><td>一条<b>曲线</b></td><td>一整片<b>场 / 曲面</b></td></tr>
+    <tr><td>例子</td><td>运动、单摆、电路、<b>Neural ODE</b></td><td>波动、热传导、流体、扩散模型</td></tr>
+  </table>
+  <p class="muted">所以"常微分方程是谁提出的"没有唯一答案:最早的微分方程本身就是 ODE,"常"只是 PDE 出现后为了区分而加的。</p>
+
+  <h3>延伸:物理里的"场",就是 PDE 的解</h3>
+  <p><b>场 = 空间每一点都有值的函数。</b>标量场(温度、电势)每点一个<b>数</b>;矢量场(电场、流速)每点一个<b>箭头</b>。因为场依赖<b>多个变量(x,y,z,t)</b>,描述它的物理定律必然含<b>偏导</b> → 就是 <b>PDE</b>。一句话:<b>粒子的故事用 ODE,场的故事用 PDE。</b></p>
+
+  <h4>矢量场:每一点都有一个箭头(点电荷的电场)</h4>
+  <p><b>拖动电荷</b>(红=正、蓝=负),看每点的电场箭头怎么变 —— 它就是 <code>E ∝ q·<b style="color:var(--hi)">r</b>/r³</code>(我们刚讲的"方向 × 平方反比")。<b>满屏的箭头,合起来就是一个矢量场。</b></p>
+  <div class="demo"><canvas id="d-field-vec" width="460" height="300" style="cursor:grab"></canvas>
+    <div class="controls"><button class="btn" id="fv-add">+ 正电荷</button><button class="btn" id="fv-addn">− 负电荷</button><button class="btn" id="fv-reset">重置</button><span class="muted" style="font-size:12.5px">拖动圆点试试</span></div></div>
+
+  <h4>标量场:每一点都有一个值,并按 PDE 演化(2D 热传导)</h4>
+  <p>每个格子是该点的温度(<b style="color:#4f8cff">蓝冷</b> → <b style="color:#22c08b">绿</b> → <b style="color:#ff6b6b">红热</b>)。点"播放",看整片温度场按 <code>∂u/∂t = α·∇²u</code> 扩散、抹平——每点都在向<b>邻居平均</b>靠拢。<b>在画布上按住涂抹可加热。</b></p>
+  <div class="demo"><canvas id="d-field-heat" width="460" height="300" style="cursor:crosshair"></canvas>
+    <div class="controls"><button class="btn" id="fh-play">▶ 播放</button><button class="btn" id="fh-reset">重置</button><span class="muted" style="font-size:12.5px">按住画布 = 加热</span></div></div>
+  <div class="note"><b>这一整片随时间变化的场,就是这条 PDE 的解。</b>物理里的"大场论"清一色是 PDE:</div>
+  <table class="cmp">
+    <tr><th>场</th><th>方程</th></tr>
+    <tr><td>电磁场 E、B</td><td><b>麦克斯韦方程组</b>(∇·E=ρ/ε₀,∇×E=−∂B/∂t …)</td></tr>
+    <tr><td>温度场</td><td>热传导 ∂u/∂t = α∇²u</td></tr>
+    <tr><td>波动 / 声 / 光</td><td>波动方程 ∂²u/∂t² = c²∇²u</td></tr>
+    <tr><td>量子波函数 ψ</td><td>薛定谔方程 iℏ∂ψ/∂t = −(ℏ²/2m)∇²ψ + Vψ</td></tr>
+    <tr><td>引力 / 时空</td><td><b>爱因斯坦场方程</b> Gμν = 8πG·Tμν</td></tr>
+  </table>
+  <div class="note" style="border-left-color:var(--teal)"><b>"场"和微分方程是同一件事的两面:</b>场是<b>未知的函数</b>,PDE 是它<b>处处遵守的法则</b>,"求出场" = "解这个 PDE"。<br>桥:把场<b>离散成网格</b>,PDE 就变成一大堆<b>耦合 ODE</b>(method of lines)≈ 一个图神经网络;ML 里 <b>PINN</b> 解场 PDE、<b>神经算子/FNO</b> 学"场→场"映射、<b>扩散模型</b>的密度场由 Fokker–Planck(PDE)演化。</div>
+</section>
+
+<!-- ===== 杨-米尔斯 ===== -->
+<section id="yangmills">
+  <h2 class="sec"><span class="dot" style="background:var(--pink)"></span>杨–米尔斯:物理里"最难的场"</h2>
+  <p>上一节说"场 = PDE 的解"。把这条线推到极致,就是 <b>杨–米尔斯场</b>:它把电磁场推广到支配<b>强力、弱力</b>的层面,是<b>标准模型</b>的骨架;而"严格解出它"至今是<b>百万美元的千禧年难题</b>。下面拆开讲,并尽量可视化。</p>
+
+  <h3>① 它是什么:电磁场的"会自我作用"升级版(非阿贝尔规范场)</h3>
+  <p>电磁场怎么来的?——<b>规范对称性</b>:带电粒子的量子相位可处处自由改变,为保持物理不变,必须引入一个"补偿场",即<b>电磁场(光子)</b>。这是最简单的规范场论(规范群 <code>U(1)</code>,可交换)。<b>杨振宁与 Mills(1954)</b>把它推广到<b>不可交换(非阿贝尔)</b>的群(如 <code>SU(2)、SU(3)</code>):此时"相位"是<b>矩阵</b>、彼此不对易,规范场变成<b>矩阵值</b>的场,并且<b>会和自己相互作用</b>。</p>
+
+  <h3>② 关键区别:光子互不理睬,胶子彼此纠缠(= 线性 vs 非线性)</h3>
+  <p>麦克斯韦方程是<b>线性</b>的 → 两束光直接<b>叠加、互穿而过</b>;杨–米尔斯方程是<b>非线性</b>的 → 两片场会<b>互相作用</b>。点按钮切换,看两个波包:<b style="color:var(--blue)">线性</b>互穿,<b style="color:var(--pink)">非线性</b>纠缠:</p>
+  <div class="demo"><canvas id="d-ym-wave" width="460" height="200"></canvas>
+    <div class="controls"><button class="btn on" id="ym-lin">线性(麦克斯韦)</button><button class="btn" id="ym-non">非线性(杨–米尔斯)</button></div>
+    <div class="cap" id="ym-cap"></div></div>
+  <p>数学根源是<b>自我作用顶点</b>:QED 只有"电子–光子"顶点,<b>光子之间不直接耦合</b>;QCD 还多了<b>三胶子、四胶子顶点</b>——正是场强里那个 <code>g·[A_μ,A_ν]</code> 对易子项:</p>
+  <div class="demo"><canvas id="d-ym-vertex" width="460" height="180"></canvas></div>
+
+  <h3>③ 它求解什么方程:杨–米尔斯方程(麦克斯韦的非线性推广)</h3>
+  <p>场强(对比电磁 <code>F=∂A−∂A</code>,多了对易子):</p>
+  <p style="text-align:center"><span class="pill" style="font-size:15px">F_μν = ∂_μ A_ν − ∂_ν A_μ + g·[A_μ, A_ν]</span></p>
+  <p>由作用量 <code>S = −¼∫F·F d⁴x</code> 取极值,得到<b>杨–米尔斯方程</b>(D 是含规范场本身的协变导数):</p>
+  <p style="text-align:center"><span class="pill" style="font-size:15px">D_μ F^μν = 0</span></p>
+  <table class="cmp">
+    <tr><th></th><th>电磁场(麦克斯韦)</th><th>杨–米尔斯场</th></tr>
+    <tr><td>规范群</td><td>U(1)(可交换)</td><td>SU(2)、SU(3)(<b>不可交换</b>)</td></tr>
+    <tr><td>场</td><td>一个矢量势 A_μ</td><td><b>矩阵值</b>的多分量场</td></tr>
+    <tr><td>方程</td><td><b>线性</b></td><td><b>非线性</b>(场乘场,自我作用)</td></tr>
+    <tr><td>玻色子</td><td>光子(不带荷、互不作用)</td><td>胶子 / W、Z(<b>带荷、彼此作用</b>)</td></tr>
+  </table>
+
+  <h3>④ 为什么"解出它"贡献这么大:从标准模型到夸克禁闭</h3>
+  <p><b>它是标准模型的骨架</b>:<b>强力</b> = <code>SU(3)</code> 量子色动力学(胶子粘住夸克)、<b>弱力</b> = <code>SU(2)</code>(W、Z 玻色子)——四种基本力里的<b>三种</b>都建在杨–米尔斯场上。</p>
+  <p>自我作用还带来一个惊人后果——<b>夸克禁闭</b>。拖滑杆拉开两个荷,对比上下两块:<b style="color:var(--hi)">电磁</b>场线<b>散开</b>、力 ∝ 1/d²(能拉开);<b style="color:var(--pink)">强力</b>场线被挤进一条<b>流管</b>、能量 ∝ d(线性增长,<b>永远拉不开</b>,拉太狠流管会"断"成新夸克对):</p>
+  <div class="demo"><canvas id="d-confine" width="460" height="320"></canvas>
+    <div class="controls"><label style="font-size:13px;color:var(--ink-dim)">拉开距离 d = <b id="cf-d" style="color:var(--pink)">小</b></label><input id="cf-slider" type="range" min="40" max="300" step="2" value="120" style="flex:1;min-width:150px"></div>
+    <div class="cap" id="cf-cap"></div></div>
+
+  <h3>⑤ 难度阶梯 + 千禧年难题</h3>
+  <p>把"场的难度"排成一道阶梯——杨–米尔斯卡在最高一级:</p>
+  <table class="cmp">
+    <tr><th>台阶</th><th>场 / 方程</th><th>状态</th></tr>
+    <tr><td>线性经典</td><td>电磁场 · 麦克斯韦(线性 PDE)</td><td>✅ 解得清清楚楚(波、光)</td></tr>
+    <tr><td>非线性经典</td><td>杨–米尔斯方程(非线性 PDE)</td><td>⚠️ 有特殊解"<b>瞬子</b>";Donaldson 用它革新四维拓扑(<b>1986 菲尔兹奖</b>)</td></tr>
+    <tr><td>非线性 + 量子</td><td>量子杨–米尔斯(4 维)</td><td>❌ <b>千禧年难题</b>:严格"存在性 + 质量间隙"无人能解</td></tr>
+  </table>
+  <div class="note" style="border-left-color:var(--pink)"><b>千禧年难题(Clay 研究所,百万美元)要两件极深的事:</b><br>① <b>存在性</b>:严格证明四维量子杨–米尔斯理论在数学上<b>真的存在</b>(物理学家天天用、算得极准,但至今没人能严格构造一个 4 维相互作用量子场论);<br>② <b>质量间隙</b>:证明最轻激发<b>质量 &gt; 0</b>。经典理论的胶子<b>无质量</b>(像光子),但强力却是<b>短程</b>的、最轻的胶球<b>有质量</b>——质量间隙要从数学上解释这件怪事,它与<b>夸克禁闭</b>紧密相连。</div>
+  <div class="note" style="border-left-color:var(--teal)"><b>回到主线:</b>它仍是"<b>场 = PDE 的解</b>",只是难度连升两级 —— <b>线性场(麦克斯韦)→ 非线性经典场(杨–米尔斯,有瞬子)→ 非线性量子场(质量间隙,无人能解)</b>。"解出这个场"= 给整个标准模型一个严格的数学地基、并解释强力为何短程,所以它分量如此之重。</div>
+</section>
+
+<!-- ===== 欧拉 ===== -->
+<section id="euler">
+  <h2 class="sec"><span class="dot" style="background:var(--pink)"></span>欧拉:把它整理成一门系统的学科</h2>
+  <p>牛顿、莱布尼茨奠基,但真正把常微分方程发展成<b>系统理论</b>的,首推<b>欧拉</b>。从前是"遇到一个具体问题,就想法解一个具体方程";欧拉则去研究<b>规律本身</b>:</p>
+  <ul>
+    <li>方程能分成哪些<b>类型</b>;哪些能<b>变量分离</b>;怎样用<b>积分因子</b>;</li>
+    <li>高阶、<b>线性</b>方程怎么解;怎样用<b>级数 / 近似</b>求解;</li>
+    <li>怎样把力学系统<b>普遍</b>写成微分方程。</li>
+  </ul>
+  <p>例如一阶线性方程 <code>dy/dx + P(x)·y = Q(x)</code>,可用积分因子 <code>μ = e^∫P dx</code> 化成易积分的形式。他还提出了最基础的<b>数值解法 —— 欧拉法</b>:已知当前状态,沿斜率走一小步推算下一刻</p>
+  <p style="text-align:center"><span class="pill" style="font-size:15px">y<sub>n+1</sub> = y<sub>n</sub> + h · f(t<sub>n</sub>, y<sub>n</sub>)</span></p>
+  <p>这条公式看着眼熟?——它正是<b>ResNet 一层 / Neural ODE 的离散步</b>。想"点着玩"欧拉法的斜率场步进、看 <code>N 步 → Neural ODE</code> 的逼近,见 → <a href="neural_net_matrix_ops.html#ode" style="color:var(--pink)">神经网络页的 ◈ 连续节</a>。</p>
+  <div class="note"><b>一句话分工:</b>牛顿、莱布尼茨<b>开启</b>了微分方程;伯努利家族<b>展示</b>了它解决具体难题的威力;欧拉把常微分方程<b>发展成一门系统学科</b>,并贯通到力学、流体、天体、声学。</div>
+</section>
+
+<!-- ===== 时间线 ===== -->
+<section id="timeline">
+  <h2 class="sec"><span class="dot" style="background:var(--hi)"></span>一条简化的发展线</h2>
+  <table class="cmp">
+    <tr><th>时期</th><th>代表人物</th><th>主要问题 / 贡献</th></tr>
+    <tr><td>1660–70s</td><td>牛顿</td><td>为运动、引力、天体轨道发展"流数法"与流数方程</td></tr>
+    <tr><td>1670–80s</td><td>莱布尼茨</td><td>建立 <code>dx,dy,dy/dx</code> 符号,使用"微分方程"概念</td></tr>
+    <tr><td>17 世纪末</td><td>雅各布、约翰·伯努利</td><td>解决悬链线、最速降线等几何与力学难题</td></tr>
+    <tr><td>18 世纪上半</td><td>欧拉</td><td>系统整理微分方程类型与解法,广泛用于力学</td></tr>
+    <tr><td>18 世纪中</td><td>达朗贝尔、欧拉等</td><td>研究振动弦、流体等多变量问题,推动偏微分方程形成</td></tr>
+    <tr><td>19 世纪后</td><td>柯西、拉格朗日、庞加莱…</td><td>解的存在性、唯一性、稳定性与系统长期行为</td></tr>
+  </table>
+
+  <h3>最准确的结论</h3>
+  <ul>
+    <li><b>微分方程是谁提出的?</b>——产生于<b>牛顿与莱布尼茨创立微积分</b>的过程中:牛顿较早研究"流数方程"(为运动/天体),莱布尼茨建立现代符号并较早用"微分方程"一词(为曲线/变量关系)。<b>不能只归功一人。</b></li>
+    <li><b>常微分方程是谁提出的?</b>——<b>也无唯一提出者</b>。最早那批微分方程本身就是 ODE,欧拉后来系统整理;"常"是 PDE 出现后为区分而加的。</li>
+    <li><b>最初为了解决什么?</b>——两大类:<span class="pill">物体怎样运动</span> 与 <span class="pill">满足某种局部性质的曲线是什么形状</span>;后来才扩展到电路、热学、流体、控制、生物、经济,直到<b>人工智能</b>。</li>
+  </ul>
+  <div class="note" style="border-left-color:var(--hi)"><b>最根本的历史动机:</b>人们已知自然在<b>每一个瞬间</b>遵循什么变化规律,希望由此<b>推算整个系统过去与未来的状态</b>。<br>三百年后,这个念头换了身衣服又回来了——<a href="neural_net_matrix_ops.html#ode" style="color:var(--hi)">Neural ODE</a> 用神经网络拟合 <code>dh/dt</code>、扩散模型解概率流、PINN 把 PDE 写进损失:<b>同一个古老的思想。</b></div>
+</section>
+
+<!-- ===== 理论先行 ===== -->
+<section id="prediction">
+  <h2 class="sec"><span class="dot" style="background:var(--hi)"></span>⭐ 理论先行:从方程里"解"出新世界</h2>
+  <p>物理常被说成"理论领先于实验":因为定律是<b>数学方程</b>,解它、或在对称性 / 一致性下自洽延伸,就会<b>逼出尚未观测的现象</b>——物理学家于是先预言它,再等实验来验证。下面把一批著名预言排成时间线:<b>○ = 理论提出,● = 实验证实,横条 = 苦苦等待的岁月 Δ</b>:</p>
+  <div class="demo"><canvas id="d-pred" width="860" height="350"></canvas></div>
+  <p>有的<b>立等可取</b>(海王星:算出坐标、当晚就在天上找到);有的<b>等了近一个世纪</b>(引力波 1916→2015 等了 99 年、希格斯 1964→2012 等了 48 年)。共同点:<b>先在纸上(方程里)存在,后在实验里现身。</b></p>
+  <div class="note"><b>两条必须的纠偏:</b>① 物理<b>不总是</b>理论先行——黑体辐射、光电效应、暗能量、高温超导都是<b>实验先撞见、理论再追赶</b>;② 理论先行<b>不保证正确</b>——质子衰变、超对称粒子至今没观测到。<b>实验始终是最终裁判。</b></div>
+</section>
+
+<!-- ===== 两种文化 ===== -->
+<section id="twocultures">
+  <h2 class="sec"><span class="dot" style="background:var(--violet)"></span>🪞 两种文化:理论领跑 vs 实验领跑</h2>
+  <p>把上一节的对比推到底:同样是"预言 → 验证"的科学,<b>物理</b>和<b>计算机 / 机器学习</b>常常<b>朝相反方向</b>跑。下图是它们的"镜像"——物理从<b>理论</b>流向<b>实验</b>,CS/ML 从<b>实验</b>流向<b>理论</b>:</p>
+  <div class="demo"><canvas id="d-twocultures" width="820" height="240"></canvas></div>
+  <table class="cmp">
+    <tr><th></th><th>物理(尤其基础物理)</th><th>计算机 / 机器学习</th></tr>
+    <tr><td>谁领跑</td><td><b>理论</b></td><td><b>实验 / 实践</b></td></tr>
+    <tr><td>发现流程</td><td>方程 → 解 → 预言 → <b>等</b>实验验证</td><td>试 → 跑 → benchmark 涨就用 → 理论<b>事后</b>解释</td></tr>
+    <tr><td>为什么</td><td>有可解的<b>基本定律</b>;实验贵、需理论瞄准;对称 / 一致性<b>逼出</b>新物</td><td><b>没有 governing 方程</b>;系统涌现复杂;实验便宜、即跑;只求<b>有用</b></td></tr>
+    <tr><td>代表</td><td>海王星、引力波、反物质、Higgs</td><td>AlexNet、ReLU/Adam/BatchNorm、scaling laws、涌现能力</td></tr>
+    <tr><td>气质</td><td>"用<b>笔尖</b>发现新世界"</td><td>"<b>炼丹</b>":先灵验、后(才勉强)解释</td></tr>
+  </table>
+  <div class="note" style="border-left-color:var(--violet)"><b>同一枚硬币的两面。</b>深层原因:物理是<b>发现一个你没造、却有定律的世界</b>(有方程可解 → 理论能抢跑);CS/ML 是<b>造出一个没有先验定律、行为涌现的世界</b>(无方程可解 → 只能造出来测)。但两者都是科学——<b>都要可证伪、都最终由实测裁判</b>。<br>而我们这一整条线 <a href="neural_net_matrix_ops.html#ode" style="color:var(--violet)">微分方程 → Neural ODE → 深度学习</a>,恰好横跨了这两种文化:<b>用"解方程"的精神,去研究一个只能"炼丹"出来的对象。</b></div>
+</section>
+
+<!-- ===== 结语 ===== -->
+<section id="conclusion">
+  <h2 class="sec"><span class="dot" style="background:var(--hi)"></span>🪜 结语:认识的阶梯——从"记一个特例"到"写一条律"</h2>
+  <p>把整页收成一个念头:<b>物理在找"律"(描述一类的<u>所有</u>情况),而不是"记账"(描述<u>某一个</u>特例)。</b>微分方程就是写"律"的语言——<code>dy/dx=2x</code> 其实就是一个"<b>斜率为 2x 的场</b>":它一口气描述了所有斜率符合这条规律的曲线,而具体的 <code>y=x²+1</code> 只是其中一个成员(C=1)。</p>
+  <p>沿着 <b>普通方程 → 常微分 → 偏微分 → 统一的场</b> 往上爬,被刻画的对象从"<b>一个数</b>"长成"<b>一条曲线</b>"再长成"<b>一整片场</b>",规律越来越复杂、也越来越难解:</p>
+  <div class="demo"><canvas id="d-ladder" width="880" height="380"></canvas></div>
+  <ul>
+    <li><b>微分方程 = 场</b>:一阶 ODE <code>dy/dx=f(x,y)</code> 就是平面上的<b>方向场</b>,解 = 顺着场流出的积分曲线。它把一族解"<b>求导消去常数</b>"后剩下的<b>共同骨架</b>写了下来(<code>y=x²+C</code> 求导即得 <code>dy/dx=2x</code>)。</li>
+    <li><b>统一 = 大贡献</b>:把多个因素并进一个场——<b>电磁 + 弱力 = 电弱</b>(已统一,并预言了 W/Z 玻色子);<b>强力 + 电弱 = 大统一</b>(仍是未竟之梦)。统一用<b>更少的律</b>解释<b>更多世界</b>,还能<b>预言未见</b>。</li>
+    <li><b>有了律 ≠ 能解</b>:湍流的场公式(<b>纳维–斯托克斯</b>)我们早就有了,难在<b>解不动</b>(混沌 + 多尺度,其解的存在性本身又是千禧难题)。这正是机器学习切进来"<b>学</b>"它的地方。</li>
+    <li><b>地基</b>:这一切的前提是——我们<b>相信现实总满足某种规律</b>,且这规律能用数学写下来(Wigner:"<b>数学不可思议的有效性</b>")。</li>
+  </ul>
+  <div class="note" style="border-left-color:var(--hi)"><b>一句话:</b>普通方程写<b>静态的值</b>,ODE 写<b>一条轴上的演化</b>,PDE 写<b>一整片场的演化</b>;"统一更多因素进一个场"之所以伟大,是因为它用更少的律解释更多世界、还能预言未见——<b>但写下律是一回事,解开它(湍流、杨–米尔斯)又是另一回事。</b><br>而我们这一路 <a href="neural_net_matrix_ops.html#ode" style="color:var(--hi)">微分方程 → Neural ODE → 深度学习</a>,正是用"<b>解方程</b>"的精神,去研究一个只能"<b>炼丹</b>"出来的对象。</div>
+</section>
+
+</div>
+
+<footer>
+  微分方程的故事 · 与 <a href="neural_net_matrix_ops.html#ode">神经网络 · Neural ODE</a> 配套阅读。<br>
+  历史细节为概览;早期文献(如牛顿《流数法》1671 前后)出版与命名时间另有考据。
+</footer>
+
+<script>
+const CSS=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COL={blue:'#4f8cff',green:'#22c08b',amber:'#f2a33c',violet:'#b07cff',pink:'#ff7eb6',teal:'#2dd4bf',hi:'#ffd34d',line:CSS('--line'),ink:CSS('--ink-dim')};
+
+/* ---------- ① 斜率场 → 解曲线 dy/dx=2x ---------- */
+(function(){
+  const cv=document.getElementById('d-slope'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=300,P=30, XMIN=-3,XMAX=3,YMIN=-1.5,YMAX=8.5;
+  const X=x=>P+(x-XMIN)/(XMAX-XMIN)*(W-2*P), Y=y=>H-P-(y-YMIN)/(YMAX-YMIN)*(H-2*P);
+  const iX=px=>XMIN+(px-P)/(W-2*P)*(XMAX-XMIN), iY=py=>YMIN+(H-P-py)/(H-2*P)*(YMAX-YMIN);
+  const pxX=(W-2*P)/(XMAX-XMIN), pxY=(H-2*P)/(YMAX-YMIN);
+  let curves=[];
+  const cols=[COL.blue,COL.green,COL.amber,COL.violet,COL.pink];
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=COL.line; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(X(0),P); ctx.lineTo(X(0),H-P); ctx.moveTo(P,Y(0)); ctx.lineTo(W-P,Y(0)); ctx.stroke();
+    ctx.strokeStyle='rgba(130,150,185,.4)'; ctx.lineWidth=1.3;
+    for(let gx=XMIN+0.4;gx<XMAX;gx+=0.55){ for(let gy=YMIN+0.5;gy<YMAX;gy+=0.9){
+      const s=2*gx; let vx=pxX,vy=-s*pxY; const L=Math.hypot(vx,vy)||1; vx=vx/L*10; vy=vy/L*10;
+      ctx.beginPath(); ctx.moveTo(X(gx)-vx,Y(gy)-vy); ctx.lineTo(X(gx)+vx,Y(gy)+vy); ctx.stroke(); } }
+    curves.forEach(c=>{ ctx.strokeStyle=c.col; ctx.lineWidth=2.4; ctx.beginPath();
+      let first=true; for(let x=XMIN;x<=XMAX;x+=0.05){ const y=x*x+c.C; const px=X(x),py=Y(y); first?(ctx.moveTo(px,py),first=false):ctx.lineTo(px,py);} ctx.stroke();
+      ctx.fillStyle=c.col; ctx.beginPath(); ctx.arc(X(c.x0),Y(c.x0*c.x0+c.C),4.5,0,7); ctx.fill(); });
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.fillText('x',W-P+6,Y(0)+4); ctx.fillText('y',X(0)-12,P+2);
+    document.getElementById('slope-cap').innerHTML = curves.length
+      ? '已画 '+curves.length+' 条解曲线 <code>y = x² + C</code>:'+curves.map(c=>'C='+c.C.toFixed(1)).join('、')+'。<span class="muted">斜率场相同,C 不同 → 平移出一族抛物线。</span>'
+      : '点画布任意处,画出过它的那条解曲线 y = x² + C。';
+  }
+  cv.onclick=e=>{ const r=cv.getBoundingClientRect(); const x0=iX((e.clientX-r.left)*W/r.width), y0=iY((e.clientY-r.top)*H/r.height);
+    curves.push({x0,C:y0-x0*x0,col:cols[curves.length%cols.length]}); draw(); };
+  document.getElementById('slope-clear').onclick=()=>{curves=[];draw();};
+  curves=[{x0:0,C:0,col:cols[0]},{x0:-1,C:3,col:cols[1]}]; draw();
+})();
+
+/* ---------- ② 牛顿轨道 ---------- */
+(function(){
+  const cv=document.getElementById('d-orbit'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=320,cx=W/2,cy=H/2, GM=2600, R0=120;
+  let px,py,vx,vy,trail,run=true,vf=1.0,raf;
+  function reset(){ px=R0; py=0; const vc=Math.sqrt(GM/R0); vx=0; vy=vc*vf; trail=[]; }
+  function step(){ for(let k=0;k<3;k++){ const r=Math.hypot(px,py)||1; const a=-GM/(r*r*r); vx+=a*px*0.12; vy+=a*py*0.12; px+=vx*0.12; py+=vy*0.12; }
+    trail.push([px,py]); if(trail.length>900)trail.shift(); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=COL.line; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,3,0,7); ctx.stroke();
+    ctx.strokeStyle='rgba(130,150,185,.35)'; ctx.lineWidth=1.5; ctx.beginPath();
+    trail.forEach((p,i)=>{i?ctx.lineTo(cx+p[0],cy+p[1]):ctx.moveTo(cx+p[0],cy+p[1]);}); ctx.stroke();
+    ctx.fillStyle=COL.hi; ctx.beginPath(); ctx.arc(cx,cy,9,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(255,211,77,.5)'; ctx.beginPath(); ctx.arc(cx,cy,13,0,7); ctx.stroke();
+    ctx.fillStyle=COL.blue; ctx.beginPath(); ctx.arc(cx+px,cy+py,5,0,7); ctx.fill();
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.fillText('太阳(引力中心)',cx-44,cy+28);
+    const r=Math.hypot(px,py);
+    document.getElementById('orbit-cap').innerHTML='F = GMm/r² → m·d²r/dt² = F,数值积分出轨迹。'+(vf<0.99?' 初速偏小 → 椭圆(近日点更近)。':vf>1.05?(r>R0*2.3?' 初速过大 → 逃逸,不再返回。':' 初速偏大 → 拉长的椭圆。'):' 初速 ≈ 圆轨道速度 → 近圆。');
+  }
+  function loop(){ if(run){step();} draw(); raf=requestAnimationFrame(loop); }
+  document.getElementById('orbit-play').onclick=e=>{ run=!run; e.target.textContent=run?'⏸ 暂停':'▶ 播放'; e.target.classList.toggle('on',run); };
+  document.getElementById('orbit-reset').onclick=()=>{reset();};
+  const sl=document.getElementById('orbit-slider'); sl.oninput=()=>{ vf=+sl.value; document.getElementById('orbit-v').textContent=vf.toFixed(2); reset(); };
+  reset(); loop();
+})();
+
+/* ---------- ③ 悬链线 vs 抛物线 ---------- */
+(function(){
+  const cv=document.getElementById('d-catenary'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=240; let a=70;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const X0=W/2, half=170, top=40;
+    // 两端固定点
+    const xL=-half, xR=half;
+    const cosh=x=>(Math.exp(x)+Math.exp(-x))/2;
+    const yAt=x=>a*cosh(x/a)-a; // 0 at center
+    const yEnd=yAt(half);
+    const sc=(H-top-30)/yEnd; // 缩放使端点落在画布下方
+    const Yc=x=>top+(yAt(x))*sc;
+    // 抛物线 经过相同三点: y=k x^2, k=yEnd/half^2
+    const k=yEnd/(half*half), Yp=x=>top+(k*x*x)*sc;
+    // 抛物线(虚线)
+    ctx.strokeStyle=COL.amber; ctx.setLineDash([5,4]); ctx.lineWidth=2; ctx.beginPath();
+    for(let x=xL;x<=xR;x+=2){const px=X0+x,py=Yp(x); x===xL?ctx.moveTo(px,py):ctx.lineTo(px,py);} ctx.stroke(); ctx.setLineDash([]);
+    // 悬链线(实线)
+    ctx.strokeStyle=COL.green; ctx.lineWidth=2.6; ctx.beginPath();
+    for(let x=xL;x<=xR;x+=2){const px=X0+x,py=Yc(x); x===xL?ctx.moveTo(px,py):ctx.lineTo(px,py);} ctx.stroke();
+    // 端点 + 钉
+    ctx.fillStyle=COL.ink; [xL,xR].forEach(x=>{ctx.beginPath();ctx.arc(X0+x,top+yEnd*sc,5,0,7);ctx.fill();});
+    ctx.font='12px monospace'; ctx.fillStyle=COL.green; ctx.fillText('悬链线 cosh',X0-150,top+14); ctx.fillStyle=COL.amber; ctx.fillText('抛物线(虚)',X0+70,top+14);
+    document.getElementById('cat-cap').innerHTML='a = '+a+':均匀绳索的真实形状是 <code>y=a·cosh(x/a)</code>(绿),比同端点的抛物线(橙虚)<b>中间更"瘪"</b>。每点受力平衡 → 关于斜率的微分方程 → 整条形状。';
+  }
+  const sl=document.getElementById('cat-slider'); sl.oninput=()=>{a=+sl.value;draw();}; draw();
+})();
+
+/* ---------- ④ 最速降线:直线 vs 摆线 ---------- */
+(function(){
+  const cv=document.getElementById('d-brach'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=260, A={x:46,y:34}, aa=88, phiMax=2.4, G=520;
+  const B={x:A.x+aa*(phiMax-Math.sin(phiMax)), y:A.y+aa*(1-Math.cos(phiMax))};
+  function buildPath(pts){ let s=0; pts[0].s=0; for(let i=1;i<pts.length;i++){const dx=pts[i].x-pts[i-1].x,dy=pts[i].y-pts[i-1].y;const d=Math.hypot(dx,dy)||1e-6;s+=d;pts[i].s=s;pts[i-1].len=d;pts[i-1].dyds=dy/d;} pts[pts.length-1].len=1e-6; pts[pts.length-1].dyds=0; pts.L=s; return pts; }
+  const line=buildPath((()=>{const a=[];for(let t=0;t<=1.0001;t+=0.01)a.push({x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t});return a;})());
+  const cyc=buildPath((()=>{const a=[];for(let p=0;p<=phiMax+1e-6;p+=phiMax/120)a.push({x:A.x+aa*(p-Math.sin(p)),y:A.y+aa*(1-Math.cos(p))});return a;})());
+  const balls=[{path:line,col:COL.blue,name:'直线'},{path:cyc,col:COL.hi,name:'摆线'}];
+  let raf=null;
+  function posAt(path,s){ s=Math.min(s,path.L); let lo=0,hi=path.length-1; while(lo<hi-1){const m=(lo+hi)>>1; (path[m].s<s)?lo=m:hi=m;} const seg=path[lo],f=(s-seg.s)/(seg.len||1e-6); return {x:seg.x+(path[lo+1].x-seg.x)*f, y:seg.y+(path[lo+1].y-seg.y)*f, dyds:seg.dyds}; }
+  function reset(){ balls.forEach(b=>{b.s=0;b.v=0;b.done=false;b.t=0;}); drawStatic(); }
+  function drawStatic(){
+    ctx.clearRect(0,0,W,H);
+    balls.forEach(b=>{ ctx.strokeStyle='rgba(130,150,185,.4)'; ctx.lineWidth=2; ctx.beginPath();
+      b.path.forEach((p,i)=>{i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}); ctx.stroke(); });
+    ctx.fillStyle=COL.ink; ctx.beginPath(); ctx.arc(A.x,A.y,5,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(B.x,B.y,5,0,7); ctx.fill();
+    ctx.font='12px monospace'; ctx.fillText('A',A.x-16,A.y+4); ctx.fillText('B',B.x+8,B.y+4);
+    balls.forEach(b=>{ const p=posAt(b.path,b.s); ctx.fillStyle=b.col; ctx.beginPath(); ctx.arc(p.x,p.y,6,0,7); ctx.fill(); });
+  }
+  function step(){ let allDone=true; balls.forEach(b=>{ if(b.done)return; allDone=false; b.t+=0.016;
+      const p=posAt(b.path,b.s); b.v+=G*p.dyds*0.016; if(b.v<0)b.v=0; b.s+=b.v*0.016; if(b.s>=b.path.L){b.s=b.path.L;b.done=true;} }); drawStatic();
+    if(allDone){ cancelAnimationFrame(raf); raf=null; const order=balls.slice().sort((x,y)=>x.t-y.t);
+      document.getElementById('brach-cap').innerHTML='到达顺序:<b style="color:'+order[0].col+'">'+order[0].name+'</b> ('+order[0].t.toFixed(2)+'s) 先于 <b style="color:'+order[1].col+'">'+order[1].name+'</b> ('+order[1].t.toFixed(2)+'s)。<b>摆线虽更长却更快 ——「最速降线」。</b>'; }
+    else raf=requestAnimationFrame(step);
+  }
+  document.getElementById('brach-go').onclick=()=>{ if(raf)return; reset(); document.getElementById('brach-cap').textContent='两球同时出发,只受重力…'; raf=requestAnimationFrame(step); };
+  document.getElementById('brach-reset').onclick=()=>{ if(raf){cancelAnimationFrame(raf);raf=null;} reset(); document.getElementById('brach-cap').textContent='点"发射":直线(蓝) vs 摆线(金),看谁先到 B。'; };
+  reset(); document.getElementById('brach-cap').textContent='点"发射":直线(蓝) vs 摆线(金),看谁先到 B。';
+})();
+
+/* ---------- ⑤ 单摆:真实 vs 小角度近似 ---------- */
+(function(){
+  const cv=document.getElementById('d-pendulum'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=260, ox=W/2,oy=40, Lp=150, gL=0.0016;
+  let run=true,a0=140*Math.PI/180,raf;
+  let th1,w1,th2,w2;
+  function reset(){ th1=a0;w1=0;th2=a0;w2=0; }
+  function step(){ for(let k=0;k<2;k++){ w1+=-gL*Math.sin(th1); th1+=w1; w2+=-gL*th2; th2+=w2; } }
+  function bob(th,col,lab,off){ const x=ox+Lp*Math.sin(th), y=oy+Lp*Math.cos(th);
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(x,y); ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,11,0,7); ctx.fill(); return {x,y}; }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=COL.ink; ctx.beginPath(); ctx.arc(ox,oy,4,0,7); ctx.fill();
+    bob(th1,COL.amber); bob(th2,COL.blue);
+    ctx.font='12px monospace'; ctx.fillStyle=COL.amber; ctx.fillText('真实 sinθ',12,H-30); ctx.fillStyle=COL.blue; ctx.fillText('近似 θ',12,H-12);
+    const d=Math.abs(th1-th2)*180/Math.PI;
+    document.getElementById('pen-cap').innerHTML='初始角 '+Math.round(a0*180/Math.PI)+'°　两摆当前相差 <b>'+d.toFixed(0)+'°</b>。'+(a0*180/Math.PI<25?'<span class="muted">小角度:两者几乎重合,sinθ≈θ 成立。</span>':'<span class="muted">大角度:真实(sinθ)更慢,近似(θ)很快就对不上了。</span>');
+  }
+  function loop(){ if(run)step(); draw(); raf=requestAnimationFrame(loop); }
+  document.getElementById('pen-play').onclick=e=>{ run=!run; e.target.textContent=run?'⏸ 暂停':'▶ 播放'; e.target.classList.toggle('on',run); };
+  document.getElementById('pen-reset').onclick=reset;
+  const sl=document.getElementById('pen-slider'); sl.oninput=()=>{ a0=(+sl.value)*Math.PI/180; document.getElementById('pen-a').textContent=sl.value+'°'; reset(); };
+  reset(); loop();
+})();
+
+/* ---------- ⑥ 振动的弦(波动方程 PDE) ---------- */
+(function(){
+  const cv=document.getElementById('d-wave'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=220, P=30, N=80; let u=new Array(N).fill(0), v=new Array(N).fill(0), raf=null;
+  const X=i=>P+i/(N-1)*(W-2*P), Y=val=>H/2 - val*(H/2-24);
+  function pluck(){ for(let i=0;i<N;i++){ const x=i/(N-1); u[i]=(x<0.5? x/0.5 : (1-x)/0.5)*0.85; v[i]=0; } }
+  function step(){ const c2=0.18, nu=u.slice(); for(let i=1;i<N-1;i++){ const a=c2*(u[i-1]-2*u[i]+u[i+1]); v[i]+=a; } for(let i=1;i<N-1;i++){ u[i]+=v[i]; v[i]*=0.9995; } u[0]=0;u[N-1]=0; }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=COL.line; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(P,H/2); ctx.lineTo(W-P,H/2); ctx.stroke();
+    ctx.fillStyle=COL.ink; [0,N-1].forEach(i=>{ctx.beginPath();ctx.arc(X(i),H/2,5,0,7);ctx.fill();});
+    ctx.strokeStyle=COL.teal; ctx.lineWidth=2.6; ctx.beginPath();
+    for(let i=0;i<N;i++){const x=X(i),y=Y(u[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.fillText('x →',W-P-4,H-8); ctx.fillText('u(x,t)',P-6,18);
+  }
+  function loop(){ for(let k=0;k<3;k++)step(); draw(); raf=requestAnimationFrame(loop); }
+  document.getElementById('wave-pluck').onclick=()=>{ pluck(); document.getElementById('wave-cap').innerHTML='整根弦 <code>u(x,t)</code> 随时间振动:这是一<b>整片场</b>(每个 x 都有值)在演化 —— 典型 <b>PDE</b>。两端固定,波来回反射、叠加。'; if(!raf)loop(); };
+  document.getElementById('wave-reset').onclick=()=>{ if(raf){cancelAnimationFrame(raf);raf=null;} u=new Array(N).fill(0); v=new Array(N).fill(0); draw(); document.getElementById('wave-cap').textContent='点"拨动":给弦一个初始形状,看波动方程让它振动。'; };
+  draw(); document.getElementById('wave-cap').textContent='点"拨动":给弦一个初始形状,看波动方程让它振动。';
+})();
+
+/* ---------- ⑦ 分步:引力如何掰弯速度(数值积分过程) ---------- */
+(function(){
+  const cv=document.getElementById('d-orbit-step'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=340,cx=W/2,cy=H/2, GM=1600, R0=100, dt=4.0;
+  let x,y,vx,vy,trail,step,timer=null;
+  function arrow(fx,fy,tx,ty,col,w){ ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w||2;
+    ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(tx,ty); ctx.stroke();
+    const an=Math.atan2(ty-fy,tx-fx); ctx.beginPath(); ctx.moveTo(tx,ty);
+    ctx.lineTo(tx-10*Math.cos(an-0.4),ty-10*Math.sin(an-0.4)); ctx.lineTo(tx-10*Math.cos(an+0.4),ty-10*Math.sin(an+0.4)); ctx.closePath(); ctx.fill(); }
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=COL.hi; ctx.beginPath(); ctx.arc(cx,cy,9,0,7); ctx.fill();
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.fillText('地球',cx-13,cy+24);
+    ctx.strokeStyle='rgba(130,150,185,.5)'; ctx.lineWidth=1.6; ctx.beginPath();
+    trail.forEach((p,i)=>{i?ctx.lineTo(cx+p[0],cy+p[1]):ctx.moveTo(cx+p[0],cy+p[1]);}); ctx.stroke();
+    ctx.fillStyle='rgba(130,150,185,.7)'; trail.forEach(p=>{ctx.beginPath();ctx.arc(cx+p[0],cy+p[1],2.5,0,7);ctx.fill();});
+    const px=cx+x, py=cy+y, r=Math.hypot(x,y)||1;
+    const ax=-GM*x/(r*r*r), ay=-GM*y/(r*r*r);
+    const vL=Math.hypot(vx,vy)||1, aL=Math.hypot(ax,ay)||1;
+    arrow(px,py, px+ax/aL*42, py+ay/aL*42, COL.pink,2.6);
+    arrow(px,py, px+vx/vL*50, py+vy/vL*50, COL.green,2.6);
+    ctx.fillStyle=COL.blue; ctx.beginPath(); ctx.arc(px,py,6,0,7); ctx.fill();
+    ctx.fillStyle=COL.green; ctx.font='11px monospace'; ctx.fillText('v 速度',px+vx/vL*50+4,py+vy/vL*50);
+    ctx.fillStyle=COL.pink; ctx.fillText('a 引力',px+ax/aL*42+4,py+ay/aL*42+4);
+    document.getElementById('os-cap').innerHTML = step===0
+      ? '起点:卫星在右侧,初速向上(≈圆轨道速度)。<b>红箭头(引力)永远指向地球,每步把绿箭头(速度)拐一点 → 轨迹弯成轨道。</b>'
+      : '步 '+step+':r='+r.toFixed(0)+'　|a|='+aL.toFixed(3)+'(指向地心)　|v|='+vL.toFixed(2)+'。<span class="muted">v += a·Δt 拐弯,x += v·Δt 前进;大 Δt 所以是折线,越小越接近光滑椭圆。</span>';
+  }
+  function reset(){ x=R0;y=0; vx=0; vy=Math.sqrt(GM/R0); trail=[[x,y]]; step=0; render(); }
+  function doStep(){ const r=Math.hypot(x,y)||1; const ax=-GM*x/(r*r*r), ay=-GM*y/(r*r*r);
+    vx+=ax*dt; vy+=ay*dt; x+=vx*dt; y+=vy*dt; trail.push([x,y]); if(trail.length>240)trail.shift(); step++; render(); }
+  function stopAuto(){ if(timer){clearInterval(timer);timer=null;document.getElementById('os-auto').textContent='自动 ▶▶';} }
+  document.getElementById('os-step').onclick=doStep;
+  document.getElementById('os-auto').onclick=()=>{ if(timer)stopAuto(); else {document.getElementById('os-auto').textContent='暂停 ⏸'; timer=setInterval(doStep,240);} };
+  document.getElementById('os-reset').onclick=()=>{ stopAuto(); reset(); };
+  reset();
+})();
+
+/* ---------- ⑧ 离心率 e → 圆/椭圆/抛物线/双曲线 ---------- */
+(function(){
+  const cv=document.getElementById('d-conic'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=300, p=70; let e=0.5;
+  function pts(e){ const a=[];
+    if(e<1){ for(let th=0;th<=Math.PI*2+0.01;th+=0.025){ const r=p/(1+e*Math.cos(th)); a.push([r*Math.cos(th),r*Math.sin(th)]); } }
+    else { const thm=Math.acos(-1/e)-0.03; for(let th=-thm;th<=thm;th+=0.02){ const r=p/(1+e*Math.cos(th)); a.push([r*Math.cos(th),r*Math.sin(th)]); } }
+    return a; }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const a=pts(e); let mnx=0,mxx=0,mny=0,mxy=0;
+    a.forEach(q=>{mnx=Math.min(mnx,q[0]);mxx=Math.max(mxx,q[0]);mny=Math.min(mny,q[1]);mxy=Math.max(mxy,q[1]);});
+    const pad=34, sc=Math.min((W-2*pad)/((mxx-mnx)||1),(H-2*pad)/((mxy-mny)||1));
+    const ox=(W-(mxx+mnx)*sc)/2, oy=(H-(mxy+mny)*sc)/2, TX=v=>ox+v*sc, TY=v=>oy+v*sc;
+    const type = e<0.02?'圆':(e<0.98?'椭圆':(e<1.02?'抛物线':'双曲线'));
+    const col = e<0.98?COL.green:(e<1.02?COL.amber:COL.pink);
+    ctx.strokeStyle=col; ctx.lineWidth=2.6; ctx.beginPath();
+    a.forEach((q,i)=>{i?ctx.lineTo(TX(q[0]),TY(q[1])):ctx.moveTo(TX(q[0]),TY(q[1]));}); if(e<1)ctx.closePath(); ctx.stroke();
+    ctx.fillStyle=COL.hi; ctx.beginPath(); ctx.arc(TX(0),TY(0),7,0,7); ctx.fill();
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.fillText('焦点(地球)',TX(0)+10,TY(0)+4);
+    document.getElementById('conic-cap').innerHTML='e = '+e.toFixed(2)+' → <b style="color:'+col+'">'+type+'</b>。<code>r(θ)=p/(1+e·cosθ)</code>,地球永远在<b>焦点</b>(不是中心)。<span class="muted">'+(e<1?'束缚轨道,周而复始。':'开放轨道,一去不回(逃逸)。')+'</span>';
+  }
+  const sl=document.getElementById('conic-slider'); sl.oninput=()=>{ e=+sl.value; document.getElementById('conic-e').textContent=e.toFixed(2); draw(); };
+  draw();
+})();
+
+/* ---------- ⑨ 矢量场:点电荷的电场 ---------- */
+(function(){
+  const cv=document.getElementById('d-field-vec'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=300; let charges, drag=-1;
+  function reset(){ charges=[{x:155,y:150,q:1},{x:305,y:150,q:-1}]; }
+  function field(px,py){ let ex=0,ey=0; charges.forEach(c=>{ const dx=px-c.x,dy=py-c.y,r2=dx*dx+dy*dy,r=Math.sqrt(r2)||1; if(r<13)return; const k=160*c.q/(r2*r); ex+=k*dx; ey+=k*dy; }); return [ex,ey]; }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(let gx=22;gx<W;gx+=33){ for(let gy=22;gy<H;gy+=33){
+      const f=field(gx,gy), m=Math.hypot(f[0],f[1]); if(m<1e-4)continue;
+      const ux=f[0]/m, uy=f[1]/m, L=11, tx=gx+ux*L, ty=gy+uy*L, al=Math.min(0.3+m*2.4,0.95);
+      ctx.strokeStyle='rgba(150,180,235,'+al+')'; ctx.fillStyle='rgba(150,180,235,'+al+')'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(gx-ux*L,gy-uy*L); ctx.lineTo(tx,ty); ctx.stroke();
+      const an=Math.atan2(uy,ux); ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(tx-6*Math.cos(an-0.5),ty-6*Math.sin(an-0.5)); ctx.lineTo(tx-6*Math.cos(an+0.5),ty-6*Math.sin(an+0.5)); ctx.closePath(); ctx.fill(); } }
+    charges.forEach(c=>{ ctx.fillStyle=c.q>0?'#ff6b6b':'#4f8cff'; ctx.beginPath(); ctx.arc(c.x,c.y,12,0,7); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 15px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(c.q>0?'+':'−',c.x,c.y+1); });
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  }
+  function pos(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; }
+  cv.addEventListener('pointerdown',e=>{ const p=pos(e); drag=charges.findIndex(c=>Math.hypot(c.x-p[0],c.y-p[1])<16); if(drag>=0)cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove',e=>{ if(drag<0)return; const p=pos(e); charges[drag].x=Math.max(8,Math.min(W-8,p[0])); charges[drag].y=Math.max(8,Math.min(H-8,p[1])); draw(); });
+  cv.addEventListener('pointerup',()=>{drag=-1;});
+  document.getElementById('fv-add').onclick=()=>{charges.push({x:230,y:70,q:1});draw();};
+  document.getElementById('fv-addn').onclick=()=>{charges.push({x:230,y:230,q:-1});draw();};
+  document.getElementById('fv-reset').onclick=()=>{reset();draw();};
+  reset(); draw();
+})();
+
+/* ---------- ⑩ 标量场:2D 热传导扩散 ---------- */
+(function(){
+  const cv=document.getElementById('d-field-heat'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=300, NX=46,NY=30, cw=W/NX, ch=H/NY; let u, timer=null, painting=false;
+  function spot(ci,cj,val){ for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){ if((i-ci)*(i-ci)+(j-cj)*(j-cj)<14) u[j][i]=val; } }
+  function init(){ u=[]; for(let j=0;j<NY;j++)u.push(new Array(NX).fill(0.05)); spot(12,15,1); spot(34,9,0.9); spot(28,23,0.0); }
+  function step(){ const r=0.18, nu=u.map(row=>row.slice());
+    for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){ const up=j>0?u[j-1][i]:u[j][i], dn=j<NY-1?u[j+1][i]:u[j][i], lf=i>0?u[j][i-1]:u[j][i], rt=i<NX-1?u[j][i+1]:u[j][i]; nu[j][i]=u[j][i]+r*(up+dn+lf+rt-4*u[j][i]); } u=nu; }
+  function color(v){ v=Math.max(0,Math.min(1,v)); const r=Math.round(255*v), g=Math.round(255*(1-Math.abs(2*v-1))), b=Math.round(255*(1-v)); return 'rgb('+r+','+g+','+b+')'; }
+  function draw(){ for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){ ctx.fillStyle=color(u[j][i]); ctx.fillRect(i*cw,j*ch,cw+1,ch+1); } }
+  function stop(){ if(timer){clearInterval(timer);timer=null;document.getElementById('fh-play').textContent='▶ 播放';} }
+  document.getElementById('fh-play').onclick=()=>{ if(timer)stop(); else {document.getElementById('fh-play').textContent='⏸ 暂停'; timer=setInterval(()=>{step();step();draw();},40);} };
+  document.getElementById('fh-reset').onclick=()=>{ stop(); init(); draw(); };
+  function paintAt(e){ const r=cv.getBoundingClientRect(); const i=Math.floor((e.clientX-r.left)*W/r.width/cw), j=Math.floor((e.clientY-r.top)*H/r.height/ch); if(i>=0&&i<NX&&j>=0&&j<NY){spot(i,j,1);draw();} }
+  cv.addEventListener('pointerdown',e=>{painting=true;cv.setPointerCapture(e.pointerId);paintAt(e);});
+  cv.addEventListener('pointermove',e=>{if(painting)paintAt(e);});
+  cv.addEventListener('pointerup',()=>{painting=false;});
+  init(); draw();
+})();
+
+/* ---------- ⑪ 线性 vs 非线性波(光子穿过 / 胶子纠缠) ---------- */
+(function(){
+  const cv=document.getElementById('d-ym-wave'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=200, base=H*0.62, A=42, w=26; let mode='lin', x1,x2,v1,v2,raf;
+  function reset(){ x1=60; x2=W-60; v1=1.7; v2=-1.7; }
+  function G(x,c){ return A*Math.exp(-((x-c)/w)*((x-c)/w)); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(130,150,185,.35)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(10,base); ctx.lineTo(W-10,base); ctx.stroke();
+    const c1=mode==='lin'?'#4f8cff':'#ff7eb6', c2=mode==='lin'?'#4f8cff':'#ff7eb6';
+    ctx.strokeStyle=mode==='lin'?'#4f8cff':'#ff7eb6'; ctx.lineWidth=2.6; ctx.beginPath();
+    for(let x=0;x<=W;x+=2){ const y=base-(G(x,x1)+G(x,x2)); x?ctx.lineTo(x,y):ctx.moveTo(x,y); } ctx.stroke();
+    ctx.fillStyle=mode==='lin'?'rgba(79,140,255,.9)':'rgba(255,126,182,.9)';
+    [x1,x2].forEach(c=>{ctx.beginPath();ctx.arc(c,base+10,3,0,7);ctx.fill();});
+    document.getElementById('ym-cap').innerHTML = mode==='lin'
+      ? '<b style="color:#4f8cff">线性(麦克斯韦)</b>:两个波包<b>直接叠加、互穿而过</b>,出来后各自<b>原样不变</b> —— 光子互不作用。'
+      : '<b style="color:#ff7eb6">非线性(杨–米尔斯)</b>:两个波包<b>互相作用、纠缠/弹开</b>,无法简单穿过(示意)—— 胶子彼此作用。';
+  }
+  function step(){
+    if(mode==='lin'){ x1+=v1; x2+=v2; if(x1>W+40&&x2<-40){reset();} }
+    else { x1+=v1; x2+=v2;
+      if(Math.abs(x1-x2)<w*1.5){ const t=v1; v1=v2; v2=t; }       // 相遇 → 弹开(自我作用示意)
+      if(x1<40){v1=Math.abs(v1);} if(x1>W-40){v1=-Math.abs(v1);}
+      if(x2<40){v2=Math.abs(v2);} if(x2>W-40){v2=-Math.abs(v2);} }
+    draw(); raf=requestAnimationFrame(step);
+  }
+  function setMode(m){ mode=m; document.getElementById('ym-lin').classList.toggle('on',m==='lin'); document.getElementById('ym-non').classList.toggle('on',m==='non'); reset(); }
+  document.getElementById('ym-lin').onclick=()=>setMode('lin');
+  document.getElementById('ym-non').onclick=()=>setMode('non');
+  reset(); step();
+})();
+
+/* ---------- ⑫ 自耦合顶点:QED vs QCD ---------- */
+(function(){
+  const cv=document.getElementById('d-ym-vertex'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=180;
+  function straight(x1,y1,x2,y2,col){ ctx.strokeStyle=col; ctx.lineWidth=2.4; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    const an=Math.atan2(y2-y1,x2-x1), mx=(x1+x2)/2, my=(y1+y2)/2; ctx.fillStyle=col;
+    ctx.beginPath(); ctx.moveTo(mx+7*Math.cos(an),my+7*Math.sin(an)); ctx.lineTo(mx-5*Math.cos(an-0.5),my-5*Math.sin(an-0.5)); ctx.lineTo(mx-5*Math.cos(an+0.5),my-5*Math.sin(an+0.5)); ctx.closePath(); ctx.fill(); }
+  function wavy(x1,y1,x2,y2,col){ ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.beginPath();
+    const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux,n=Math.round(L/9);
+    for(let i=0;i<=L;i+=2){ const t=i/L, off=Math.sin(i/L*n*Math.PI*2)*4; const x=x1+dx*t+nx*off, y=y1+dy*t+ny*off; i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke(); }
+  function dot(x,y){ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x,y,4,0,7); ctx.fill(); }
+  function label(x,y,t,col){ ctx.fillStyle=col||'#9aa3b2'; ctx.font='12px monospace'; ctx.textAlign='center'; ctx.fillText(t,x,y); ctx.textAlign='left'; }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(130,150,185,.25)'; ctx.beginPath(); ctx.moveTo(W/2,18); ctx.lineTo(W/2,H-10); ctx.stroke();
+    // QED 顶点:2 电子(直) + 1 光子(波)
+    const ax=110,ay=80; straight(40,40,ax,ay,'#22c08b'); straight(ax,ay,40,120,'#22c08b'); wavy(ax,ay,200,80,'#ffd34d'); dot(ax,ay);
+    label(120,28,'QED','#22c08b'); label(120,150,'电子–光子(光子之间无顶点)');
+    // QCD 顶点:3 胶子(波)互相连
+    const bx=320,by=82; wavy(bx,by,260,40,'#ff7eb6'); wavy(bx,by,260,124,'#ff7eb6'); wavy(bx,by,400,82,'#ff7eb6'); dot(bx,by);
+    label(330,28,'QCD','#ff7eb6'); label(330,150,'三胶子顶点 = g·[A,A](还有四胶子)');
+  }
+  draw();
+})();
+
+/* ---------- ⑬ 电场散开 vs QCD 流管(夸克禁闭) ---------- */
+(function(){
+  const cv=document.getElementById('d-confine'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=320; let d=120;
+  const yEM=80, yQ=240;
+  function emField(px,py,c1,c2){ let ex=0,ey=0; [[c1,1],[c2,-1]].forEach(([cx,q])=>{ const dx=px-cx,dy=py-yEM,r2=dx*dx+dy*dy,r=Math.sqrt(r2)||1; if(r<10)return; const k=q/(r2*r); ex+=k*dx; ey+=k*dy; }); return [ex,ey]; }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const cx=W/2, x1=cx-d/2, x2=cx+d/2;
+    // ---- 上:电磁场线散开 ----
+    ctx.fillStyle='#9aa3b2'; ctx.font='12px monospace'; ctx.fillText('电磁:场线散开,力 ∝ 1/d²(能拉开)',14,22);
+    ctx.strokeStyle='rgba(255,211,77,.55)'; ctx.lineWidth=1.4;
+    for(let a=0;a<Math.PI*2;a+=Math.PI/7){ let px=x1+11*Math.cos(a), py=yEM+11*Math.sin(a); ctx.beginPath(); ctx.moveTo(px,py);
+      for(let s=0;s<170;s++){ const f=emField(px,py,x1,x2),m=Math.hypot(f[0],f[1])||1; px+=f[0]/m*4; py+=f[1]/m*4; ctx.lineTo(px,py); if(Math.hypot(px-x2,py-yEM)<12||px<0||px>W||py<0||py>yQ-30)break; } ctx.stroke(); }
+    ctx.fillStyle='#ff6b6b'; ctx.beginPath(); ctx.arc(x1,yEM,11,0,7); ctx.fill(); ctx.fillStyle='#4f8cff'; ctx.beginPath(); ctx.arc(x2,yEM,11,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.fillText('+',x1,yEM+5); ctx.fillText('−',x2,yEM+5); ctx.textAlign='left';
+    // ---- 下:QCD 流管 ----
+    ctx.fillStyle='#9aa3b2'; ctx.font='12px monospace'; ctx.fillText('强力:场线挤成流管,能量 ∝ d(拉不开 = 禁闭)',14,yQ-58);
+    const snap = d>250;
+    if(!snap){
+      ctx.fillStyle='rgba(255,126,182,.18)'; ctx.fillRect(x1,yQ-13,d,26);
+      ctx.strokeStyle='rgba(255,126,182,.7)'; ctx.lineWidth=1.6;
+      for(let k=-2;k<=2;k++){ ctx.beginPath(); ctx.moveTo(x1,yQ+k*5); ctx.lineTo(x2,yQ+k*5); ctx.stroke(); }
+      ctx.fillStyle='#f2a33c'; ctx.beginPath(); ctx.arc(x1,yQ,11,0,7); ctx.fill(); ctx.fillStyle='#2dd4bf'; ctx.beginPath(); ctx.arc(x2,yQ,11,0,7); ctx.fill();
+      ctx.fillStyle='#0f1117'; ctx.font='bold 12px monospace'; ctx.textAlign='center'; ctx.fillText('q',x1,yQ+4); ctx.fillText('q̄',x2,yQ+4); ctx.textAlign='left';
+    } else {
+      // 流管断裂 → 新夸克对
+      const m1=cx-30, m2=cx+30;
+      ctx.fillStyle='rgba(255,126,182,.18)'; ctx.fillRect(x1,yQ-13,m1-x1,26); ctx.fillRect(m2,yQ-13,x2-m2,26);
+      ctx.strokeStyle='rgba(255,126,182,.7)'; ctx.lineWidth=1.6;
+      for(let k=-2;k<=2;k++){ ctx.beginPath(); ctx.moveTo(x1,yQ+k*5); ctx.lineTo(m1,yQ+k*5); ctx.moveTo(m2,yQ+k*5); ctx.lineTo(x2,yQ+k*5); ctx.stroke(); }
+      [[x1,'#f2a33c','q'],[m1,'#2dd4bf','q̄'],[m2,'#f2a33c','q'],[x2,'#2dd4bf','q̄']].forEach(([xx,cc,tt])=>{ ctx.fillStyle=cc; ctx.beginPath(); ctx.arc(xx,yQ,10,0,7); ctx.fill(); ctx.fillStyle='#0f1117'; ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.fillText(tt,xx,yQ+4); ctx.textAlign='left'; });
+    }
+    document.getElementById('cf-d').textContent = d<110?'小':(d<210?'中':(snap?'断裂!':'大'));
+    document.getElementById('cf-cap').innerHTML = snap
+      ? '强力流管被拉断 → 凭空<b>蹦出一对新夸克</b>补上两端 —— 所以你<b>永远得不到单个自由夸克</b>(禁闭)。'
+      : '拉开 d:<b style="color:var(--hi)">电磁</b>场线越散越弱(力 ∝ 1/d²,拉开能量有限);<b style="color:var(--pink)">强力</b>场线被挤进等宽<b>流管</b>,能量随 d <b>线性增长</b> → 拉不开。';
+  }
+  const sl=document.getElementById('cf-slider'); sl.oninput=()=>{ d=+sl.value; draw(); };
+  draw();
+})();
+
+/* ---------- ⑭ 理论先行:预言 → 证实 时间线 ---------- */
+(function(){
+  const cv=document.getElementById('d-pred'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=860,H=350, TL=170, TR=W-26, Y0=1690, Y1=2030, top=44, rowH=26;
+  const X=y=>TL+(y-Y0)/(Y1-Y0)*(TR-TL);
+  const D=[
+    {n:'哈雷彗星回归',p:1705,c:1758,col:COL.amber},
+    {n:'海王星',p:1846,c:1846,col:COL.amber},
+    {n:'电磁波',p:1865,c:1887,col:COL.blue},
+    {n:'广义相对论·光偏折',p:1915,c:1919,col:COL.violet},
+    {n:'引力波',p:1916,c:2015,col:COL.violet},
+    {n:'玻色–爱因斯坦凝聚',p:1924,c:1995,col:COL.teal},
+    {n:'反物质(正电子)',p:1928,c:1932,col:COL.pink},
+    {n:'中微子',p:1930,c:1956,col:COL.teal},
+    {n:'Ω⁻ 重子',p:1962,c:1964,col:COL.pink},
+    {n:'希格斯玻色子',p:1964,c:2012,col:COL.pink},
+    {n:'W / Z 玻色子',p:1968,c:1983,col:COL.pink},
+  ];
+  ctx.clearRect(0,0,W,H);
+  ctx.lineWidth=1;
+  for(let y=1700;y<=2025;y+=50){ ctx.strokeStyle=COL.line; ctx.globalAlpha=.4; ctx.beginPath(); ctx.moveTo(X(y),top-6); ctx.lineTo(X(y),top+D.length*rowH); ctx.stroke(); ctx.globalAlpha=1;
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.textAlign='center'; ctx.fillText(y,X(y),top-12); }
+  ctx.textAlign='left'; ctx.font='bold 12px monospace'; ctx.fillStyle=COL.hi; ctx.fillText('○ 理论提出    ● 实验证实    ── 等待 Δ年',8,18);
+  D.forEach((d,i)=>{ const y=top+i*rowH+rowH/2, xp=X(d.p), xc=X(d.c);
+    ctx.fillStyle='#cdd6e6'; ctx.font='12px monospace'; ctx.textAlign='left'; ctx.fillText(d.n,8,y+4);
+    ctx.strokeStyle=d.col; ctx.lineWidth=4; ctx.globalAlpha=.5; ctx.beginPath(); ctx.moveTo(xp,y); ctx.lineTo(Math.max(xc,xp+2),y); ctx.stroke(); ctx.globalAlpha=1;
+    ctx.fillStyle='#1f232f'; ctx.strokeStyle=d.col; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(xp,y,4.5,0,7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=d.col; ctx.beginPath(); ctx.arc(xc,y,4.5,0,7); ctx.fill();
+    const gap=d.c-d.p; ctx.fillStyle=gap>=40?COL.hi:COL.ink; ctx.font=(gap>=40?'bold ':'')+'11px monospace'; ctx.textAlign='left';
+    ctx.fillText(gap===0?'同年!':('Δ'+gap+'y'), xc+8, y+4); });
+})();
+
+/* ---------- ⑮ 两种文化:理论领跑 vs 实验领跑(镜像) ---------- */
+(function(){
+  const cv=document.getElementById('d-twocultures'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=820,H=240;
+  ctx.clearRect(0,0,W,H);
+  ctx.textAlign='center'; ctx.font='bold 14px sans-serif'; ctx.fillStyle=COL.ink;
+  ctx.fillText('🧮  理论 · 方程',135,26); ctx.fillText('🔬  实验 · 实践',W-135,26);
+  ctx.strokeStyle=COL.line; ctx.setLineDash([5,5]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(W/2,38); ctx.lineTo(W/2,H-12); ctx.stroke(); ctx.setLineDash([]);
+  function lane(y,x1,x2,col,steps){
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=11; ctx.globalAlpha=.85;
+    ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke();
+    const dir=Math.sign(x2-x1); ctx.beginPath(); ctx.moveTo(x2+dir*6,y); ctx.lineTo(x2-dir*20,y-15); ctx.lineTo(x2-dir*20,y+15); ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
+    steps.forEach(st=>{ const x=x1+(x2-x1)*st.t; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x,y,3.5,0,7); ctx.fill();
+      ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.textAlign='center'; ctx.fillText(st.l,x,y-20); });
+  }
+  lane(105,120,W-120,COL.green,[{t:0,l:'方程'},{t:0.34,l:'解'},{t:0.62,l:'预言'},{t:1,l:'实验证实'}]);
+  ctx.fillStyle=COL.green; ctx.font='bold 13px sans-serif'; ctx.textAlign='center'; ctx.fillText('物理:理论先行 ▶',W/2,90);
+  lane(195,W-120,120,COL.pink,[{t:0,l:'试 / 跑'},{t:0.42,l:'有效就用'},{t:1,l:'理论解释'}]);
+  ctx.fillStyle=COL.pink; ctx.font='bold 13px sans-serif'; ctx.textAlign='center'; ctx.fillText('◀ CS/ML:实验先行',W/2,180);
+})();
+
+/* ---------- ⑯ 解是一个点 vs 一条曲线 ---------- */
+(function(){
+  const cv=document.getElementById('d-point-vs-curve'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=240; let prog=0, running=false;
+  const Lx0=28,Lx1=210, ny=150, NX=v=>Lx0+(v+1)/6*(Lx1-Lx0);
+  const Rx0=252,Rx1=448, Ry0=42,Ry1=202, PX=x=>Rx0+(x+2.2)/4.4*(Rx1-Rx0), PY=y=>Ry1-(y+0.5)/5.5*(Ry1-Ry0);
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=COL.line; ctx.setLineDash([4,4]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(231,18); ctx.lineTo(231,H-10); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=COL.ink; ctx.font='12px monospace'; ctx.textAlign='center';
+    ctx.fillText('普通方程  2x+3=7',118,24); ctx.fillText('微分方程  dy/dx=2x',346,24);
+    // 左:数轴
+    ctx.strokeStyle='rgba(130,150,185,.5)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(Lx0,ny); ctx.lineTo(Lx1,ny); ctx.stroke();
+    ctx.fillStyle=COL.ink; ctx.font='10px monospace';
+    for(let v=0;v<=4;v++){ ctx.beginPath(); ctx.moveTo(NX(v),ny-4); ctx.lineTo(NX(v),ny+4); ctx.stroke(); ctx.fillText(v,NX(v)-3,ny+17); }
+    ctx.fillStyle=COL.amber; ctx.beginPath(); ctx.arc(NX(2*prog),ny,7,0,7); ctx.fill();
+    if(prog>=1){ ctx.fillStyle=COL.amber; ctx.font='bold 13px monospace'; ctx.fillText('x = 2',NX(2),ny-15); }
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.fillText('解 = 一个数(一个点)',118,H-8);
+    // 右:坐标 + 曲线
+    ctx.strokeStyle='rgba(130,150,185,.4)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(PX(0),Ry0); ctx.lineTo(PX(0),Ry1); ctx.moveTo(Rx0,PY(0)); ctx.lineTo(Rx1,PY(0)); ctx.stroke();
+    const xr=2.2*prog; ctx.strokeStyle=COL.green; ctx.lineWidth=2.6; ctx.beginPath(); let f=true;
+    for(let x=-xr;x<=xr+1e-9;x+=0.04){ const px=PX(x),py=PY(x*x); f?(ctx.moveTo(px,py),f=false):ctx.lineTo(px,py);} ctx.stroke();
+    ctx.fillStyle=COL.green; ctx.beginPath(); ctx.arc(PX(0),PY(0),4,0,7); ctx.fill();
+    if(prog>=1){ ctx.fillStyle=COL.green; ctx.font='bold 12px monospace'; ctx.textAlign='left'; ctx.fillText('y = x²',PX(1.35),PY(1.6)); }
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.textAlign='center'; ctx.fillText('解 = 一个函数(一条曲线)',346,H-8);
+  }
+  function loop(){ if(running){ prog=Math.min(1,prog+0.018); if(prog>=1)running=false; } draw(); requestAnimationFrame(loop); }
+  document.getElementById('pvc-solve').onclick=()=>{ prog=0; running=true; };
+  document.getElementById('pvc-reset').onclick=()=>{ prog=0; running=false; };
+  loop();
+})();
+
+/* ---------- ⑰ 求解意义:速度 → 路程(积分) ---------- */
+(function(){
+  const cv=document.getElementById('d-speedo'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=460,H=260, T=8, vmax=2.5, px0=46,px1=W-22, py0=86,py1=200;
+  const VT=t=>1.4+0.9*Math.sin(t*1.05);
+  const X=t=>px0+t/T*(px1-px0), Y=v=>py1-v/vmax*(py1-py0);
+  let t=0, dist=0, run=true, md=0;
+  for(let s=0;s<T;s+=0.001)md+=VT(s)*0.001;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(130,150,185,.4)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(40,48); ctx.lineTo(W-40,48); ctx.stroke();
+    const carx=40+(dist/md)*(W-80-16);
+    ctx.fillStyle=COL.amber; ctx.fillRect(carx,38,16,9); ctx.fillStyle=COL.ink; ctx.beginPath(); ctx.arc(carx+4,48,2.5,0,7); ctx.arc(carx+12,48,2.5,0,7); ctx.fill();
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.textAlign='left'; ctx.fillText('车走过的路程 →',40,24);
+    ctx.strokeStyle=COL.line; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(px0,py0-6); ctx.lineTo(px0,py1); ctx.lineTo(px1,py1); ctx.stroke();
+    ctx.fillStyle=COL.ink; ctx.font='10px monospace'; ctx.fillText('速度 v',px0-2,py0-10); ctx.fillText('t →',px1-22,py1+13);
+    ctx.strokeStyle='rgba(130,150,185,.5)'; ctx.lineWidth=1.4; ctx.beginPath();
+    for(let s=0;s<=T;s+=0.05){ const x=X(s),y=Y(VT(s)); s?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+    ctx.fillStyle='rgba(45,212,191,.32)'; ctx.beginPath(); ctx.moveTo(px0,py1);
+    for(let s=0;s<=t;s+=0.04){ ctx.lineTo(X(s),Y(VT(s))); } ctx.lineTo(X(Math.min(t,T)),py1); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle=COL.teal; ctx.lineWidth=2.6; ctx.beginPath();
+    for(let s=0;s<=t;s+=0.04){ const x=X(s),y=Y(VT(s)); s?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+    ctx.strokeStyle=COL.hi; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(X(t),py0-6); ctx.lineTo(X(t),py1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=COL.hi; ctx.beginPath(); ctx.arc(X(t),Y(VT(t)),4,0,7); ctx.fill();
+    ctx.fillStyle=COL.ink; ctx.font='12px monospace'; ctx.textAlign='left'; ctx.fillText('当前速度 v = '+VT(t).toFixed(2),px0,py1+26);
+    ctx.fillStyle=COL.teal; ctx.fillText('已走路程 = 阴影面积 = ∫v dt = '+dist.toFixed(2),px0,py1+44);
+  }
+  function loop(){ if(run&&t<T){ const dt=0.016*1.7, nt=Math.min(T,t+dt); dist+=VT(t)*(nt-t); t=nt; } draw(); requestAnimationFrame(loop); }
+  document.getElementById('sp-play').onclick=e=>{ run=!run; e.target.textContent=run?'⏸ 暂停':'▶ 播放'; e.target.classList.toggle('on',run); };
+  document.getElementById('sp-reset').onclick=()=>{ t=0; dist=0; };
+  loop();
+})();
+
+/* ---------- ⑱ 认识的阶梯:数 → 曲线 → 场 → 统一场 ---------- */
+(function(){
+  const cv=document.getElementById('d-ladder'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=880,H=380;
+  ctx.clearRect(0,0,W,H);
+  const steps=[
+    {name:'普通方程', sub:'解 = 一个数(点)', stat:'✅ 直接求解', col:COL.amber, ic:'dot'},
+    {name:'常微分 ODE', sub:'解 = 一条曲线', stat:'✅ 多数可解', col:COL.green, ic:'curve'},
+    {name:'偏微分 PDE', sub:'解 = 一整片场', stat:'⚠️ 常常难解', col:COL.teal, ic:'field'},
+    {name:'统一的场', sub:'一条律统辖多力', stat:'❌ 未竟之梦', col:COL.pink, ic:'unify'},
+  ];
+  const n=4, colW=(W-44)/n, cardW=colW-16, cardH=132, rise=34;
+  function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function drawIcon(kind,cx,cy,col){
+    ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2;
+    if(kind==='dot'){ ctx.strokeStyle='rgba(130,150,185,.6)'; ctx.beginPath(); ctx.moveTo(cx-26,cy+6); ctx.lineTo(cx+26,cy+6); ctx.stroke(); ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx+6,cy+6,5,0,7); ctx.fill(); }
+    else if(kind==='curve'){ ctx.beginPath(); for(let t=-1;t<=1.001;t+=0.05){ const x=cx+t*24, y=cy+12-(t*t)*22; t===-1?ctx.moveTo(x,y):ctx.lineTo(x,y);} ctx.stroke(); }
+    else if(kind==='field'){ for(let gx=-1;gx<=1;gx++)for(let gy=-1;gy<=1;gy++){ const x=cx+gx*15,y=cy+gy*11, a=gx*0.6+gy*0.4; const dx=Math.cos(a)*6,dy=Math.sin(a)*6; ctx.beginPath(); ctx.moveTo(x-dx,y-dy); ctx.lineTo(x+dx,y+dy); ctx.stroke(); ctx.beginPath(); ctx.arc(x+dx,y+dy,1.5,0,7); ctx.fill(); } }
+    else { const c=[cx,cy+2], nodes=[[cx-22,cy-10],[cx+22,cy-10],[cx,cy+18]]; ctx.strokeStyle='rgba(255,126,182,.7)'; nodes.forEach(nd=>{ctx.beginPath();ctx.moveTo(c[0],c[1]);ctx.lineTo(nd[0],nd[1]);ctx.stroke();}); ctx.fillStyle=col; ctx.beginPath(); ctx.arc(c[0],c[1],6,0,7); ctx.fill(); nodes.forEach(nd=>{ctx.fillStyle='rgba(255,126,182,.6)';ctx.beginPath();ctx.arc(nd[0],nd[1],4,0,7);ctx.fill();}); }
+    ctx.restore();
+  }
+  ctx.strokeStyle='rgba(255,211,77,.45)'; ctx.lineWidth=2; ctx.setLineDash([6,5]);
+  ctx.beginPath(); ctx.moveTo(28,H-22); ctx.lineTo(W-22,H-22-3*rise-12); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle=COL.hi; ctx.font='italic 12px sans-serif'; ctx.textAlign='left'; ctx.fillText('刻画的规律越来越复杂、越来越难解  ↗', 28, 22);
+  for(let i=0;i<n;i++){
+    const x=24+i*colW, bottom=(H-22)-i*rise, top=bottom-cardH, cx=x+cardW/2;
+    ctx.fillStyle='rgba(31,35,47,.92)'; ctx.strokeStyle=steps[i].col; ctx.lineWidth=2; roundRect(x,top,cardW,cardH,10); ctx.fill(); ctx.stroke();
+    drawIcon(steps[i].ic, cx, top+36, steps[i].col);
+    ctx.fillStyle='#e7eaf0'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.fillText(steps[i].name, cx, top+74);
+    ctx.fillStyle=COL.ink; ctx.font='11px monospace'; ctx.fillText(steps[i].sub, cx, top+94);
+    ctx.fillStyle=steps[i].col; ctx.font='12px sans-serif'; ctx.fillText(steps[i].stat, cx, top+116);
+    if(i<n-1){ ctx.fillStyle=COL.ink; ctx.font='17px sans-serif'; ctx.fillText('→', x+cardW+4, top+cardH/2); }
+  }
+})();
+</script>
+</body>
+</html>

@@ -270,6 +270,7 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
     <a href="#history">发展简史</a>
     <a href="#group">什么是群</a>
     <a href="#liegroup">李群</a>
+    <a href="#matrix">矩阵</a>
     <a href="#liealgebra">李代数</a>
     <a href="#exp">指数映射</a>
     <a href="#so3">SO(3) 三维旋转</a>
@@ -532,8 +533,20 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
         </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:46px">
+<!-- ============ MATRIX INTERLUDE ============ -->
+<section id="matrix" class="section">
+  <div class="wrap">
+    <div class="eyebrow reveal">番外 · 线性代数</div>
+    <h2 class="title reveal">读懂<em>矩阵</em>这台机器</h2>
+    <p class="lede reveal">上一章看到:一个旋转 R(θ) 不过是一个矩阵,它的两列就是坐标轴旋转后的落点。
+    可「矩阵」这台机器远不止于此——它是一切<b>线性变换</b>的语言。这一节把它彻底拆开:
+    乘法 AB 的<b>两种读法</b>、「方程组」与「向量」<b>两种视角</b>、以及<b>特征值 / 特征向量 / 秩 / 行列式</b>到底在说什么。
+    读懂它,后面的李代数、雅可比、SLAM 优化才会变得透明。</p>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:30px">
       <div class="gd-head">再深一层 · 矩阵到底是什么</div>
       <p class="gd-intro">既然旋转就是一个矩阵,不妨把视野放大:<b>任何矩阵,本质上都是一次线性变换</b>——
       它把整个平面映成新的平面,让直线仍是直线、网格仍然均匀、原点保持不动。
@@ -553,6 +566,39 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
       多个变换 <b>A·B·v</b> 里<b>最右边的先作用</b>。换个对象看——左乘 A·M 等于「对 M 的每一列各做一次 A」(从<b>输出端 / 世界坐标系</b>叠加);
       右乘 M·A 等于「用 A 把 M 的列重新组合」(从<b>输入端 / 机体坐标系</b>叠加,是一次基变换)。
       到第八章 SLAM,旋转的<b>左扰动 exp(δφ)·R</b> 与<b>右扰动 R·exp(δφ)</b> 之所以给出不同的雅可比,根子就在这条左右之分上。</p>
+    </div>
+
+    <p class="lede reveal" style="margin-top:38px"><b>同一个 AB,两种读法 ——</b> 顺序始终是 AB、算出的每个数都一样,变的只是<b>「谁当动词」</b>:
+    <b>读法①</b> A 当动词——把 B 的每一列当向量,用 A 去变换它(<code>c = A·b</code>);
+    <b>读法②</b> B 当动词——把 A 的列当材料 / 积木,用 B 的列作配方把它们组合起来(<code>c = Σ Bₖⱼ·aₖ</code>)。
+    谁主动、谁被动只是<b>读法的选择</b>,乘积本身不变。下图聚焦 C 的某一列,左右两种读法落到<b>同一支金色向量</b>上。</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">⊞</span> <b>AB 的两种读法</b> · A 变换 B 的列 ↔ B 重组 A 的列</div>
+        <div class="legend"><span><i style="background:var(--cyan)"></i>B 的列</span><span><i style="background:var(--red)"></i>a₁</span><span><i style="background:var(--green)"></i>a₂</span><span><i style="background:var(--gold)"></i>结果 C 的列</span></div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_abr"></canvas></div>
+        <div class="controls">
+          <div class="ctl"><label>矩阵 A(变换 / 积木)</label>
+            <div class="seg" id="seg_ab" style="flex-wrap:wrap;width:100%">
+              <button data-p="rot" class="on">旋转</button><button data-p="scale">缩放</button><button data-p="shear">剪切</button><button data-p="proj">投影(降维)</button>
+            </div>
+          </div>
+          <div class="ctl-grid">
+            <div class="ctl"><label>B 第1列·x<span class="v" id="abv_0">1.0</span></label><input type="range" id="s_ab0" min="-150" max="150" value="100"></div>
+            <div class="ctl"><label>B 第1列·y<span class="v" id="abv_1">0.4</span></label><input type="range" id="s_ab1" min="-150" max="150" value="40"></div>
+            <div class="ctl"><label>B 第2列·x<span class="v" id="abv_2">0.5</span></label><input type="range" id="s_ab2" min="-150" max="150" value="50"></div>
+            <div class="ctl"><label>B 第2列·y<span class="v" id="abv_3">1.0</span></label><input type="range" id="s_ab3" min="-150" max="150" value="100"></div>
+          </div>
+          <div class="btnrow"><button class="btn" id="ab_col">右图正在构造:C 第 1 列 ↔</button></div>
+          <div class="readout" id="abr_out"></div>
+          <div class="note cy">左(读法①):青 = B 的列(名词),被 A 这个「动词」推成金色 c。
+          右(读法②):红 / 绿 = A 的列(材料),被 B 这个「动词」按配方拼成<b>同一个 c</b>(金色圈标出,两边落点相同)。
+          用按钮切换聚焦 C 的第 1 / 2 列;切「投影」看 A 降秩时结果被压到一条线(降维)。</div>
+        </div>
+      </div>
     </div>
 
     <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:40px">
@@ -780,6 +826,21 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
           紫色虚线只缩放不偏转,旁边数字是它的特征值 λ。</div>
         </div>
       </div>
+    </div>
+
+    <div class="panel reveal" style="padding:24px clamp(20px,3vw,32px);margin-top:34px">
+      <div class="gd-head">一条漂亮的连线 · det = 面积,det=0 的塌缩方向 = λ=0 的特征向量</div>
+      <p class="gd-intro"><b>det(A) 就是 A 两列撑起的平行四边形的(有向)面积。</b>
+      det=0 ⟺ 面积塌成 0 ⟺ 两列共线 ⟺ 降维。那「被牺牲掉的方向」究竟是谁?——正是<b style="color:var(--violet)">特征值 λ=0 的特征向量</b>。</p>
+      <div class="basis-map">
+        <div class="bm"><span class="bm-h" style="color:var(--gold)">det = 面积 / 体积缩放</span>
+          det = 所有特征值之积 = 各方向缩放倍数的连乘。只要有<b>一个 λ=0</b>,连乘就为 0 → 面积塌掉 → 降维。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--violet)">λ=0 的特征向量 = 被压扁到零的方向</span>
+          λ=0 意味着 <b>A·v = 0·v = 0</b>:这个方向被整个<b>压成原点</b>(它落在 A 的<b>零空间 / kernel</b> 里)。这就是降维时「丢掉」的那一维。</div>
+      </div>
+      <p class="gd-foot" style="margin-top:16px">所以你的直觉对:<b>求特征向量(尤其 λ=0 那个),正好告诉你降维时哪个方向被压没了</b>。
+      回到上面的「变换沙盒」切到「投影」:平行四边形塌成一条线(面积=0),而紫色特征向量里标着 <b style="color:var(--violet)">λ=0</b> 的那条,就是被压扁的方向;
+      标着非零 λ 的那条,则是结果幸存、落在其上的方向(A 的列空间)。det、秩、特征向量在这里彻底连成了一件事。</p>
     </div>
 
     <p class="lede reveal" style="margin-top:40px"><b>那「不动的轴」到底什么意思?</b> 关键是:特征向量<b>不是不动,而是「不被偏转」</b>——
@@ -1995,6 +2056,104 @@ const C = {ink:'#0b0f1a',gold:'#f0bf4c',goldS:'#f6d486',cyan:'#46d7cc',cyanS:'#7
     playing=true;document.getElementById('eq_play').textContent='⏸ 停';
     function step(){if(!playing)return;lam+=dir*0.02;if(lam>=LMAX){lam=LMAX;dir=-1;}if(lam<=LMIN){lam=LMIN;dir=1;}
       sLam.value=Math.round(lam*100);refresh();raf=requestAnimationFrame(step);}step();});
+  onResize(cv,size);
+  size();refresh();
+})();
+
+/* ============================================================
+   AB 的两种读法 — A 变换 B 的列 ↔ B 重组 A 的列
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_abr'); if(!cv)return;
+  let ctx,w,h,U=44,col=0;
+  const presets={rot:[0.7,-0.7,0.7,0.7],scale:[1.5,0,0,0.6],shear:[1,0.7,0,1],proj:[1,0.6,0,0]};
+  let A=presets.rot.slice();
+  let B=[1,0.5,0.4,1]; // b11,b12,b21,b22
+  const S=['s_ab0','s_ab1','s_ab2','s_ab3'].map(id=>document.getElementById(id));
+  function mv(M,v){return [M[0]*v[0]+M[1]*v[1], M[2]*v[0]+M[3]*v[1]];}
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;U=Math.min(w*0.42,h)*0.13;draw();}
+  function arrow(P,ax,ay,bx,by,col,lw){const o=P(ax,ay),q=P(bx,by);
+    ctx.strokeStyle=col;ctx.lineWidth=lw||2.4;ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+    const a=Math.atan2(q[1]-o[1],q[0]-o[0]);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(q[0],q[1]);
+    ctx.lineTo(q[0]-Math.cos(a-0.4)*9,q[1]-Math.sin(a-0.4)*9);ctx.lineTo(q[0]-Math.cos(a+0.4)*9,q[1]-Math.sin(a+0.4)*9);ctx.closePath();ctx.fill();}
+  function seg(P,ax,ay,bx,by,col,lw,dash){const o=P(ax,ay),q=P(bx,by);ctx.strokeStyle=col;ctx.lineWidth=lw;
+    if(dash)ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();ctx.setLineDash([]);}
+  function axes(P){ctx.strokeStyle='rgba(36,49,73,.85)';ctx.lineWidth=1;
+    let a=P(-3,0),b=P(3,0);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);
+    a=P(0,-3);b=P(0,3);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();}
+  function ringAt(P,v){const p=P(v[0],v[1]);ctx.strokeStyle='rgba(246,212,134,.95)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(p[0],p[1],7,0,TAU);ctx.stroke();}
+  function drawLeft(cx){
+    const P=(x,y)=>[cx+x*U,h/2-y*U]; axes(P);
+    const bF=col===0?[B[0],B[2]]:[B[1],B[3]], bO=col===0?[B[1],B[3]]:[B[0],B[2]];
+    const cF=mv(A,bF), cO=mv(A,bO);
+    arrow(P,0,0,bO[0],bO[1],'rgba(70,215,204,.25)',2);
+    arrow(P,0,0,cO[0],cO[1],'rgba(240,191,76,.22)',2);
+    seg(P,bF[0],bF[1],cF[0],cF[1],'rgba(157,140,255,.5)',1.5,[4,4]);
+    arrow(P,0,0,bF[0],bF[1],'rgba(70,215,204,.95)',2.6);
+    arrow(P,0,0,cF[0],cF[1],C.gold,3);
+    ringAt(P,cF);
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('读法① A 是「动词」： c = A · b',cx,h-15);
+    ctx.fillText('青 = B 的列(名词)，被 A 推成金色 c',cx,h-2);
+  }
+  function drawRight(cx){
+    const P=(x,y)=>[cx+x*U,h/2-y*U]; axes(P);
+    const a1=[A[0],A[2]],a2=[A[1],A[3]];
+    [[a1,'rgba(255,107,107,.16)'],[a2,'rgba(91,224,138,.16)']].forEach(([a,cc])=>{
+      const n=Math.hypot(a[0],a[1])||1,ux=a[0]/n,uy=a[1]/n;seg(P,-ux*3,-uy*3,ux*3,uy*3,cc,1);});
+    arrow(P,0,0,a1[0],a1[1],'rgba(255,107,107,.6)',2);
+    arrow(P,0,0,a2[0],a2[1],'rgba(91,224,138,.6)',2);
+    const wv=col===0?[B[0],B[2]]:[B[1],B[3]];
+    const m1=[wv[0]*a1[0],wv[0]*a1[1]];
+    const c=[wv[0]*a1[0]+wv[1]*a2[0], wv[0]*a1[1]+wv[1]*a2[1]];
+    arrow(P,0,0,m1[0],m1[1],C.red,2.6);
+    arrow(P,m1[0],m1[1],c[0],c[1],C.green,2.6);
+    arrow(P,0,0,c[0],c[1],C.gold,3);
+    ringAt(P,c);
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('读法② B 是「动词」： c = '+wv[0].toFixed(1)+'·a₁ + '+wv[1].toFixed(1)+'·a₂',cx,h-15);
+    ctx.fillText('红/绿 = A 的列(名词/材料)，被 B 拼成同一个 c',cx,h-2);
+  }
+  function draw(){if(!ctx)return;ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(36,49,73,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(w/2,22);ctx.lineTo(w/2,h-26);ctx.stroke();
+    drawLeft(w*0.25);drawRight(w*0.75);
+    ctx.fillStyle=C.goldS;ctx.font='600 11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('同一个 AB · 这支金色 = C 第 '+(col+1)+' 列，左右落点完全相同',w/2,15);}
+  function out(){
+    const detA=A[0]*A[3]-A[1]*A[2];
+    const rank=Math.abs(detA)>1e-6?2:((Math.abs(A[0])+Math.abs(A[1])+Math.abs(A[2])+Math.abs(A[3]))>1e-6?1:0);
+    const c1=mv(A,[B[0],B[2]]),c2=mv(A,[B[1],B[3]]),f=x=>x.toFixed(1);
+    const red='var(--red)',grn='var(--green)',gld='var(--gold-soft)',mut='var(--muted2)';
+    const mtx=(cells,cc,cls)=>`<span class="mtx ${cls||''}" style="grid-template-columns:repeat(2,auto);font-size:11.5px;margin:0 2px">`+
+      cells.map((v,i)=>`<b style="min-width:2.4em${cc&&cc[i%2]?';color:'+cc[i%2]:''}">${v}</b>`).join('')+`</span>`;
+    const Am=mtx([f(A[0]),f(A[1]),f(A[2]),f(A[3])],[red,grn]);
+    const Bm=mtx([f(B[0]),f(B[1]),f(B[2]),f(B[3])],null);
+    const Cm=mtx([f(c1[0]),f(c2[0]),f(c1[1]),f(c2[1])],[gld,gld],'gold');
+    const sub=col===0?'₁':'₂', wF=col===0?[B[0],B[2]]:[B[1],B[3]], cF=col===0?c1:c2, res=`(${f(cF[0])}, ${f(cF[1])})`;
+    document.getElementById('abr_out').innerHTML=
+      `<div class="eq" style="margin-bottom:8px;font-size:12px">`+
+        `<span style="color:${mut}">A</span>${Am}<span class="op">·</span><span style="color:${mut}">B</span>${Bm}`+
+        `<span class="op">=</span><span style="color:${mut}">C</span>${Cm}</div>`+
+      `聚焦 <b style="color:${gld}">C 第 ${col+1} 列 c${sub}</b> = ${res} —— <b style="color:#5be08a">两种读法都到达它</b>：<br>`+
+      `<span style="color:#7ff0e7">读法①(A 作用)</span> A·b${sub} = ${res}<br>`+
+      `<span style="color:#f6d486">读法②(B 重组)</span> ${f(wF[0])}·<span style="color:${red}">a₁</span> + ${f(wF[1])}·<span style="color:${grn}">a₂</span> = ${res}<br>`+
+      (rank===2?'A 满秩(det≠0)→ <b style="color:#f6d486">保维</b>'
+              :'A 降秩(det=0)→ <b style="color:#ff6b6b">降维</b>：列共线,结果压成一条线');
+  }
+  function refresh(){
+    [['abv_0',B[0]],['abv_1',B[2]],['abv_2',B[1]],['abv_3',B[3]]].forEach(([id,v])=>document.getElementById(id).textContent=v.toFixed(1));
+    draw();out();
+  }
+  S[0].addEventListener('input',()=>{B[0]=+S[0].value/100;refresh();});
+  S[1].addEventListener('input',()=>{B[2]=+S[1].value/100;refresh();});
+  S[2].addEventListener('input',()=>{B[1]=+S[2].value/100;refresh();});
+  S[3].addEventListener('input',()=>{B[3]=+S[3].value/100;refresh();});
+  document.getElementById('seg_ab').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    e.currentTarget.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    A=presets[b.dataset.p].slice();refresh();});
+  document.getElementById('ab_col').addEventListener('click',()=>{col=col===0?1:0;
+    document.getElementById('ab_col').textContent='右图正在构造:C 第 '+(col+1)+' 列 ↔';refresh();});
   onResize(cv,size);
   size();refresh();
 })();

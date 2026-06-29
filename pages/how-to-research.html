@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>没人教你做研究 · 一摞可刻意训练的技能</title>
+<style>
+  :root{
+    --bg:#0f1014; --panel:#16181f; --panel-2:#1d2029; --ink:#e9ecf3; --ink-dim:#9aa1b0; --line:#2a2e3a;
+    --gold:#ffce5c; --cyan:#33d6c0; --green:#36c98a; --blue:#5b96ff; --violet:#b58bff; --pink:#ff84b8; --orange:#ff9d57;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.78;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+  a{color:var(--gold)}
+
+  header.hero{padding:74px 22px 48px;text-align:center;border-bottom:1px solid var(--line);
+    background:radial-gradient(1000px 420px at 50% -12%,rgba(255,206,92,.13),transparent 62%)}
+  header.hero .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
+  header.hero h1{font-size:clamp(28px,5.4vw,44px);margin:0 0 18px;font-weight:800;letter-spacing:.4px;line-height:1.25}
+  header.hero .lede{color:var(--ink-dim);max-width:600px;margin:0 auto;font-size:16.5px}
+  header.hero .lede b{color:var(--ink)}
+
+  nav.toc{position:sticky;top:0;z-index:30;background:rgba(15,16,20,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:9px 0}
+  nav.toc .wrap{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;max-width:900px}
+  nav.toc a{font-size:12.5px;color:var(--ink-dim);text-decoration:none;padding:3px 8px;border-radius:7px}
+  nav.toc a:hover{color:var(--ink);background:var(--panel-2)}
+
+  section{padding:34px 0 6px}
+  .intro p{font-size:16px;color:#c9cedb;margin:14px 0}
+  .intro b{color:var(--ink)}
+
+  /* overview cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:24px 0}
+  .gcard{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px;border-top:3px solid var(--c);transition:.15s}
+  .gcard:hover{transform:translateY(-2px);background:var(--panel-2)}
+  .gcard .gn{font-family:var(--mono);font-size:12px;color:var(--c);font-weight:700}
+  .gcard .gt{color:var(--ink);font-weight:700;font-size:14.5px;margin-top:3px}
+  .gcard .gs{color:var(--ink-dim);font-size:12.5px;margin-top:4px}
+
+  .habit{padding-top:40px}
+  .hhead{display:flex;align-items:baseline;gap:14px;margin-bottom:4px}
+  .hnum{font-family:var(--mono);font-size:34px;font-weight:800;color:var(--c);line-height:1;opacity:.9}
+  .habit h2{font-size:22px;margin:0;font-weight:800}
+  .habit h2 .en{display:block;font-family:var(--mono);font-size:13px;color:var(--c);font-weight:600;letter-spacing:.5px;margin-bottom:2px}
+  .thesis{font-size:17px;color:var(--ink);font-weight:600;border-left:3px solid var(--c);padding:2px 0 2px 14px;margin:14px 0}
+  .habit p{margin:12px 0;color:#c4cad7;font-size:15px}
+  .habit b{color:var(--ink)}
+  .drill{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin:16px 0;font-size:14px;color:var(--ink-dim)}
+  .drill b{color:var(--c)}
+  .who{font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);margin-top:8px}
+  blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--line);color:var(--ink-dim);font-style:italic;background:rgba(255,255,255,.015)}
+
+  h3.block{font-size:21px;margin:40px 0 4px;display:flex;align-items:center;gap:10px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .sub{color:var(--ink-dim);font-size:14.5px;margin:2px 0 16px}
+
+  /* meta loop svg */
+  .loopwrap{text-align:center;margin:18px 0}
+
+  /* checklist */
+  ul.metalist{list-style:none;padding:0;margin:14px 0}
+  ul.metalist li{position:relative;padding:8px 0 8px 26px;border-bottom:1px solid var(--line);color:#c4cad7;font-size:14.5px}
+  ul.metalist li::before{content:"▸";position:absolute;left:4px;color:var(--gold)}
+  ul.metalist li b{color:var(--ink)}
+
+  .check{margin:16px 0}
+  .check .bar{font-family:var(--mono);font-size:13px;color:var(--gold);margin-bottom:10px}
+  .citem{display:flex;align-items:flex-start;gap:11px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--panel);transition:.12s;font-size:14px;color:#c4cad7}
+  .citem:hover{border-color:var(--gold)}
+  .citem .box{flex:none;width:18px;height:18px;border:2px solid var(--ink-dim);border-radius:5px;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#0f1014}
+  .citem.done{color:var(--ink-dim);background:var(--panel-2)}
+  .citem.done .box{background:var(--green);border-color:var(--green)}
+  .citem.done .txt{text-decoration:line-through;opacity:.7}
+
+  table.idx{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px}
+  table.idx td{border:1px solid var(--line);padding:9px 11px;vertical-align:top}
+  table.idx td:first-child{font-family:var(--mono);color:var(--gold);white-space:nowrap;font-size:12.5px}
+
+  footer{padding:38px 22px 80px;text-align:center;color:var(--ink-dim);font-size:13px;border-top:1px solid var(--line);margin-top:34px}
+  footer a{text-decoration:none}
+
+  header.hero .byline{margin-top:16px;font-size:12.5px;color:var(--ink-dim)} header.hero .byline b{color:var(--ink)} header.hero .byline a{font-family:var(--mono);color:var(--gold)}
+  ol.chain{counter-reset:c;list-style:none;padding:0;margin:14px 0}
+  ol.chain li{counter-increment:c;position:relative;padding:11px 14px 11px 48px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;background:var(--panel);font-size:14px;color:#c4cad7}
+  ol.chain li::before{content:counter(c);position:absolute;left:13px;top:11px;width:23px;height:23px;background:var(--blue);color:#0f1014;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:12px}
+  ol.chain li b{color:var(--ink)}
+  .core{background:linear-gradient(180deg,rgba(255,206,92,.10),rgba(255,206,92,.03));border:1px solid rgba(255,206,92,.4);border-radius:14px;padding:18px 20px;margin:22px 0;font-size:15.5px;color:#dfe4ee;line-height:1.85}
+  .core b{color:var(--gold)} .core .corelabel{font-family:var(--mono);font-size:12px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">RESEARCH · 一门手艺</div>
+  <h1>没人真正教你做研究</h1>
+  <p class="lede">他们给你一张桌子、一个<b>别人选好</b>的问题,和一句含糊的"做点新东西"。于是多数人逆向工程出"<b>看起来像研究者</b>",而不是"<b>成为研究者</b>"。真正的技能,是一摞更小的技能——<b>而它们几乎每一个,都能被刻意训练。</b></p>
+  <p class="byline">原文 <b>by Vivek Nair</b>(Anthropic 研究员)· 发表于 X,经 Qwen 林俊旸等转发后在中文圈传开 · <a href="https://x.com/itsreallyvivek/status/2064686372737454155" target="_blank" rel="noopener">原帖 ↗</a></p>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#overview">总览</a>
+  <a href="#h1">①选问题</a>
+  <a href="#h2">②升级输入</a>
+  <a href="#h3">③写下来</a>
+  <a href="#h4">④收紧循环</a>
+  <a href="#h5">⑤盯输出</a>
+  <a href="#h6">⑥漫游</a>
+  <a href="#h7">⑦找到你的人</a>
+  <a href="#h8">⑧长期游戏</a>
+  <a href="#meta">元模式</a>
+  <a href="#deep">金句背后</a>
+  <a href="#checklist">训练清单</a>
+  <a href="#index">人物索引</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview" class="intro">
+  <p>这篇把一篇关于"如何做研究"的随笔,提炼成 <b>8 个可训练的习惯</b>。它们底下其实跑着同一套元模式:<b>预测 → 校正,重复几百遍</b>——这正是训练任何好模型(包括你脑子里那个)的方式。先看全局,点卡片可跳转:</p>
+  <div class="grid">
+    <a class="gcard" href="#h1" style="--c:var(--gold)"><div class="gn">01</div><div class="gt">自己选问题</div><div class="gs">别"吸收"问题,要"选择"</div></a>
+    <a class="gcard" href="#h2" style="--c:var(--cyan)"><div class="gn">02</div><div class="gt">升级你的输入</div><div class="gs">冷门与老料被严重低估</div></a>
+    <a class="gcard" href="#h3" style="--c:var(--green)"><div class="gn">03</div><div class="gt">把一切写下来</div><div class="gs">写作是最便宜的防自欺</div></a>
+    <a class="gcard" href="#h4" style="--c:var(--blue)"><div class="gn">04</div><div class="gt">收紧循环</div><div class="gs">研究速度=发现自己错的速度</div></a>
+    <a class="gcard" href="#h5" style="--c:var(--violet)"><div class="gn">05</div><div class="gt">盯着输出看</div><div class="gs">loss 曲线只是安慰剂</div></a>
+    <a class="gcard" href="#h6" style="--c:var(--pink)"><div class="gn">06</div><div class="gt">有意识地漫游</div><div class="gs">广度是保险,也是优势</div></a>
+    <a class="gcard" href="#h7" style="--c:var(--orange)"><div class="gn">07</div><div class="gt">找到你的人</div><div class="gs">开着门的人做重要的工作</div></a>
+    <a class="gcard" href="#h8" style="--c:var(--gold)"><div class="gn">08</div><div class="gt">长期游戏</div><div class="gs">每日微小边际会复利</div></a>
+  </div>
+</section>
+
+<!-- 1 -->
+<section id="h1" class="habit" style="--c:var(--gold)">
+  <div class="hhead"><span class="hnum">01</span><h2><span class="en">PICK YOUR OWN PROBLEMS</span>自己选问题</h2></div>
+  <p class="thesis">别"吸收"问题,要"选择"问题。</p>
+  <p><b>Hamming</b> 在贝尔实验室有个让人午餐时换桌子的习惯:问邻座"你领域里<b>重要的问题</b>是什么?",再问"那你为什么不做?"。问题之所以刺人,是因为多数人没有好答案——我们不<b>选</b>问题,我们<b>吸收</b>问题:从导师、从某大厂上季度的发布、从这周被疯狂转发的论文。</p>
+  <p>吸收来的问题,麻烦在于<b>你拿着结论,却没有推理</b>:你知道某名实验室在乎某方向,却不知道为什么、期待发现什么、什么会让他们放弃。他们一转向,你一年后才知道。而在一个<b>已经时髦</b>的问题上,你在和一千个起步更早、算力更多的人赛跑。</p>
+  <p><b>Schulman</b> 把研究分两种模式:① 读文献、找可改进处;② 选一个你<b>真心希望它存在</b>的结果,再反推实验。他主张第二种——安静的理由是:<b>它制造原创性</b>。一个你真在乎的目标,会把你拖进任何综述都没覆盖的领地。</p>
+  <p><b>品味(taste)</b>常被当作天赋,它其实更像肌肉:每个实验跑之前<b>先预测结果</b>;遮住论文的结果区,只凭方法猜数字;标记本月发布里哪些两年后还重要,之后核对命中率。<b>一次预测 + 一次校正,重复几百遍</b>——所有好模型就是这么训出来的,包括你脑子里那个。</p>
+  <div class="drill"><b>训练:</b>① 写下"我希望存在的结果",反推实验;② 跑每个实验前先押结果;③ 遮住结果区猜数字;④ 给本月发布打分,日后核对命中率。</div>
+  <div class="who">📌 Hamming《You and Your Research》· John Schulman《ML Research 指南》</div>
+</section>
+
+<!-- 2 -->
+<section id="h2" class="habit" style="--c:var(--cyan)">
+  <div class="hhead"><span class="hnum">02</span><h2><span class="en">UPGRADE YOUR INPUTS</span>升级你的输入</h2></div>
+  <p class="thesis">共享的阅读清单,产生共享的(因而几乎无价值的)想法。</p>
+  <p>如果你的信息食谱是 arXiv 热榜 + 群聊过滤后剩下的东西,你会<b>可靠地</b>和所有人在同一时间得出同一结论——而这种结论值约等于零。</p>
+  <p><b>老料被严重低估。</b>这个领域延迟地重跑自己的过去:MoE 可追到 1991、LSTM 到 1997、反向传播 1986 才主流化。<b>Sutton</b> 用大约一千字写下 2019 的《苦涩的教训》,比十倍长的综述更能预测领域的形状。<b>Shannon</b> 1952 谈创造性思维,开场第一招是:把问题<b>缩小到近乎平凡</b>,先解小版本,再一块一块把难度加回来——这一招能带你穿过比任何现代效率建议都多的墙。</p>
+  <p><b>广度和深度一样重要。</b>可解释性厚着脸皮借神经科学;eval 设计是穿白大褂的机制设计;真懂 GPU 如何搬内存,能在 benchmark 出来之前就判断哪些架构论文注定失败;而<b>诚实的统计</b>或许是 ML 最稀缺的技能——很多发表出来的"严谨",不过是带误差棒的氛围。</p>
+  <p>还有一条:<b>读论文本身,别读总结它的线程</b>。附录是埋尸体的地方,而 limitations 段通常是全文最诚实的一段。</p>
+  <div class="drill"><b>训练:</b>① 每周读一篇 5 年以上的老论文;② 用 Shannon 法把当前问题缩到平凡再加难度;③ 跨一个邻近领域(神经科学/机制设计/系统/统计);④ 读原文 + 附录 + limitations,不读线程。</div>
+  <div class="who">📌 Sutton《The Bitter Lesson》· Shannon《Creative Thinking》1952</div>
+</section>
+
+<!-- 3 -->
+<section id="h3" class="habit" style="--c:var(--green)">
+  <div class="hhead"><span class="hnum">03</span><h2><span class="en">WRITE EVERYTHING DOWN</span>把一切写下来</h2></div>
+  <p class="thesis">写作会逼出你脑子糊弄过去的缝隙。</p>
+  <p><b>Paul Graham</b> 指出:一个想法在你试图把它<b>写成文字</b>之前,会一直感觉很完整。落到纸上,缝隙就现形了——那个你从没验证的假设、那个其实不成立的推导、那两个悄悄互相矛盾的论断。</p>
+  <p><b>Feynman</b> 的规矩:第一个你必须避免欺骗的人是<b>你自己</b>,因为你是最容易得手的目标。写作是有史以来最便宜的防御。<b>Darwin</b> 走得更远、把它<b>程序化</b>:任何与他理论相悖的事实,<b>当场</b>记下——因为他发现自己的记忆删除不便证据比删除便利的更快。你的记忆对失败的 run 也是这么干的。</p>
+  <p>所以<b>记日志</b>:假设、设置、预期、结果、更新后的信念。重读上个月的条目,谦卑得任何审稿人都给不了。</p>
+  <p>然后把其中一部分<b>公开</b>。<b>Olah & Carter</b> 的《Research Debt》论证:领域会被未消化的想法噎住,而一个清晰的解释是<b>真正的贡献</b>,不是打杂。今天很多做可解释性的人,是通过可读的博客、而非会议论文入门的。一批公开写作,还是你能持有的<b>最强凭证</b>——因为它是一份无法伪造的"你如何思考"的样本。</p>
+  <div class="drill"><b>训练:</b>① 实验日志五栏:假设/设置/预期/结果/更新信念;② 当场记下与你想法相悖的证据;③ 每月重读旧日志;④ 把一个难概念用平实语言公开讲清楚。</div>
+  <div class="who">📌 Paul Graham · Feynman · Darwin · Olah & Carter《Research Debt》</div>
+</section>
+
+<!-- 4 -->
+<section id="h4" class="habit" style="--c:var(--blue)">
+  <div class="hhead"><span class="hnum">04</span><h2><span class="en">TIGHTEN THE LOOP</span>收紧循环</h2></div>
+  <p class="thesis">研究速度,基本就是你<b>发现自己错了</b>的速度。</p>
+  <p>关于 <b>Alec Radford</b> 的故事很少关于灵光一现,而是关于<b>量</b>:每天更多 run、每周丢掉更多错误想法、一个比谁都更新得快的现实模型。这才是真正的游戏。</p>
+  <p>于是<b>工具是一等的研究活动</b>:启动一个 run 应是一条命令,画它再一条;每个实验都能从它的 config <b>复现</b>;比较两个 run 应是几秒,而不是一下午的考古。<b>Karpathy</b> 的训练配方里有一步回本一百次:大规模训练前,先在<b>单个 batch 上过拟合</b>。三十秒,一半的 bug 没了。把一切缩到便宜 → 搞对 → 再花算力。</p>
+  <p>还要退掉"工程是初级伙伴"的念头。在前沿,两份工作已经<b>融合</b>:能亲手搭 harness、eval、data pipeline 的研究者,他的假设才真正得到检验;其他人在排队等着。</p>
+  <div class="drill"><b>训练:</b>① 一条命令启动 run、一条命令出图;② config 即可复现,两个 run 秒级对比;③ 单 batch 过拟合再放大;④ 把"建工具/管线"当研究本身来投入。</div>
+  <div class="who">📌 Alec Radford(迭代量)· Karpathy《A Recipe for Training Neural Networks》</div>
+</section>
+
+<!-- 5 -->
+<section id="h5" class="habit" style="--c:var(--violet)">
+  <div class="hhead"><span class="hnum">05</span><h2><span class="en">STARE AT THE OUTPUTS</span>盯着输出看</h2></div>
+  <p class="thesis">下降的 loss 曲线不是分析,是安慰剂。</p>
+  <p>你的实验抛出的信息,远多于你消费的:transcripts、失败案例、分布那条奇怪的尾巴——大多没人读,死在 logs 文件夹里。</p>
+  <p><b>Karpathy</b> 的配方在写任何训练代码之前,先花<b>数小时手工看原始数据</b>。多数 ML bug 住在数据里,而且<b>静默失败</b>:什么都不崩,你只是得到一个平庸的模型,和一套关于"为什么平庸"的错误理论。</p>
+  <p><b>Andrew Ng</b> 把同一个不光彩的动作教了十多年,因为没有什么比它更管用:<b>拉一百个失败案例,全部读完,分成几堆,攻击最大的那堆。</b>它对模型有效,对 eval 也有效——一个你从没读过 transcript 的 benchmark,是一个你<b>并不真懂</b>的 benchmark。一条真正反常行为的 transcript,教你的比下一位小数的准确率多。</p>
+  <div class="drill"><b>训练:</b>① 写训练码前先手翻几小时原始数据;② 误差分析:拉 100 个失败、读完、分堆、攻最大堆;③ 用过的 benchmark 必读其 transcript;④ 专门去看分布的尾巴与反常案例。</div>
+  <div class="who">📌 Karpathy(先看数据)· Andrew Ng(误差分析)</div>
+</section>
+
+<!-- 6 -->
+<section id="h6" class="habit" style="--c:var(--pink)">
+  <div class="hhead"><span class="hnum">06</span><h2><span class="en">WANDER ON PURPOSE</span>有意识地漫游</h2></div>
+  <p class="thesis">你的第一个子领域是<b>时机的意外</b>,就当意外对待。</p>
+  <p>在 interpretability、evals、rl、systems 里都<b>真实地</b>待一阵,再决定定居哪里。这个领域的某个角落,你那份特定的"怪"会是不公平的优势——而找到它的唯一办法,是在<b>好几个地方交学费</b>。没人给你免单。</p>
+  <p>每个想法先跑<b>一次性的、可丢弃的</b>版本,让多数早夭。把 baseline 调到<b>痛</b>为止——ML 的坟场堆满了对着一个调好的 baseline 就蒸发的收益,而审稿人是你最不该从他那里学到这件事的人。<b>消融(ablate)</b>到你知道是哪个组件扛起了结果:通常只有一个,而且通常不是标题里那个。</p>
+  <p>广度也是<b>保险</b>:子领域都会饱和,通常就在它于 Twitter 上达峰之后。能熬过这些转型继续产出的人,是那些早就熟悉邻近领地的人。</p>
+  <div class="drill"><b>训练:</b>① 在 3–4 个子领域各交一次学费再定居;② 想法先做一次性版本,大胆早夭;③ baseline 调到痛、ablate 到锁定真正起作用的组件;④ 平时维护一两块"邻近领地"作保险。</div>
+  <div class="who">📌 调好的 baseline · 消融 · 广度即保险</div>
+</section>
+
+<!-- 7 -->
+<section id="h7" class="habit" style="--c:var(--orange)">
+  <div class="hhead"><span class="hnum">07</span><h2><span class="en">FIND YOUR PEOPLE</span>找到你的人</h2></div>
+  <p class="thesis">关着门的人做得更多,<b>开着门的人</b>做出真正重要的工作。</p>
+  <p><b>Hamming</b> 注意到一个模式:关上办公室门的同事,在任一年里都做得更多;而开着门的同事,做出了<b>真正要紧</b>的工作——因为那些打扰携带着"世界究竟需要什么"的信息。你的"门"大概是收件箱,让它开着。</p>
+  <p><b>慷慨</b>在研究里的复利无与伦比:复现一个结果并公布你的发现;发布你为自己造的工具;用平实语言解释一件难事。回报会从<b>侧面</b>、几个月后到来——作为那个你申请不到的合作、引用,或职位。也把<b>半成形</b>的想法公开漂浮,因为<b>在时间线上犯错,远比在印刷品上犯错便宜</b>。而那个在你投入三个月之前就告诉你"这想法很烂"的合作者,比算力更值钱——这种关系买不到,只能挣来。</p>
+  <div class="drill"><b>训练:</b>① 保持"开门"(可被打扰的入口);② 复现并公布、发布工具、公开讲清难点;③ 公开漂浮半成形想法,早点被纠错;④ 珍惜那个敢说你"想法烂"的人。</div>
+  <div class="who">📌 Hamming(开门 vs 关门)· 慷慨的复利</div>
+</section>
+
+<!-- 8 -->
+<section id="h8" class="habit" style="--c:var(--gold)">
+  <div class="hhead"><span class="hnum">08</span><h2><span class="en">THE LONG GAME</span>长期游戏</h2></div>
+  <p class="thesis">每日的边际优势会像利息一样复利。</p>
+  <p><b>Pasteur</b> 说机会偏爱有准备的头脑;<b>Hamming</b> 在此之上建了整套职业哲学:知识与生产力像利息一样<b>复利</b>。那些每日的小边际——你读什么、记什么、循环跑多快、和谁争论——孤立看都微不足道。给它们几年,就长成从外面看像<b>运气</b>的职业。</p>
+  <p>比"感觉有必要"更<b>早</b>开始复利。未来的你已经知道:这是便宜的那部分。</p>
+  <div class="loopwrap"><canvas id="cmp" width="680" height="240" style="max-width:100%;height:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px"></canvas></div>
+  <div class="who">📌 Pasteur(有准备的头脑)· Hamming(复利)</div>
+</section>
+
+<!-- meta -->
+<section id="meta">
+  <h3 class="block"><span class="dot" style="background:var(--gold)"></span>贯穿全文的元模式</h3>
+  <p class="sub">8 个习惯底下,其实只有这几条引擎在反复出现。</p>
+  <div class="loopwrap"><svg width="420" height="120" viewBox="0 0 420 120" style="max-width:100%">
+    <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ffce5c"/></marker></defs>
+    <rect x="14" y="42" width="108" height="36" rx="9" fill="#1d2029" stroke="#ffce5c"/><text x="68" y="65" text-anchor="middle" fill="#e9ecf3" font-size="13" font-family="monospace">预测</text>
+    <rect x="156" y="42" width="108" height="36" rx="9" fill="#1d2029" stroke="#36c98a"/><text x="210" y="65" text-anchor="middle" fill="#e9ecf3" font-size="13" font-family="monospace">校正</text>
+    <rect x="298" y="42" width="108" height="36" rx="9" fill="#1d2029" stroke="#5b96ff"/><text x="352" y="65" text-anchor="middle" fill="#e9ecf3" font-size="13" font-family="monospace">更新</text>
+    <line x1="122" y1="60" x2="150" y2="60" stroke="#ffce5c" stroke-width="2" marker-end="url(#ar)"/>
+    <line x1="264" y1="60" x2="292" y2="60" stroke="#ffce5c" stroke-width="2" marker-end="url(#ar)"/>
+    <path d="M352,42 C352,12 68,12 68,42" fill="none" stroke="#ffce5c" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+    <text x="210" y="108" text-anchor="middle" fill="#9aa1b0" font-size="11">重复几百遍 —— 训练任何好模型(包括你脑子里那个)的方式</text>
+  </svg></div>
+  <ul class="metalist">
+    <li><b>预测 → 校正,重复几百遍</b>:品味、看输出、写日志,本质都是"押一个、对一下、更新信念"。</li>
+    <li><b>研究速度 = 发现自己错了的速度</b>:所以收紧反馈环、把一切缩到便宜、单 batch 过拟合。</li>
+    <li><b>复利</b>:每日微小边际(读/记/循环/争论),几年后从外面看像运气。早点开始。</li>
+    <li><b>别欺骗自己(你最易得手)</b>:写作、日志、读原始数据/transcript、调到痛的 baseline、消融——都是防自欺的装置。</li>
+    <li><b>原创是"制造"出来的</b>:选一个你希望它存在的目标 + 喂冷门/老料的输入,把你带到综述覆盖不到的地方。</li>
+    <li><b>慷慨与开门</b>:复现、发布工具、公开讲清、漂浮半成形想法——回报从侧面、几个月后到来。</li>
+  </ul>
+</section>
+
+<!-- deep -->
+<section id="deep">
+  <h3 class="block"><span class="dot" style="background:var(--blue)"></span>金句背后:文章一笔带过、其实有真东西的几条</h3>
+  <p class="sub">原文很多是"一句话带过、背后有完整方法"的点。分两层拆透:动手实操的纪律链,与容易被技术细节盖过的判断力。</p>
+
+  <h4 style="color:var(--blue)">实操层 · 一条防"沉默 bug"的纪律链</h4>
+  <p>这五步串起来,是一条针对<b>沉默的 bug</b> 的防御链——多数 ML bug 不会崩溃报错,而是<b>静默</b>地让你得到"一个平庸模型 + 一套关于它为什么平庸的错误理论"。</p>
+  <ol class="chain">
+    <li><b>写训练码前,先肉眼过几小时原始数据。</b>数据 bug 静默失败:标注差一帧、坐标系反了、某类样本全脏——程序照跑、loss 照降,你只得到"平庸模型 + 错误归因"。<span class="muted">(Karpathy)</span></li>
+    <li><b>大规模训练前,先在单个 batch 上过拟合。</b>管线对的话,模型一定能把几条样本背到 loss≈0;背不动 = 梯度没回传 / 标签错位 / loss 写错。<b>三十秒,干掉一半 bug。</b><span class="muted">(Karpathy)</span></li>
+    <li><b>baseline 调到心疼,再做消融。</b>否则你那"几个点"可能只是"方法被你认真调、baseline 被你敷衍"。消融到你知道是哪个组件扛着结果——<b>通常一个,且通常不是标题里那个。</b></li>
+    <li><b>读 100 个失败案例,分堆,攻最大的那堆。</b><span class="muted">(Andrew Ng 的 error analysis)</span> 汇总数字只说"错多少",不说"为什么错";一条诡异行为的 transcript,比下一位小数的准确率教你更多。<b>没读过 transcript 的 benchmark,是你不真懂的 benchmark。</b></li>
+    <li><b>读论文时盖住结果、只凭方法猜数字。</b>把"读论文"从被动接收变成<b>带反馈的预测训练</b>——你猜的数与真实数的差距,精确暴露你直觉哪里不准。重复几百次,品味就长出来了。</li>
+  </ol>
+
+  <h4 style="color:var(--orange)">策略层 · 四条容易被技术细节盖过的判断力</h4>
+  <ul class="metalist">
+    <li><b>原创性是"反推目标"的副产品,不是硬想的靶子。</b>你真心想让某个结果存在、而它还不存在,那通往它的路上<b>必然有没人走过的段落</b>——你是被问题逼进无人区,而非刻意去找无人区。</li>
+    <li><b>投资"判断自己错了的速度",而不是"做对的速度"。</b>你大多数想法是坏的(常态),决定产出的是<b>淘汰坏想法多快</b>:坏想法做到 50% 才放弃,一篇好论文要付三篇的工作量;10% 就判死刑,效率差几倍。而且"<b>在时间线上犯错,远比在印刷品上犯错便宜</b>"——半成形想法尽早暴露受击。</li>
+    <li><b>公开写作 = 你能持有的最强、且无法伪造的资历。</b>CV 说你<i>做过</i>什么,博文直接展示你<b>怎么思考</b>,没法注水;而把难事讲清本身就是贡献(帮领域消化"未消化的想法")。</li>
+    <li><b>"开门" = 获取"什么重要"的信号渠道,不是对深度工作的干扰。</b>关门的人产出更多,<b>开门的人做出重要的工作</b>——因为打扰携带"世界究竟需要什么"的信息。今天你的门大概是收件箱,让它开着。</li>
+  </ul>
+
+  <div class="core">
+    <div class="corelabel">一句话内核</div>
+    研究的成败,不取决于你<b>执行</b>好想法的能力,而取决于一组可以刻意训练的<b>判断力</b>——判断什么问题值得做、判断自己什么时候错了、判断一个结果是真的还是假的——而这些判断力,全都通过"<b>预测 + 暴露 + 修正</b>"的高频循环积累,且会像利息一样复利。
+  </div>
+</section>
+
+<!-- checklist -->
+<section id="checklist">
+  <h3 class="block"><span class="dot" style="background:var(--green)"></span>可勾选的训练清单</h3>
+  <p class="sub">把上面所有"训练动作"汇成一张清单。点一下打勾,进度会存在本地浏览器里。</p>
+  <div class="check" id="check">
+    <div class="bar" id="cbar"></div>
+  </div>
+</section>
+
+<!-- index -->
+<section id="index">
+  <h3 class="block"><span class="dot" style="background:var(--violet)"></span>人物 / 出处索引</h3>
+  <table class="idx">
+    <tr><td>Vivek Nair ★</td><td><b>本文作者</b>,Anthropic 研究员(@itsreallyvivek)。原帖发于 X,经 Qwen 林俊旸等转发后在中文圈广传</td></tr>
+    <tr><td>Richard Hamming</td><td>选"重要"的问题;开门 vs 关门;知识像利息复利。《You and Your Research》</td></tr>
+    <tr><td>John Schulman</td><td>研究两种模式;主张"反推你想要的结果",以制造原创性</td></tr>
+    <tr><td>Claude Shannon</td><td>《Creative Thinking》1952:把问题缩到平凡,再逐块加回难度</td></tr>
+    <tr><td>Rich Sutton</td><td>《The Bitter Lesson》2019:一千字预测领域走向</td></tr>
+    <tr><td>Paul Graham</td><td>想法在写成文字前都"感觉"完整;写作暴露缝隙</td></tr>
+    <tr><td>Richard Feynman</td><td>第一个不能骗的人是你自己——你最容易得手</td></tr>
+    <tr><td>Charles Darwin</td><td>把反对自己理论的证据当场写下,对抗记忆的偏袒</td></tr>
+    <tr><td>Olah &amp; Carter</td><td>《Research Debt》:清晰的解释是真正的贡献</td></tr>
+    <tr><td>Alec Radford</td><td>不是灵光一现,是迭代量与更新速度</td></tr>
+    <tr><td>Andrej Karpathy</td><td>《A Recipe…》:先看数据、单 batch 过拟合</td></tr>
+    <tr><td>Andrew Ng</td><td>误差分析:读一百个失败、分堆、攻最大堆</td></tr>
+    <tr><td>Louis Pasteur</td><td>机会偏爱有准备的头脑</td></tr>
+  </table>
+</section>
+
+</div>
+
+<footer>
+  知识总结 · 原文 <a href="https://x.com/itsreallyvivek/status/2064686372737454155" target="_blank" rel="noopener">by Vivek Nair(Anthropic 研究员)↗</a>。<br>核心一句:<a href="#meta">研究不是天赋,是一摞可刻意训练的小技能;预测→校正,重复几百遍。</a>
+</footer>
+
+<script>
+/* 清单:汇总各节训练动作,可勾选 + localStorage 持久化 */
+const ITEMS=[
+  '写下"我希望存在的结果",再反推实验',
+  '跑每个实验前先押结果,事后核对',
+  '遮住论文结果区,只凭方法猜数字',
+  '给本月发布打分,两年后核对命中率',
+  '每周读一篇 5 年以上的老论文',
+  '用 Shannon 法:把问题缩到平凡,再逐块加难度',
+  '读原文 + 附录 + limitations,不读线程',
+  '写五栏实验日志:假设/设置/预期/结果/更新信念',
+  '当场记下与自己想法相悖的证据',
+  '每月重读旧日志一次',
+  '把一个难概念用平实语言公开讲清',
+  '一条命令启动 run、一条命令出图;config 可复现',
+  '大规模训练前,先单 batch 过拟合',
+  '写训练码前,先手翻几小时原始数据',
+  '误差分析:拉 100 个失败、读完、分堆、攻最大堆',
+  '用过的 benchmark 必读其 transcript',
+  'baseline 调到痛;ablate 到锁定真正起作用的组件',
+  '保持"开门",公开漂浮半成形想法、早被纠错'
+];
+(function(){
+  const host=document.getElementById('check'), bar=document.getElementById('cbar');
+  let done={}; try{ done=JSON.parse(localStorage.getItem('research-checklist')||'{}'); }catch(e){ done={}; }
+  function save(){ try{ localStorage.setItem('research-checklist',JSON.stringify(done)); }catch(e){} }
+  function refresh(){ const n=ITEMS.filter((_,i)=>done[i]).length; bar.textContent='已完成 '+n+' / '+ITEMS.length+'　—— 每练一项,你脑子里那个模型就更新一次'; }
+  ITEMS.forEach((t,i)=>{
+    const row=document.createElement('div'); row.className='citem'+(done[i]?' done':'');
+    row.innerHTML='<span class="box">'+(done[i]?'✓':'')+'</span><span class="txt">'+t+'</span>';
+    row.onclick=()=>{ done[i]=!done[i]; row.classList.toggle('done',done[i]); row.querySelector('.box').textContent=done[i]?'✓':''; save(); refresh(); };
+    host.appendChild(row);
+  });
+  refresh();
+})();
+
+/* 复利曲线:线性"努力" vs 复利"积累" */
+(function(){
+  const cv=document.getElementById('cmp'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=680,H=240,P=34;
+  const X=t=>P+t*(W-2*P), Y=v=>H-P-v*(H-2*P);
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#2a2e3a'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(P,P); ctx.lineTo(P,H-P); ctx.lineTo(W-P,H-P); ctx.stroke();
+  ctx.fillStyle='#9aa1b0'; ctx.font='11px monospace'; ctx.fillText('产出',8,P+4); ctx.fillText('时间(年) →',W-90,H-12);
+  // 线性
+  ctx.strokeStyle='#9aa1b0'; ctx.setLineDash([5,4]); ctx.lineWidth=2; ctx.beginPath();
+  for(let t=0;t<=1;t+=0.02){ const x=X(t),y=Y(t*0.55); t?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#9aa1b0'; ctx.fillText('线性努力',X(0.62),Y(0.36));
+  // 复利
+  ctx.strokeStyle='#ffce5c'; ctx.lineWidth=2.8; ctx.beginPath();
+  for(let t=0;t<=1;t+=0.02){ const v=(Math.exp(t*2.6)-1)/(Math.exp(2.6)-1); const x=X(t),y=Y(v); t?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+  ctx.fillStyle='#ffce5c'; ctx.font='bold 12px sans-serif'; ctx.fillText('复利(读/记/循环/争论)',X(0.40),Y(0.86));
+  // 交点后阴影提示
+  ctx.fillStyle='rgba(255,206,92,.10)'; ctx.beginPath(); ctx.moveTo(X(0.62),H-P);
+  for(let t=0.62;t<=1;t+=0.02){ const v=(Math.exp(t*2.6)-1)/(Math.exp(2.6)-1); ctx.lineTo(X(t),Y(v)); } ctx.lineTo(X(1),H-P); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#9aa1b0'; ctx.font='italic 11px sans-serif'; ctx.fillText('从外面看像"运气"的那段,其实是早年复利的结果 ↗',X(0.30),Y(0.5));
+})();
+</script>
+</body>
+</html>
