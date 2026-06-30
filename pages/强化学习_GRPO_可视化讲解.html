@@ -256,8 +256,24 @@ footer a:hover{text-decoration:underline}
 .insight{display:flex;gap:14px;align-items:flex-start;background:rgba(52,224,201,.06);border:1px solid rgba(52,224,201,.28);border-radius:14px;padding:16px 18px;margin-top:18px;font-size:13.8px;color:#cdd6ea;line-height:1.65}
 .insight .ic{font-size:24px;flex:none;line-height:1.2}
 
+/* ⑤ 半梯度 stop-gradient 图 / ⑧ OaK 步骤 / 跨页链接卡 */
+.stopgrad{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;margin:6px 0 2px}
+.linkcard{display:flex;align-items:center;gap:16px;text-decoration:none;background:linear-gradient(100deg,rgba(251,191,36,.10),rgba(251,113,133,.06));border:1px solid var(--line2);border-left:3px solid var(--amber);border-radius:16px;padding:16px 20px;margin:18px 0;transition:.2s}
+.linkcard:hover{transform:translateY(-2px);border-color:var(--amber);box-shadow:0 14px 32px -16px rgba(251,191,36,.55)}
+.linkcard .lk-ico{font-size:30px;flex:none;line-height:1}
+.linkcard .lk-t{font-family:var(--serif);font-weight:700;font-size:16.5px;color:var(--ink);display:block}
+.linkcard .lk-d{font-size:12.5px;color:var(--muted);display:block;margin-top:2px}
+.linkcard .lk-go{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--amber);white-space:nowrap}
+.oak{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.ostep{background:#0a1426;border:1px solid var(--line);border-radius:12px;padding:13px 14px;position:relative}
+.ostep .on{font-family:var(--mono);font-weight:700;color:var(--violet);font-size:11.5px;letter-spacing:.5px}
+.ostep .ot{font-size:12.8px;color:#dbe3f4;margin-top:4px;line-height:1.45}
+.ostep.done{border-color:rgba(94,234,212,.32)}
+.ostep.done::after{content:"≈已成型";position:absolute;top:10px;right:11px;font-family:var(--mono);font-size:9px;color:var(--good)}
+
 @media(max-width:820px){
   .paradcards,.intuition,.vs2{grid-template-columns:1fr}
+  .oak{grid-template-columns:repeat(2,1fr)}
   .g2,.g3,.g4,.panel-explain,.minis,.vs{grid-template-columns:1fr}
   .resp-grid{grid-template-columns:1fr 1fr}
   nav .links{display:none}
@@ -273,11 +289,14 @@ footer a:hover{text-decoration:underline}
     <div class="brand"><span class="dot"></span>RL · DL · GRPO</div>
     <div class="links">
       <a href="#dl-rl">① DL vs RL</a>
-      <a href="#unify">② 统一公式</a>
-      <a href="#policy">③ 策略学习</a>
-      <a href="#ppo">④ PPO 的负担</a>
-      <a href="#grpo">⑤ GRPO</a>
-      <a href="#impact">⑥ 改变了什么</a>
+      <a href="#agent">② 智能体解剖</a>
+      <a href="#unify">③ 统一公式</a>
+      <a href="#policy">④ 策略学习</a>
+      <a href="#ppo">⑤ PPO 的负担</a>
+      <a href="#semigrad">⑥ 半梯度</a>
+      <a href="#grpo">⑦ GRPO</a>
+      <a href="#impact">⑧ 改变了什么</a>
+      <a href="#horizon">⑨ 更大的图景</a>
     </div>
   </div>
 </nav>
@@ -390,9 +409,113 @@ footer a:hover{text-decoration:underline}
   </table>
 </div></section>
 
-<!-- ================= ② 统一公式 ================= -->
+<!-- ================= ② 智能体解剖 ================= -->
+<section id="agent"><div class="container">
+  <div class="eyebrow"><span class="num">2</span> 一个 RL 智能体里面有什么</div>
+  <h2>强化学习智能体的解剖：四个部件，一个循环</h2>
+  <p class="lead">Sutton 在 OaK 演讲里把一个智能体的「心智」拆成四个部件：<strong class="hl-cyan">感知 Perception</strong>、<strong class="hl-rose">反应式策略 Reactive Policy</strong>、<strong class="hl-amber">价值函数 Value Function</strong>、<strong class="hl-violet">转移模型 Transition Model</strong>。这四件套，正是本篇后面所有内容的「词汇表」。</p>
+
+  <div class="insight">
+    <div class="ic">❓</div>
+    <div><strong>先回答一个常见疑问：这是新理论吗？——并不是。</strong> 这四件套正是<strong>基于模型的强化学习智能体</strong>的经典结构，几十年前就写在 Sutton &amp; Barto 的教科书里（<span class="mono">策略 + 价值 + 模型 + 状态表示</span>）。Sutton 的<strong>新意不在「有哪四个部件」，而在主张：在「大世界」里（世界远大于智能体），这四样必须由智能体<span class="hl-cyan">在运行时、纯粹从经验中自己学出来</span></strong>，并在其上自造 options 与子问题——那才是 §⑨ 的 OaK。</div>
+  </div>
+
+  <div class="loop-wrap" style="margin-top:18px">
+    <svg viewBox="0 0 800 430" role="img" aria-label="Sutton OaK：智能体的四个部件示意图">
+      <defs>
+        <marker id="aH" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#93a0bd"/></marker>
+        <marker id="aV" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#a78bfa"/></marker>
+        <marker id="aA" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#fbbf24"/></marker>
+      </defs>
+      <!-- agent box -->
+      <rect x="150" y="52" width="470" height="320" rx="18" fill="#0c1322" stroke="#3a4a6e"/>
+      <text x="172" y="86" fill="#93a0bd" font-size="14" font-weight="700" font-family="Space Grotesk">Agent · 智能体</text>
+      <!-- external: observation -->
+      <text x="74" y="222" fill="#93a0bd" font-size="12" text-anchor="middle" font-family="JetBrains Mono">观测</text>
+      <text x="74" y="238" fill="#5c6b86" font-size="10" text-anchor="middle" font-family="JetBrains Mono">Observation</text>
+      <line x1="110" y1="248" x2="178" y2="248" stroke="#93a0bd" stroke-width="1.5" marker-end="url(#aH)"/>
+      <!-- perception -->
+      <rect x="180" y="222" width="118" height="54" rx="10" fill="#142036" stroke="#34e0c9"/>
+      <text x="239" y="246" fill="#34e0c9" font-size="14" text-anchor="middle" font-family="Space Grotesk">感知</text>
+      <text x="239" y="264" fill="#93a0bd" font-size="10" text-anchor="middle" font-family="JetBrains Mono">Perception</text>
+      <!-- last action self loop -->
+      <path d="M198,222 C188,200 220,196 232,216" fill="none" stroke="#5c6b86" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#aH)"/>
+      <text x="196" y="194" fill="#5c6b86" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">上一步动作</text>
+      <!-- transition model -->
+      <rect x="440" y="78" width="140" height="50" rx="10" fill="#142036" stroke="#a78bfa"/>
+      <text x="510" y="100" fill="#a78bfa" font-size="13" text-anchor="middle" font-family="Space Grotesk">转移模型</text>
+      <text x="510" y="117" fill="#93a0bd" font-size="10" text-anchor="middle" font-family="JetBrains Mono">Transition model</text>
+      <!-- reactive policy (stacked) -->
+      <rect x="462" y="216" width="130" height="52" rx="10" fill="#101a30" stroke="#5b3a44"/>
+      <rect x="456" y="210" width="130" height="52" rx="10" fill="#142036" stroke="#fb7185"/>
+      <text x="521" y="232" fill="#fb7185" font-size="13" text-anchor="middle" font-family="Space Grotesk">反应式策略</text>
+      <text x="521" y="249" fill="#93a0bd" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">Reactive policy +options</text>
+      <!-- value functions (stacked) -->
+      <rect x="356" y="300" width="130" height="50" rx="10" fill="#101a30" stroke="#6b5a2a"/>
+      <rect x="350" y="294" width="130" height="50" rx="10" fill="#142036" stroke="#fbbf24"/>
+      <text x="415" y="315" fill="#fbbf24" font-size="13" text-anchor="middle" font-family="Space Grotesk">价值函数</text>
+      <text x="415" y="332" fill="#93a0bd" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">Value functions</text>
+      <!-- perception -> policy (state-feature vector) -->
+      <line x1="298" y1="246" x2="452" y2="240" stroke="#93a0bd" stroke-width="1.6" marker-end="url(#aH)"/>
+      <text x="375" y="234" fill="#7d8aa6" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">状态-特征向量</text>
+      <!-- perception -> transition model -->
+      <path d="M272,222 C330,150 410,128 470,124" fill="none" stroke="#93a0bd" stroke-width="1.4" marker-end="url(#aH)"/>
+      <!-- transition -> policy (planning, dashed) -->
+      <path d="M524,128 C544,160 530,184 524,208" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#aV)"/>
+      <text x="566" y="172" fill="#a78bfa" font-size="11" text-anchor="middle" font-family="JetBrains Mono">规划</text>
+      <text x="566" y="186" fill="#7d6fb0" font-size="9" text-anchor="middle" font-family="JetBrains Mono">planning</text>
+      <!-- perception -> value -->
+      <path d="M250,276 C280,300 312,308 352,316" fill="none" stroke="#93a0bd" stroke-width="1.4" marker-end="url(#aH)"/>
+      <!-- value -> policy (learning, dashed) -->
+      <path d="M480,308 C536,298 540,280 536,266" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#aA)"/>
+      <text x="516" y="292" fill="#fbbf24" font-size="11" text-anchor="middle" font-family="JetBrains Mono">学习</text>
+      <text x="516" y="305" fill="#a98f3e" font-size="9" text-anchor="middle" font-family="JetBrains Mono">learning</text>
+      <!-- reward in -->
+      <text x="415" y="416" fill="#fbbf24" font-size="12" text-anchor="middle" font-family="JetBrains Mono">奖励 Reward</text>
+      <line x1="415" y1="398" x2="415" y2="346" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#aA)"/>
+      <!-- action out -->
+      <line x1="586" y1="236" x2="694" y2="236" stroke="#fb7185" stroke-width="1.6" marker-end="url(#aH)"/>
+      <text x="704" y="232" fill="#fb7185" font-size="12" text-anchor="start" font-family="JetBrains Mono">动作</text>
+      <text x="704" y="247" fill="#93a0bd" font-size="10" text-anchor="start" font-family="JetBrains Mono">Action</text>
+    </svg>
+    <p class="note" style="margin:6px 0 0">忠于 Sutton 演讲原图：<span class="hl-cyan">感知</span>把观测变成特征 → 喂给<span class="hl-rose">策略</span>产生动作；<span class="hl-amber">价值函数</span>用奖励评估、回头改策略（<strong>学习</strong>）；<span class="hl-violet">转移模型</span>预测后果、回头改策略（<strong>规划</strong>）。</p>
+  </div>
+
+  <div class="grid g4" style="margin-top:18px">
+    <div class="card"><div class="ico" style="color:var(--cyan)">👁</div><h3 class="hl-cyan">感知 Perception</h3><p class="muted">把观测（+上一步动作）变成<strong>状态-特征向量</strong>，供主问题和所有子问题使用。这就是 RL 的「状态表示」。</p></div>
+    <div class="card"><div class="ico" style="color:var(--rose)">⚡</div><h3 class="hl-rose">反应式策略 Policy</h3><p class="muted">由状态<strong>快速产生动作</strong>（或 option）。本篇 ④ 策略梯度、⑦ GRPO 优化的就是它。</p></div>
+    <div class="card"><div class="ico" style="color:var(--amber)">📊</div><h3 style="color:var(--amber)">价值函数 Value</h3><p class="muted">评估在主/各子问题上<strong>做得好不好</strong>，据此改策略（<span class="hl-cyan">学习</span>）。就是 ⑤ PPO 的 Critic，⑥ 讲它怎么学。</p></div>
+    <div class="card"><div class="ico" style="color:var(--violet)">🗺</div><h3 class="hl-violet">转移模型 Model</h3><p class="muted">预测不同动作/选项的<strong>后果</strong>，据此改策略（<span class="hl-violet">规划</span>）。是 model-based RL 与 OaK 的重点。</p></div>
+  </div>
+
+  <h3 style="margin-top:30px;font-size:18px">这不是新理论：Sutton 称它为跨学科的「共识模型」</h3>
+  <p>同一张图，Sutton 演讲里的标题就是 <strong>「The consensus model of the intelligent agent」</strong>，副标题——<em>跨学科存在实质共识 (substantial agreement across disciplines)</em>。强化学习/AI、心理学/神经科学、控制论/运筹、经济/哲学，对「智能决策者内部如何运作」给出的其实是同一套部件，只是叫法不同：</p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>共识部件</th><th>强化学习 / AI</th><th>其它学科的叫法（示例）</th></tr></thead>
+    <tbody>
+      <tr><td>奖励 / 目标</td><td>reward</td><td>心理：reward；控制/运筹：payoff / gain / −cost；经济：payoff / utility</td></tr>
+      <tr><td>状态表示</td><td>state representation</td><td>心理：situation；控制：state；经济：state</td></tr>
+      <tr><td>其余部件</td><td colspan="2"><span class="muted">agent 智能体 · world 世界 · action 动作 · observation 观测 · value function 价值函数 · perception 感知 · reactive policy 反应式策略 · transition model 转移模型 · subjective state 主观状态 —— 各学科都有对应词</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="insight">
+    <div class="ic">✅</div>
+    <div>所以你最早问的「<strong>这是不是新理论</strong>」——<strong>Sutton 本人的答案是：不是。</strong> 这是几十年跨学科沉淀下来的<strong>共识</strong>。OaK 的新意<strong>不在「有哪四个部件」</strong>，而在<strong class="hl-cyan">让智能体在运行时、纯靠经验把这些部件自己学出来</strong>（见 §⑨）。</div>
+  </div>
+
+  <p class="note" style="margin-top:14px">本篇主要顺着「<strong class="hl-rose">策略</strong> + <strong class="hl-amber">价值</strong>」这条<strong>无模型 (model-free)</strong> 主线走（③→⑦：策略梯度 → PPO → 半梯度 → GRPO）；而「<strong class="hl-violet">转移模型 + 规划</strong>」那条<strong>model-based</strong> 主线，正是 §⑨ OaK 要让智能体<strong>自己长出来</strong>的部分。</p>
+  <a class="linkcard" href="rl-fundamentals.html" style="border-left-color:var(--cyan)">
+    <span class="lk-ico">📘</span>
+    <span><span class="lk-t">姊妹页 · 强化学习基础（含函数逼近）</span><span class="lk-d">想从 MDP、Q-learning、致命三元组系统补「价值/表格」这条主线 → Sutton 教程精华</span></span>
+    <span class="lk-go" style="color:var(--cyan)">前往 →</span>
+  </a>
+</div></section>
+
+<!-- ================= ③ 统一公式 ================= -->
 <section id="unify"><div class="container">
-  <div class="eyebrow"><span class="num">2</span> 一个统一视角（教学框架）</div>
+  <div class="eyebrow"><span class="num">3</span> 一个统一视角（教学框架）</div>
   <h2>一个公式，统一四种学习</h2>
   <p class="lead">监督、自监督、半监督、强化——它们看起来天差地别，其实都在做同一件事：<strong>调参数 θ，让模型的输出去匹配某个「标签」</strong>。换句话说，它们共享同一个优化目标，<em>唯一的区别是标签 y 从哪里来</em>。</p>
 
@@ -554,7 +677,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- ================= ③ 策略学习 ================= -->
 <section id="policy"><div class="container">
-  <div class="eyebrow"><span class="num">3</span> 强化学习如何「学策略」</div>
+  <div class="eyebrow"><span class="num">4</span> 强化学习如何「学策略」</div>
   <h2>策略梯度：把好动作的概率推上去</h2>
   <p class="lead">RL 学的不是一张映射表，而是一个<strong>策略</strong> <span class="mono">π<sub>θ</sub>(a|s)</span>——给定状态，输出动作的概率分布。我们没有「正确动作」可学，只有事后的奖励。<strong>策略梯度</strong>给出了答案：让带来高回报的动作，下次出现的概率更大。</p>
 
@@ -592,7 +715,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- ================= ④ PPO 的负担 ================= -->
 <section id="ppo"><div class="container">
-  <div class="eyebrow"><span class="num">4</span> GRPO 之前的主流方案</div>
+  <div class="eyebrow"><span class="num">5</span> GRPO 之前的主流方案</div>
   <h2>PPO 的代价：你得额外养一个 Critic</h2>
   <p class="lead">PPO 是 RLHF 时代的主力。为了估计「这步比基准好多少」(A<sub>t</sub>)，它训练了一个<strong class="hl-rose">价值网络 Critic</strong> <span class="mono">V<sub>φ</sub>(s)</span> 来预测「从当前状态往后能拿多少奖励」，再用它算 advantage。问题是：这个 Critic 通常<strong>和策略网络一样大</strong>——等于训练时要同时背着两个大模型，显存和算力近乎翻倍。</p>
 
@@ -611,9 +734,47 @@ footer a:hover{text-decoration:underline}
   </div>
 </div></section>
 
-<!-- ================= ⑤ GRPO ================= -->
+<!-- ================= ⑤ 半梯度 · 价值函数怎么学 ================= -->
+<section id="semigrad"><div class="container">
+  <div class="eyebrow"><span class="num">6</span> 价值函数到底怎么学出来</div>
+  <h2>插曲：Critic 是怎么训练的？——半梯度 TD</h2>
+  <p class="lead">上一节 PPO 要养一个 Critic <span class="mono">v̂(s,w)</span> 来估计「从这个状态往后还能拿多少奖励」。可它自己又是怎么学出来的？答案是强化学习里最核心、也最微妙的一招——<strong class="hl-cyan">半梯度（semi-gradient）</strong>方法。看懂它，才真正明白下一节 GRPO 为什么敢把 Critic 整个扔掉。</p>
+
+  <div class="grid g2" style="align-items:start">
+    <div>
+      <div class="eq">
+        <div class="cap">半梯度 TD(0) 更新</div>
+        $$ w \leftarrow w + \alpha\,\big[\,\underbrace{R+\gamma\,\hat v(S',w)}_{\text{TD 目标（自举）}}-\hat v(S,w)\,\big]\,\nabla_{w}\hat v(S,w) $$
+        <div class="note" style="margin-top:8px">不等真实回报，直接拿「即时奖励 + 对下一步的估计」当目标——这叫<strong>自举 (bootstrapping)</strong>：用自己的估计去训练自己。</div>
+      </div>
+      <p>关键就在<strong class="hl-rose">「半」</strong>字：TD 目标 <span class="mono">R+γv̂(S′,w)</span> 其实也含 w，但我们<strong>假装它是常数</strong>，只对预测项 <span class="mono">v̂(S,w)</span> 求梯度，<strong>不</strong>对目标里的 <span class="mono">v̂(S′,w)</span> 回传梯度。于是每步只用了「半个梯度」——这就是名字的由来。</p>
+    </div>
+    <div class="card" style="background:#0a1426">
+      <h3>梯度只从一边流</h3>
+      <div class="stopgrad">
+        <div class="fnode ysrc" style="--c:var(--cyan)"><span class="t">求梯度 ∇</span><span class="v">v̂(S,w)</span></div>
+        <span style="font-family:var(--mono);color:var(--muted);font-size:13px">　← 更新 w ←　</span>
+        <div class="fnode" style="border-color:var(--rose)"><span class="t">✋ 停止梯度 · 当常数</span><span class="v">R + γ·v̂(S′,w)</span></div>
+      </div>
+      <p class="note" style="margin:14px 0 0">和深度学习里的 <span class="mono">stop-gradient / detach</span> 是一回事：把目标「截断」掉，不让梯度回传。真梯度会两边都求导（即 residual gradient），但实践中更慢、更别扭。</p>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><div class="ico">⚡</div><h3 class="hl-cyan">为什么这么干</h3><p class="muted">半梯度学得更快、更稳，是 TD / Q-learning / Actor-Critic 的<strong>默认做法</strong>，也是 PPO 里 Critic（配 GAE）的训练方式。</p></div>
+    <div class="card"><div class="ico">✅</div><h3 class="hl-cyan">什么时候安全</h3><p class="muted">在 <strong>同策略 (on-policy) + 线性逼近</strong> 下，半梯度 TD 有收敛保证，是教科书级的可靠基线。</p></div>
+    <div class="card"><div class="ico">☠️</div><h3 class="hl-rose">致命三元组</h3><p class="muted">一旦 <strong>自举 + 离策略 + 函数逼近</strong> 三者同时出现（the deadly triad），价值估计可能<strong>发散</strong>——深度 RL 不稳定的根源之一。</p></div>
+  </div>
+
+  <div class="insight">
+    <div class="ic">🎯</div>
+    <div><strong>这正是 GRPO 扔掉 Critic 的底气。</strong> PPO 的 Critic 就是用这套半梯度 TD 训练的——既贵（多一个大模型），又可能踩中致命三元组而不稳。而 GRPO 的基准是「<strong class="hl-cyan">同一问题一组答案的平均奖励</strong>」，是当场算出来的统计量：<strong>没有自举、没有要学的价值网络，也就没有致命三元组的隐患</strong>。下一节就来看它怎么做到。</div>
+  </div>
+</div></section>
+
+<!-- ================= ⑥ GRPO ================= -->
 <section id="grpo"><div class="container">
-  <div class="eyebrow"><span class="num">5</span> DeepSeek 的关键改动</div>
+  <div class="eyebrow"><span class="num">7</span> DeepSeek 的关键改动</div>
   <h2>GRPO：扔掉 Critic，用「一群答案」当基准</h2>
   <p class="lead">GRPO（Group Relative Policy Optimization，组相对策略优化）的核心洞察极其简洁：<strong>既然不知道一个答案的绝对好坏，那就对同一个问题一次采样一整组答案，用这组答案的平均分当基准。</strong>高于平均 → 鼓励；低于平均 → 抑制。基准不再靠一个学出来的 Critic，而是<strong class="hl-cyan">直接从这组答案的统计量算出来</strong>——精确、在线、还自带归一化。</p>
 
@@ -664,7 +825,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- ================= ⑥ 改变了什么 ================= -->
 <section id="impact"><div class="container">
-  <div class="eyebrow"><span class="num">6</span> 影响</div>
+  <div class="eyebrow"><span class="num">8</span> 影响</div>
   <h2>GRPO 改变了强化学习的什么</h2>
   <p class="lead">表面上 GRPO 只是「删掉了一个网络」，但这个改动顺着成本和稳定性一路传导，最终改变了「大模型该怎么训练推理」这件事。</p>
 
@@ -688,6 +849,117 @@ footer a:hover{text-decoration:underline}
   </div>
 </div></section>
 
+<!-- ================= ⑧ 更大的图景 ================= -->
+<section id="horizon"><div class="container">
+  <div class="eyebrow"><span class="num">9</span> 站到更高处看</div>
+  <h2>更大的图景：苦涩的教训、经验时代，与 OaK</h2>
+  <p class="lead">把这页的故事往后退一步，会发现它落在一条更大的主线上——由强化学习之父、2024 年图灵奖得主 <strong>Richard Sutton</strong> 反复强调的判断：<strong class="hl-amber">能随算力扩展的通用方法，终将胜过人类手工注入的知识。</strong></p>
+
+  <h3 style="margin-top:8px">① 苦涩的教训（The Bitter Lesson, 2019）</h3>
+  <p>纵观 70 年 AI 史，真正长期取胜的，永远是「<strong>能吃下更多算力的通用方法</strong>」——学习与搜索——而不是把人类领域知识精心编码进系统。Sutton 把它拆成四点观察：</p>
+  <div class="quotecard">
+    <div class="qtag">📄 Sutton《The Bitter Lesson》· 四点观察（原文）</div>
+    <p class="qen">"…1) AI researchers have often tried to build knowledge into their agents, 2) this always helps in the short term, and is personally satisfying to the researcher, 3) but in the long run it plateaus and even inhibits further progress, and 4) breakthrough progress eventually arrives by an opposing approach based on scaling computation by search and learning."</p>
+    <p class="qcn">译：①研究者总想把知识塞进智能体；②短期总有效，也让研究者很有成就感；③但长期会停滞、甚至阻碍进步；④真正的突破最终来自相反路线——靠<strong>搜索与学习</strong>把<strong>算力</strong>规模化。</p>
+  </div>
+  <div class="insight">
+    <div class="ic">🤝</div>
+    <div><strong>由此引出一个尖锐问题：「帮智能体，是错的吗？」</strong> Sutton 的回答有分寸：帮忙会把「<strong>你的智能</strong>」和「<strong>智能体的智能</strong>」混为一谈——你到底在为谁的能力骄傲？<strong class="hl-rose">大量帮在「领域相关」的事上 → 不 scale</strong>（专家系统的教训）；<strong class="hl-cyan">帮在「领域无关」的事上（比如更好的学习算法）→ 没问题</strong>。这正是苦涩的教训的操作版。</div>
+  </div>
+  <p>本页整条故事，就是它的一个活体样本：</p>
+  <div class="quotecard">
+    <div class="qtag">本页 ↔ 苦涩的教训</div>
+    <p class="qcn"><strong class="hl-amber">SFT（注入人类示范）</strong> vs <strong class="hl-rose">RL（让模型用奖励 + 算力自己探索）</strong>：R1-Zero「纯 RL、推理自发涌现」正是苦涩的教训在大模型上的重演，而 <strong>GRPO 让「用算力换能力」变得便宜</strong>，把这条路从奢侈变成日常。</p>
+  </div>
+  <a class="linkcard" href="the-bitter-lesson.html">
+    <span class="lk-ico">🫐</span>
+    <span><span class="lk-t">延伸阅读 ·《苦涩的教训》</span><span class="lk-d">Sutton 2019 原文精读 · 人类知识 vs 算力反超曲线 · 四个经典案例</span></span>
+    <span class="lk-go">前往 →</span>
+  </a>
+
+  <h3 style="margin-top:30px">② 经验时代（The Era of Experience, Silver &amp; Sutton 2025）</h3>
+  <p>下一代智能体将主要从<strong class="hl-cyan">自己产生的经验</strong>（与环境交互、奖励信号）里学习，而不是从人类数据里学。这正是本页 <strong>SFT → RL</strong> 那条迁移线的放大版：从「<strong>模仿人类</strong>」走向「<strong>在经验中自我超越</strong>」。</p>
+  <a class="linkcard" href="design-for-learning.html">
+    <span class="lk-ico">🦾</span>
+    <span><span class="lk-t">延伸 · Design for Learning：为「学习」而设计机器人硬件</span><span class="lk-d">经验时代落到钢铁上——犯错=报废则试错失效；快速复位 / 抗探索 / stress-aware 仿真（Kris De Asis）</span></span>
+    <span class="lk-go">前往 →</span>
+  </a>
+
+  <h3 style="margin-top:30px">③ OaK 架构（Sutton, RLC 2025）</h3>
+  <div class="grid g3" style="margin-top:6px">
+    <div class="card"><div class="ico" style="color:var(--cyan)">🌐</div><h3 class="hl-cyan">① 通用</h3><p class="muted">领域无关——不含任何针对特定世界的东西。</p></div>
+    <div class="card"><div class="ico" style="color:var(--amber)">🌱</div><h3 style="color:var(--amber)">② 经验性</h3><p class="muted">从运行时经验中生长，而非某个特殊的「训练阶段」。</p></div>
+    <div class="card"><div class="ico" style="color:var(--rose)">🔭</div><h3 class="hl-rose">③ 自发现抽象</h3><p class="muted">能自己发现状态与时间上的抽象，开环、只受算力限制。</p></div>
+  </div>
+  <p class="muted" style="margin-top:10px;font-size:14.5px">这是 Sutton 一开场给出的「<strong>quest（毕生目标）</strong>」——他想要的智能体须同时满足这三条，而 OaK 正是为此而设计。</p>
+  <p>OaK = <strong>O</strong>ptions <strong>a</strong>nd <strong>K</strong>nowledge，隶属 <em>The Alberta Plan</em>。它的底座正是 <a href="#agent" style="color:var(--cyan);text-decoration:none">§② 那四个经典部件</a>（感知 / 策略 / 价值 / 模型）；OaK 在其上加了两样东西：<strong class="hl-rose">选项 Option</strong>（一个 option = 策略 <span class="mono">π</span> + 终止条件 <span class="mono">γ</span>，即「一段可命名、可复用的行为」）与<strong class="hl-violet">知识 Knowledge</strong>（= 这些选项的转移模型）。Sutton 的赌注是：在「<strong>大世界</strong>」里（世界远大于智能体，Javed &amp; Sutton 2024），智能体必须<strong>自己造特征、自己提子问题、把解法固化成选项</strong>，开环式地不断长出更高层抽象。下面把这台「机器」拆开看 👇</p>
+
+  <div class="aha" style="margin-top:16px">
+    <h3 style="margin-bottom:4px">一句话：OaK 是一张「智能的设计图」</h3>
+    <p class="muted" style="margin:0">一个<strong>领域通用</strong>、<strong>完全靠经验在运行时自我搭建</strong>的智能体架构。Sutton 称它给出了通往「简单、通用」超级智能的一条<strong>视线 (line-of-sight)</strong>——一颗能自己长大的「<strong class="hl-cyan">种子</strong>」。</p>
+  </div>
+
+  <div class="grid g2" style="margin-top:18px;align-items:start">
+    <div class="insight">
+      <div class="ic">🏭</div>
+      <div><strong>设计时 vs 运行时（OaK 的灵魂）。</strong> 传统做法在<strong>设计时</strong>把领域知识塞进智能体；OaK 主张：在<strong class="hl-cyan">大世界</strong>里，<strong>学习、规划、发现抽象这三件事必须全部在运行时、纯靠经验发生</strong>，而非靠特制的人类输入——因为世界远大于智能体，没法把一切预先装好。</div>
+    </div>
+    <div class="card">
+      <div class="ico">🧩</div><h3>知识 = 选项的「预测模型」</h3>
+      <p class="muted">学会一个选项后，再学「<strong>执行它之后世界会怎样</strong>」=它的转移模型。有了它就能<strong>跨大步规划</strong>，像把<em>世界的动力学切成块</em>——这就是 OaK 里的 <strong class="hl-violet">Knowledge</strong>。</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:26px;font-size:18px">核心机制：智能体<strong class="hl-amber">自己造子问题</strong></h3>
+  <p>子问题太多、且高度依赖具体世界，<strong>不可能预先内置</strong>，只能交给智能体自己生成。OaK 的造法很通用——<strong>「尊重奖励的特征达成子问题」(reward-respecting subproblems of feature attainment)</strong>：给某个重要特征 <span class="mono">φᵢ</span> 设一个目标——<strong>把世界带到该特征很高的状态，同时别丢太多主线奖励</strong>。解出来，就是一个选项。</p>
+  <div class="eq">
+    <div class="cap">OaK 如何从特征 i 造一个子问题（κ = 想要该特征的强度）</div>
+    $$ \max_{\pi,\,\gamma}\ \mathbb{E}\Big[\ \kappa\,\phi_i(S_T)\ +\ \hat v(S_T)\ +\ \sum_{k=t+1}^{T}\big(R_k-\bar r_\pi\big)\ \Big|\ S_t=s\Big] $$
+    <div class="note" style="margin-top:8px">三项含义：<span class="hl-amber">κ·φᵢ(S_T)</span> 终止时特征越高越好（κ 平衡「想要特征」与「损失奖励」）；<span class="hl-cyan">v̂(S_T)</span> 终止状态在主问题上的价值；<span class="hl-rose">Σ(Rₖ−r̄π)</span>「别为追特征而丢太多奖励」。这类子问题就是<strong>通用价值函数 GVF</strong>，有现成 RL 解法。出处：<em>Reward-Respecting Subtasks for Model-based RL</em>, Sutton 等, AIJ 2023。</div>
+  </div>
+
+  <h3 style="margin-top:26px;font-size:18px">于是它能<strong class="hl-cyan">递归地长出抽象</strong></h3>
+  <p class="muted" style="margin-top:-2px">解子问题时会冒出新特征 → 新特征又生出新子问题 →……开环、无上限：</p>
+  <div class="flow" style="justify-content:flex-start;flex-wrap:wrap;margin:8px 0 2px">
+    <div class="fnode"><span class="t">从感知</span><span class="v" style="color:var(--cyan)">特征 φ</span></div>
+    <span class="farrow">→</span>
+    <div class="fnode"><span class="t">达成它</span><span class="v" style="color:var(--amber)">子问题 GVF</span></div>
+    <span class="farrow">→</span>
+    <div class="fnode"><span class="t">解法固化</span><span class="v" style="color:var(--rose)">选项 (π,γ)</span></div>
+    <span class="farrow">→</span>
+    <div class="fnode"><span class="t">学其后果</span><span class="v" style="color:var(--violet)">转移模型 = 知识</span></div>
+    <span class="farrow">↺</span>
+    <div class="fnode"><span class="t">求解中冒出</span><span class="v" style="color:var(--cyan)">新特征</span></div>
+  </div>
+  <p class="note" style="margin-top:8px">四者近似<strong>一一对应</strong>：一个特征 ↔ 一个子问题 ↔ 一个选项 ↔ 一个转移模型。这台机器越转，抽象层级越高——这正是「智能从经验里自我生长」的样子。</p>
+
+  <p style="margin-top:22px">具体地，OaK 在运行时<strong>并行</strong>做下面八件事：</p>
+  <div class="oak">
+    <div class="ostep done"><span class="on">STEP 1</span><div class="ot">学策略与价值函数（最大化奖励）</div></div>
+    <div class="ostep"><span class="on">STEP 2</span><div class="ot">从已有特征生成新特征</div></div>
+    <div class="ostep"><span class="on">STEP 3</span><div class="ot">按重要性给特征排序</div></div>
+    <div class="ostep"><span class="on">STEP 4</span><div class="ot">为高价值特征提出子问题</div></div>
+    <div class="ostep"><span class="on">STEP 5</span><div class="ot">把解法固化成「选项 option」= 策略 π + 终止条件 γ</div></div>
+    <div class="ostep"><span class="on">STEP 6</span><div class="ot">学选项/动作的转移模型（这就是「知识」）</div></div>
+    <div class="ostep done"><span class="on">STEP 7</span><div class="ot">用模型做规划 (planning)</div></div>
+    <div class="ostep done"><span class="on">STEP 8</span><div class="ot">维护效用元数据、做取舍策展</div></div>
+  </div>
+  <p class="note" style="margin-top:10px"><strong>一条贯穿主线：特征 → 子问题 → 选项 → 转移模型（近似一一对应）。</strong> 每个重要特征生出一个「把该特征做高」的子问题（reward-respecting GVF），解它得到一个选项，再学这个选项的转移模型当「知识」。</p>
+  <p class="note" style="margin-top:8px">忠于原讲：第 1、7、8 步今天大体能做；硬骨头是第 2–6 步。Sutton 点名的前置条件是——<strong>不遗忘的持续深度学习</strong>（"Loss of Plasticity in Continual Deep Learning", Nature）、<strong>元学习 / 步长优化</strong>、<strong>安全高效的离策略学习</strong>（Retrace、Emphatic）；完整 12 步见 <em>The Alberta Plan for AI Research</em>。所以 OaK 目前是<strong>研究纲领 / 愿景</strong>，不是已落地系统。</p>
+  <p class="note" style="margin-top:8px">这些前置条件已有候选方法在推进：持续学习有 <strong>Continual Backprop</strong>（Dohare 等, 2024）与 <strong>Stream-X</strong>；自动造特征沿用 <strong>Generate-and-Test（生成-检验）</strong> 这条 1960 年代就有的老路（Minsky、Selfridge）；步长元学习可追到 Sutton 的 <strong>IDBD (1992)</strong>。他说：「我们<strong>需要它已经 40 年了</strong>；不管怎样，未来几年一定会得到可靠的持续学习。」</p>
+
+  <div class="quotecard">
+    <div class="qtag">📄 Sutton · OaK 的灵魂句</div>
+    <p class="qen">"We want AI agents that can <b>discover</b> like we can, not which <b>contain</b> what we have discovered."</p>
+    <p class="qcn">译：我们要的是<strong>能像我们一样去「发现」</strong>的 AI，而不是<strong>装着我们已经发现之物</strong>的 AI——这正是「苦涩的教训」的另一种说法。</p>
+  </div>
+
+  <div class="card" style="margin-top:18px;border-color:var(--line2)">
+    <h3>两条不同的下注</h3>
+    <p style="margin:0"><strong class="hl-violet">LLM + RL（如 DeepSeek-R1）</strong>站在海量人类数据预训练的肩膀上，再用 RL 去突破；<strong class="hl-rose">OaK</strong> 则主张几乎从零、纯靠经验流自建抽象。二者是「从经验中获得智能」的两条不同路线——并排来看，恰好照出苦涩的教训那股张力：<strong>我们到底该把多少先验交给人类，又把多少留给算力自己去发现？</strong></p>
+  </div>
+</div></section>
+
 <footer><div class="container">
   <strong style="color:#cdd6ea">参考资料</strong>
   <div class="srclist">
@@ -696,6 +968,11 @@ footer a:hover{text-decoration:underline}
     <span>· <a href="https://huggingface.co/learn/llm-course/en/chapter12/3b" target="_blank">Hugging Face LLM Course — Advanced Understanding of GRPO (DeepSeekMath)</a></span>
     <span>· <a href="https://arxiv.org/pdf/2507.04136" target="_blank">A Technical Survey of Reinforcement Learning Techniques for Large Language Models (arXiv 2507.04136)</a></span>
     <span>· <a href="https://medium.com/better-ml/group-relative-policy-optimization-grpo-the-deep-seek-cheat-code-5c13a2c86317" target="_blank">Group Relative Policy Optimization (GRPO): DeepSeek's RL cheat-code</a></span>
+    <span>· Sutton &amp; Barto, <a href="http://incompleteideas.net/book/the-book.html" target="_blank">Reinforcement Learning: An Introduction</a> · 第 9 章（半梯度方法）</span>
+    <span>· Rich Sutton, <a href="http://incompleteideas.net/IncIdeas/BitterLesson.html" target="_blank">The Bitter Lesson (2019)</a> · 本站中文页 <a href="the-bitter-lesson.html">《苦涩的教训》→</a></span>
+    <span>· Silver &amp; Sutton, <em>The Era of Experience</em> (2025)；Rich Sutton, <a href="https://www.youtube.com/watch?v=gEbbGyNkR2U" target="_blank">The OaK Architecture: A Vision of SuperIntelligence from Experience (RLC 2025)</a></span>
+    <span>· OaK 四部件 / 选项 / 子问题图据 R. Sutton 现场演讲《触碰真实 · 自主进化》(2025) 整理；另见 Javed &amp; Sutton, <em>The Big World Hypothesis</em> (RLC 2024)、Sutton 等 <em>Reward-Respecting Subtasks for Model-based RL</em> (AIJ 2023)、<em>The Alberta Plan for AI Research</em></span>
+    <span>· 本站姊妹页：<a href="rl-fundamentals.html">强化学习基础（含函数逼近）</a> · <a href="design-for-learning.html">Design for Learning（机器人硬件）</a></span>
   </div>
   <p style="margin-top:18px;color:#5c6b86;font-size:12.5px">交互可视化讲解 · 公式为教学简化版，完整推导以原论文为准。</p>
 </div></footer>
