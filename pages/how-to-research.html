@@ -90,6 +90,14 @@
   ol.chain li b{color:var(--ink)}
   .core{background:linear-gradient(180deg,rgba(255,206,92,.10),rgba(255,206,92,.03));border:1px solid rgba(255,206,92,.4);border-radius:14px;padding:18px 20px;margin:22px 0;font-size:15.5px;color:#dfe4ee;line-height:1.85}
   .core b{color:var(--gold)} .core .corelabel{font-family:var(--mono);font-size:12px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px}
+
+  /* original + translation */
+  #original summary{cursor:pointer;color:var(--ink-dim);font-size:13px;margin-bottom:14px;font-family:var(--mono)}
+  #original summary:hover{color:var(--ink)}
+  .orig-h{font-family:var(--mono);font-size:12.5px;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;margin:28px 0 12px;padding-top:16px;border-top:1px dashed var(--line)}
+  .orig-pair{margin:0 0 18px}
+  .orig-en{font-size:13.5px;color:var(--ink-dim);font-style:italic;line-height:1.7;margin:0 0 7px;padding-left:14px;border-left:2px solid var(--line)}
+  .orig-zh{font-size:15px;color:#c9cedb;line-height:1.85;margin:0;padding-left:14px;border-left:2px solid var(--cyan)}
 </style>
 </head>
 <body>
@@ -102,6 +110,7 @@
 </header>
 
 <nav class="toc"><div class="wrap">
+  <a href="#original">原文对照</a>
   <a href="#overview">总览</a>
   <a href="#h1">①选问题</a>
   <a href="#h2">②升级输入</a>
@@ -118,6 +127,128 @@
 </div></nav>
 
 <div class="wrap">
+
+<section id="original">
+  <h3 class="block"><span class="dot" style="background:var(--cyan)"></span>原文对照 · Nobody Really Teaches You Research</h3>
+  <p class="sub">英文原文与中文逐段翻译并列。来源见页首 <a href="https://x.com/itsreallyvivek/status/2064686372737454155" target="_blank" rel="noopener">原帖 ↗</a>。</p>
+  <details open>
+  <summary>展开 / 折叠原文全文 ▾</summary>
+
+  <div class="orig-pair">
+    <p class="orig-en">nobody really teaches you research. you get a desk, a problem someone else picked, and a vague instruction to produce something novel. so most people reverse-engineer the job from what they can see, which is papers, threads, and announcements, and what they end up learning is how to look like a researcher rather than how to be one. the actual skill is a stack of smaller skills, and almost every one of them can be deliberately trained.</p>
+    <p class="orig-zh">没人真正教你做研究。你得到一张桌子、一个别人挑好的问题,还有一句含糊的"做点新东西"的指示。于是大多数人只能从自己能看到的东西——论文、帖子、发布通告——去逆向工程这份工作,最终学会的是如何看起来像个研究者,而不是如何真正成为一个研究者。真正的技能是一摞更小的技能叠起来的,而其中几乎每一项,都可以被刻意训练。</p>
+  </div>
+
+  <div class="orig-h">Pick your own problems · 自己选问题</div>
+  <div class="orig-pair">
+    <p class="orig-en">richard hamming had a habit at bell labs that made him unpopular at lunch. he'd ask whoever sat near him what the important problems in their field were, then ask why they weren't working on them. people changed tables. the question stings because most of us have no good answer. we don't choose problems, we absorb them, from an advisor, from whatever a big lab announced last quarter, from the paper everyone is quote-tweeting this week.</p>
+    <p class="orig-zh">理查德·哈明(Richard Hamming)在贝尔实验室有个让他在午餐时不太受欢迎的习惯。他会问坐在旁边的人,他们领域里重要的问题是什么,然后追问对方为什么不去做那个问题。于是人们纷纷换桌子坐。这个问题之所以扎人,是因为我们大多数人根本答不上来。我们不是在"选择"问题,而是在"吸收"问题——从导师那里,从某个大实验室上个季度发布的东西里,从这周所有人都在转发评论的论文里。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">the trouble with an absorbed problem is that you hold the conclusion without the reasoning. you know some famous lab cares about a direction, but not why, not what they expect to find, not what would make them drop it. when they pivot, you find out a year later. and on a problem that's already fashionable, you're racing a thousand people who started earlier and have more compute than you.</p>
+    <p class="orig-zh">被吸收来的问题,麻烦在于你只拿到了结论,却没有拿到推理过程。你知道某个知名实验室在乎某个方向,却不知道为什么在乎、他们期待发现什么、又是什么会让他们放弃这个方向。等他们转向了,你要一年后才会知道。而且,在一个已经变得时髦的问题上,你是在和一千个起步更早、算力也比你多的人赛跑。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">john schulman's guide to ml research splits the work into two modes. in one, you read the literature and hunt for things to improve. in the other, you choose an outcome you genuinely want to exist and reason backwards to the experiments. he argues for the second, and the quiet reason is that it manufactures originality. a goal you actually care about will drag you into territory no survey paper covers.</p>
+    <p class="orig-zh">约翰·舒尔曼(John Schulman)那份机器学习研究指南,把研究工作分成两种模式。一种是阅读文献,寻找可以改进的地方;另一种是先选定一个你真心希望它存在的结果,再反向推导出该做哪些实验。他主张后者,而背后不太说破的理由是:这种做法能够"制造"出原创性。一个你真正在乎的目标,会把你拖进任何综述论文都没有覆盖过的领地。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">taste, meanwhile, gets discussed like a gift. it behaves more like a muscle. predict the result of every experiment before you run it. cover a paper's results section and guess the numbers from the method alone. mark down which of this month's releases will matter in two years and check your hit rate later. a forecast plus a correction, repeated a few hundred times, is how every good model gets trained, including the one in your head.</p>
+    <p class="orig-zh">与此同时,"品味"常常被说成是一种天赋。但它的表现更像一块肌肉。在跑每一个实验之前,先预测它的结果;遮住一篇论文的结果部分,只凭方法描述去猜数字;记下这个月发布的东西里,哪些两年后还会重要,之后再回来核对命中率。一次预测加一次校正,重复个几百遍——这正是训练出任何一个好模型的方式,包括你脑子里那一个。</p>
+  </div>
+
+  <div class="orig-h">Upgrade your inputs · 升级你的输入</div>
+  <div class="orig-pair">
+    <p class="orig-en">shared reading lists produce shared ideas. if your information diet is the trending page of arxiv plus whatever survives the group chat filter, you will reliably reach the same conclusions as everyone else, at the same time, which makes those conclusions worth approximately nothing.</p>
+    <p class="orig-zh">共享的阅读清单,产出共享的想法。如果你的信息食谱就是 arXiv 热门榜,再加上群聊过滤后剩下的那些东西,你就会可靠地在同一时间和所有人得出同样的结论——而这些结论的价值约等于零。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">old material is criminally underpriced. this field reruns its own past on a delay: mixture of experts dates to 1991, lstms to 1997, backprop went mainstream in 1986. rich sutton needed about a thousand words in 2019 to write the bitter lesson, and it predicts the shape of the field better than surveys ten times its length. claude shannon gave a talk on creative thinking in 1952 where his opening move was to shrink a problem until it's nearly trivial, crack the small version, then reintroduce the difficulty one piece at a time. that single trick will carry you through more walls than any modern productivity advice.</p>
+    <p class="orig-zh">老材料被严重低估了,简直是不公平地便宜。这个领域一直在延迟重演自己的过去:混合专家模型(mixture of experts)可以追溯到 1991 年,LSTM 追溯到 1997 年,反向传播在 1986 年才真正主流化。理查德·萨顿(Rich Sutton)在 2019 年只用了大约一千字,就写出了《苦涩的教训》,而这篇文章对领域走向的预测,比十倍篇幅的综述论文还要准。克劳德·香农(Claude Shannon)在 1952 年做过一次关于创造性思维的演讲,他的第一招是:把问题缩小到近乎平凡,先攻克这个小版本,再一点一点把难度加回来。就这一招,能带你穿过比任何现代"效率建议"都多的墙。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">range matters as much as depth. interpretability borrows shamelessly from neuroscience. eval design is mechanism design wearing a lab coat. a working sense of how gpus actually move memory tells you which architecture papers are doomed before the benchmarks do. and honest statistics might be the rarest skill in ml, where a lot of published rigor is vibes with error bars.</p>
+    <p class="orig-zh">广度和深度一样重要。可解释性研究毫不客气地从神经科学那里借东西;eval 设计其实是穿着实验室白大褂的机制设计;真正搞懂 GPU 是怎么搬运内存的,能让你在跑 benchmark 之前就判断出哪些架构论文注定行不通。而诚实的统计学,或许是机器学习里最稀缺的技能——很多发表出来的"严谨",不过是带着误差棒的感觉罢了。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">one more thing. read the paper itself, not the thread summarizing it. the appendix is where the bodies are buried, and the limitations section is usually the most honest paragraph in the document.</p>
+    <p class="orig-zh">还有一点:读论文本身,而不是那条总结它的推文串。附录才是埋尸体的地方,而"局限性"那一段,通常是全文中最诚实的一段。</p>
+  </div>
+
+  <div class="orig-h">Write everything down · 把一切写下来</div>
+  <div class="orig-pair">
+    <p class="orig-en">paul graham points out that an idea can feel fully formed right up until you try to put it into words. the page finds gaps your head papers over: the assumption you never tested, the step that doesn't actually follow, the two claims that quietly contradict each other.</p>
+    <p class="orig-zh">保罗·格雷厄姆(Paul Graham)指出,一个想法在你试图把它写成文字之前,可以一直感觉完整无缺。而纸面会找出你脑子里悄悄糊弄过去的缝隙:那个你从没验证过的假设、那一步其实并不成立的推导、还有那两个悄悄互相矛盾的论断。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">feynman's rule was that the first person you must avoid fooling is yourself, because you're the easiest target. writing is the cheapest defense ever invented. darwin went further and made it procedural. any fact that cut against his theory got written down on the spot, because he'd caught his own memory deleting inconvenient evidence faster than the convenient kind. your memory does the same thing to your failed runs. keep a log: hypothesis, setup, expectation, result, updated belief. rereading last month's entries is humbling in a way no reviewer can match.</p>
+    <p class="orig-zh">费曼的原则是:第一个必须避免去欺骗的人,是你自己,因为你是最容易得手的目标。写作是有史以来最便宜的防御手段。达尔文则更进一步,把这件事变成了一套程序:任何与他理论相悖的事实,都要当场记下来——因为他发现,自己的记忆删除不利证据的速度,比删除有利证据快得多。你的记忆对你那些失败的实验,干的是同一件事。所以要记日志:假设、设置、预期、结果、更新后的信念。重读上个月的记录,会让你谦卑到任何审稿人都做不到的程度。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">then put some of it in public. olah and carter's research debt essay makes the case that fields choke on undigested ideas, and that a clear explanation is a genuine contribution rather than a service job. a lot of people working in interpretability today found the field through readable posts, not conference papers. a body of public writing also doubles as the strongest credential you can hold, because it's an unfakeable sample of how you think.</p>
+    <p class="orig-zh">然后把其中一部分公开出来。奥拉(Olah)和卡特(Carter)那篇《Research Debt》论证说,一个领域会被大量未被消化的想法噎住,而一份清晰的解释本身就是一份真正的贡献,而不是打杂的服务工作。今天很多做可解释性研究的人,是通过读得懂的博客文章、而不是会议论文入行的。一批公开发表的写作,同时也是你能拥有的最强凭证,因为它是一份无法伪造的、关于你如何思考的样本。</p>
+  </div>
+
+  <div class="orig-h">Tighten the loop · 收紧循环</div>
+  <div class="orig-pair">
+    <p class="orig-en">the stories about alec radford rarely involve a single stroke of genius. they involve volume. more runs per day, more wrong ideas discarded per week, a model of reality that updated faster than anyone else's. that's the actual game. research speed is mostly the speed at which you discover you're wrong.</p>
+    <p class="orig-zh">关于亚历克·拉德福德(Alec Radford)的故事,很少涉及某个灵光一现的天才时刻,它们涉及的是"量":每天更多的实验、每周丢弃更多的错误想法、一个比任何人都更新得快的现实模型。这才是真正的游戏。研究的速度,很大程度上就是你发现自己错了的速度。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">which makes tooling a first-class research activity. launching a run should be one command. plotting it should be one more. every experiment should be reproducible from its config, and comparing two runs should take seconds, not an afternoon of archaeology. karpathy's recipe for training neural networks has a step that pays for itself a hundred times over: overfit a single batch before training at scale. thirty seconds, half your bugs, gone. shrink everything until it's cheap, get it right, then spend the compute.</p>
+    <p class="orig-zh">这也让"搭工具"成了一等一的研究活动。启动一次实验应该只需要一条命令,画图应该只需要再多一条命令。每个实验都应该能从它的配置文件复现出来,而比较两次实验应该只花几秒钟,而不是一下午的考古工作。卡帕西(Karpathy)那份训练神经网络的配方里有一步,回本一百倍:在大规模训练之前,先在单个 batch 上把模型过拟合。三十秒钟,干掉一半的 bug。把一切都缩到足够便宜,先搞对,再花算力。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">and retire the idea that engineering is the junior partner here. at the frontier the two jobs have fused. the researcher who can build the harness, the eval, and the data pipeline is the one whose hypotheses actually get tested. everyone else is waiting in a queue.</p>
+    <p class="orig-zh">也该退休"工程是研究的初级伙伴"这种想法了。在前沿地带,这两份工作已经融合在一起。能亲手搭建 harness、eval 和数据管线的研究者,才是那个假设真正能被检验的人。其他人都在排队等着。</p>
+  </div>
+
+  <div class="orig-h">Stare at the outputs · 盯着输出看</div>
+  <div class="orig-pair">
+    <p class="orig-en">a descending loss curve is not analysis, it's reassurance. your experiments throw off far more information than you consume: transcripts, failure cases, the strange tail of the distribution. most of it dies unread in a logs folder.</p>
+    <p class="orig-zh">一条下降的 loss 曲线不是分析,而是一种安慰。你的实验抛出的信息,远比你消费掉的要多:transcript、失败案例、分布里那条奇怪的尾巴——大多数都没人读过,死在了 logs 文件夹里。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">karpathy's recipe starts before any training code gets written, with hours spent on the raw data by hand. most ml bugs live in the data, and they fail silently. nothing crashes. you simply get a mediocre model and a wrong theory about why.</p>
+    <p class="orig-zh">卡帕西的配方,在写任何一行训练代码之前就开始了——先花上几个小时,亲手过一遍原始数据。多数机器学习的 bug 都住在数据里,而且它们是静默失败的。什么都不会崩溃,你只会得到一个平庸的模型,以及一套关于"为什么平庸"的错误理论。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">andrew ng has taught the same unglamorous move for over a decade because nothing beats it. pull a hundred failures, read all of them, sort them into piles, attack the biggest pile. it works on models and it works on evals, where a benchmark you've never read transcripts from is a benchmark you don't actually understand. one transcript of genuinely strange behavior will teach you more than the next decimal of accuracy ever will.</p>
+    <p class="orig-zh">吴恩达(Andrew Ng)教了同一个毫不光鲜的动作十多年,因为没有什么比它更管用:拉出一百个失败案例,全部读完,分成几堆,攻击最大的那一堆。这招对模型有效,对 eval 也有效——一个你从来没读过其 transcript 的 benchmark,就是一个你并不真正理解的 benchmark。一条真正反常行为的 transcript,教给你的东西,比准确率再往后多一位小数还要多。</p>
+  </div>
+
+  <div class="orig-h">Wander on purpose · 有意识地漫游</div>
+  <div class="orig-pair">
+    <p class="orig-en">your first subfield is an accident of timing, so treat it like one. spend real time in interpretability, in evals, in rl, in systems, before deciding where you live. somewhere in this field is a corner where your specific weirdness is an unfair advantage, and the only way to locate it is to pay tuition in several places. nobody waives the tuition.</p>
+    <p class="orig-zh">你的第一个子领域,是时机造成的意外,那就把它当作意外来对待。在决定"定居"何处之前,先在可解释性、eval、强化学习、系统这些方向上真正花时间。这个领域里的某个角落,你身上那种特有的"怪"会是一种不公平的优势,而找到它的唯一办法,就是在好几个地方交学费。没有人能替你免掉这笔学费。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">run the disposable version of every idea first and let most of them die young. tune your baselines until it hurts, because the graveyard of ml is full of gains that evaporated against a properly tuned baseline, and a reviewer is the worst possible person to learn that from. ablate until you know which component carries the result. it's usually one, and it's usually not the one in the title.</p>
+    <p class="orig-zh">每个想法都先跑一个可丢弃的版本,让大多数想法早早夭折。把 baseline 调到痛为止,因为机器学习的坟场里堆满了那些一遇上真正调好的 baseline 就蒸发的"进步",而审稿人是你最不该从他那里学到这一课的人。做消融实验,直到你知道究竟是哪个部件撑起了结果——通常只有一个,而且通常不是标题里写的那个。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">breadth is also insurance. subfields saturate, all of them, usually right after they peak on twitter. the people who keep producing through those transitions are the ones who already know their way around the neighboring territory.</p>
+    <p class="orig-zh">广度也是一种保险。所有子领域都会饱和,而且往往就在它们在 Twitter 上达到热度顶峰之后不久。能在这些转折期依然持续产出的人,是那些早就熟悉邻近领地的人。</p>
+  </div>
+
+  <div class="orig-h">Find your people · 找到你的人</div>
+  <div class="orig-pair">
+    <p class="orig-en">hamming noticed a pattern in who ended up doing important work. colleagues with closed office doors got more done in any given year, and colleagues with open doors did the work that mattered, because the interruptions carried information about what the world actually needed. your open door is probably an inbox. keep it that way.</p>
+    <p class="orig-zh">哈明注意到,谁最终做出了重要的工作,是有规律可循的。关着办公室门的同事,在任何一年里都完成得更多;而开着门的同事,做出的才是真正要紧的工作——因为那些打扰携带着"这个世界究竟需要什么"的信息。你的"开着的门",大概就是收件箱。让它继续开着。</p>
+  </div>
+  <div class="orig-pair">
+    <p class="orig-en">generosity compounds in research like nothing else. replicate a result and publish what you find. release the tool you built for yourself. explain something hard in plain language. the returns arrive sideways, months later, as the collaboration or the reference or the role you couldn't have applied for. float your half-formed ideas in public too, because being wrong on the timeline is far cheaper than being wrong in print. and the collaborator who tells you an idea is bad before you sink three months into it is worth more than compute. that relationship can't be bought, only earned.</p>
+    <p class="orig-zh">在研究里,慷慨的复利效应无与伦比。复现一个结果,并把你的发现公开发表出来。把你为自己造的工具发布出去。用平实的语言把一件难事解释清楚。回报会从侧面到来,几个月之后,以一次合作、一次引用,或者一个你原本申请不到的职位的形式出现。也把你那些半成形的想法拿到公开场合去漂浮一下,因为在时间线上犯错,远比在印刷品上犯错便宜得多。而那个在你把三个月时间沉进一个想法之前,就告诉你"这想法不行"的合作者,比算力还珍贵。这种关系买不到,只能靠挣。</p>
+  </div>
+
+  <div class="orig-h">The long game · 长期游戏</div>
+  <div class="orig-pair">
+    <p class="orig-en">pasteur said luck favors the prepared mind, and hamming built a whole career philosophy on top of it: knowledge and productivity compound like interest. the daily edges look trivial in isolation. what you read, what you record, how fast your loop runs, who you argue with. give them a few years and they produce careers that look like luck from the outside. start compounding earlier than feels necessary. future you already knows this was the cheap part.</p>
+    <p class="orig-zh">巴斯德说,机会偏爱有准备的头脑,哈明则在这句话之上,搭建了一整套职业哲学:知识和生产力会像利息一样复利增长。那些每天的小小优势,单独看都微不足道——你读了什么、记了什么、你的循环跑得多快、你和谁争论。给它们几年时间,它们会造就一份从外面看起来像是"运气"的职业生涯。比"感觉有必要"更早地开始复利。未来的你已经知道,这是整件事里最便宜的部分。</p>
+  </div>
+
+  </details>
+</section>
 
 <section id="overview" class="intro">
   <p>这篇把一篇关于"如何做研究"的随笔,提炼成 <b>8 个可训练的习惯</b>。它们底下其实跑着同一套元模式:<b>预测 → 校正,重复几百遍</b>——这正是训练任何好模型(包括你脑子里那个)的方式。先看全局,点卡片可跳转:</p>
