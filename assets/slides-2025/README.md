@@ -17,7 +17,7 @@
 - 3963/3964 **OaK = Options+Knowledge，option=(π,γ)** · 3965 **四部件智能体图** · 3966/3983 **自己造子问题**
 - 3984 **reward-respecting 子问题公式** · 3985–3991 **OaK 八步** · 3987 持续学习 · 3989 特征发现 · 3992–3995 **心智发育流水线**
 - 3996 **What is missing** · 3997 结论
-→ 取材至 **`pages/强化学习_GRPO_可视化讲解.html`** 的 §②（智能体解剖）与 §⑨（苦涩的教训·经验时代·OaK）。
+→ 取材至 **`pages/rl-vs-dl-grpo.html`** 的 §②（智能体解剖）与 §⑨（苦涩的教训·经验时代·OaK）。
 
 ### 2. Kris De Asis — *Design for Learning*（为学习而设计机器人硬件）
 主要区间：`IMG_3967–3981`（穿插在 Sutton 之间）。

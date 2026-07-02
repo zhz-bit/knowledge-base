@@ -64,7 +64,7 @@
   <h1>微分方程的故事</h1>
   <p>它不是某人某天为某个问题突然"发明"的,而是 17 世纪研究<b>运动、天体、曲线</b>时,随<b>微积分</b>一起长出来的。核心动机只有一句:<b>已知自然在每一瞬间的变化规律,反推整个系统的过去与未来。</b></p>
   <div class="src">
-    <a href="neural_net_matrix_ops.html#ode">→ 神经网络里的 Neural ODE</a>
+    <a href="neural-net-matrix-ops.html#ode">→ 神经网络里的 Neural ODE</a>
     <a href="linear-algebra-foundations.html">线性代数基础</a>
     <a href="lie-groups-slam.html">李群 · SLAM</a>
   </div>
@@ -317,7 +317,7 @@
   </ul>
   <p>例如一阶线性方程 <code>dy/dx + P(x)·y = Q(x)</code>,可用积分因子 <code>μ = e^∫P dx</code> 化成易积分的形式。他还提出了最基础的<b>数值解法 —— 欧拉法</b>:已知当前状态,沿斜率走一小步推算下一刻</p>
   <p style="text-align:center"><span class="pill" style="font-size:15px">y<sub>n+1</sub> = y<sub>n</sub> + h · f(t<sub>n</sub>, y<sub>n</sub>)</span></p>
-  <p>这条公式看着眼熟?——它正是<b>ResNet 一层 / Neural ODE 的离散步</b>。想"点着玩"欧拉法的斜率场步进、看 <code>N 步 → Neural ODE</code> 的逼近,见 → <a href="neural_net_matrix_ops.html#ode" style="color:var(--pink)">神经网络页的 ◈ 连续节</a>。</p>
+  <p>这条公式看着眼熟?——它正是<b>ResNet 一层 / Neural ODE 的离散步</b>。想"点着玩"欧拉法的斜率场步进、看 <code>N 步 → Neural ODE</code> 的逼近,见 → <a href="neural-net-matrix-ops.html#ode" style="color:var(--pink)">神经网络页的 ◈ 连续节</a>。</p>
   <div class="note"><b>一句话分工:</b>牛顿、莱布尼茨<b>开启</b>了微分方程;伯努利家族<b>展示</b>了它解决具体难题的威力;欧拉把常微分方程<b>发展成一门系统学科</b>,并贯通到力学、流体、天体、声学。</div>
 </section>
 
@@ -340,7 +340,7 @@
     <li><b>常微分方程是谁提出的?</b>——<b>也无唯一提出者</b>。最早那批微分方程本身就是 ODE,欧拉后来系统整理;"常"是 PDE 出现后为区分而加的。</li>
     <li><b>最初为了解决什么?</b>——两大类:<span class="pill">物体怎样运动</span> 与 <span class="pill">满足某种局部性质的曲线是什么形状</span>;后来才扩展到电路、热学、流体、控制、生物、经济,直到<b>人工智能</b>。</li>
   </ul>
-  <div class="note" style="border-left-color:var(--hi)"><b>最根本的历史动机:</b>人们已知自然在<b>每一个瞬间</b>遵循什么变化规律,希望由此<b>推算整个系统过去与未来的状态</b>。<br>三百年后,这个念头换了身衣服又回来了——<a href="neural_net_matrix_ops.html#ode" style="color:var(--hi)">Neural ODE</a> 用神经网络拟合 <code>dh/dt</code>、扩散模型解概率流、PINN 把 PDE 写进损失:<b>同一个古老的思想。</b></div>
+  <div class="note" style="border-left-color:var(--hi)"><b>最根本的历史动机:</b>人们已知自然在<b>每一个瞬间</b>遵循什么变化规律,希望由此<b>推算整个系统过去与未来的状态</b>。<br>三百年后,这个念头换了身衣服又回来了——<a href="neural-net-matrix-ops.html#ode" style="color:var(--hi)">Neural ODE</a> 用神经网络拟合 <code>dh/dt</code>、扩散模型解概率流、PINN 把 PDE 写进损失:<b>同一个古老的思想。</b></div>
 </section>
 
 <!-- ===== 理论先行 ===== -->
@@ -365,7 +365,7 @@
     <tr><td>代表</td><td>海王星、引力波、反物质、Higgs</td><td>AlexNet、ReLU/Adam/BatchNorm、scaling laws、涌现能力</td></tr>
     <tr><td>气质</td><td>"用<b>笔尖</b>发现新世界"</td><td>"<b>炼丹</b>":先灵验、后(才勉强)解释</td></tr>
   </table>
-  <div class="note" style="border-left-color:var(--violet)"><b>同一枚硬币的两面。</b>深层原因:物理是<b>发现一个你没造、却有定律的世界</b>(有方程可解 → 理论能抢跑);CS/ML 是<b>造出一个没有先验定律、行为涌现的世界</b>(无方程可解 → 只能造出来测)。但两者都是科学——<b>都要可证伪、都最终由实测裁判</b>。<br>而我们这一整条线 <a href="neural_net_matrix_ops.html#ode" style="color:var(--violet)">微分方程 → Neural ODE → 深度学习</a>,恰好横跨了这两种文化:<b>用"解方程"的精神,去研究一个只能"炼丹"出来的对象。</b></div>
+  <div class="note" style="border-left-color:var(--violet)"><b>同一枚硬币的两面。</b>深层原因:物理是<b>发现一个你没造、却有定律的世界</b>(有方程可解 → 理论能抢跑);CS/ML 是<b>造出一个没有先验定律、行为涌现的世界</b>(无方程可解 → 只能造出来测)。但两者都是科学——<b>都要可证伪、都最终由实测裁判</b>。<br>而我们这一整条线 <a href="neural-net-matrix-ops.html#ode" style="color:var(--violet)">微分方程 → Neural ODE → 深度学习</a>,恰好横跨了这两种文化:<b>用"解方程"的精神,去研究一个只能"炼丹"出来的对象。</b></div>
 </section>
 
 <!-- ===== 结语 ===== -->
@@ -380,13 +380,13 @@
     <li><b>有了律 ≠ 能解</b>:湍流的场公式(<b>纳维–斯托克斯</b>)我们早就有了,难在<b>解不动</b>(混沌 + 多尺度,其解的存在性本身又是千禧难题)。这正是机器学习切进来"<b>学</b>"它的地方。</li>
     <li><b>地基</b>:这一切的前提是——我们<b>相信现实总满足某种规律</b>,且这规律能用数学写下来(Wigner:"<b>数学不可思议的有效性</b>")。</li>
   </ul>
-  <div class="note" style="border-left-color:var(--hi)"><b>一句话:</b>普通方程写<b>静态的值</b>,ODE 写<b>一条轴上的演化</b>,PDE 写<b>一整片场的演化</b>;"统一更多因素进一个场"之所以伟大,是因为它用更少的律解释更多世界、还能预言未见——<b>但写下律是一回事,解开它(湍流、杨–米尔斯)又是另一回事。</b><br>而我们这一路 <a href="neural_net_matrix_ops.html#ode" style="color:var(--hi)">微分方程 → Neural ODE → 深度学习</a>,正是用"<b>解方程</b>"的精神,去研究一个只能"<b>炼丹</b>"出来的对象。</div>
+  <div class="note" style="border-left-color:var(--hi)"><b>一句话:</b>普通方程写<b>静态的值</b>,ODE 写<b>一条轴上的演化</b>,PDE 写<b>一整片场的演化</b>;"统一更多因素进一个场"之所以伟大,是因为它用更少的律解释更多世界、还能预言未见——<b>但写下律是一回事,解开它(湍流、杨–米尔斯)又是另一回事。</b><br>而我们这一路 <a href="neural-net-matrix-ops.html#ode" style="color:var(--hi)">微分方程 → Neural ODE → 深度学习</a>,正是用"<b>解方程</b>"的精神,去研究一个只能"<b>炼丹</b>"出来的对象。</div>
 </section>
 
 </div>
 
 <footer>
-  微分方程的故事 · 与 <a href="neural_net_matrix_ops.html#ode">神经网络 · Neural ODE</a> 配套阅读。<br>
+  微分方程的故事 · 与 <a href="neural-net-matrix-ops.html#ode">神经网络 · Neural ODE</a> 配套阅读。<br>
   历史细节为概览;早期文献(如牛顿《流数法》1671 前后)出版与命名时间另有考据。
 </footer>
 
@@ -923,5 +923,6 @@ const COL={blue:'#4f8cff',green:'#22c08b',amber:'#f2a33c',violet:'#b07cff',pink:
   }
 })();
 </script>
+<div style="text-align:center;padding:18px 0 30px;font-size:13px;opacity:.55"><a href="../index.html" style="color:inherit;text-decoration:none">&larr; 返回知识库门户</a></div>
 </body>
 </html>

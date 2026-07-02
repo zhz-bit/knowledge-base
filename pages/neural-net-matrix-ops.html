@@ -1,0 +1,2341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神经网络中的矩阵运算 · 可视化</title>
+<style>
+  :root{
+    --bg:#0f1117;
+    --panel:#171a23;
+    --panel-2:#1f232f;
+    --ink:#e7eaf0;
+    --ink-dim:#9aa3b2;
+    --line:#2c3242;
+    --mlp:#4f8cff;
+    --cnn:#22c08b;
+    --rnn:#f2a33c;
+    --trf:#b07cff;
+    --hi:#ffd34d;
+    --found:#4f8cff; --attn:#b07cff; --gen:#ff7eb6; --gnn:#2dd4bf; --train:#94a3b8; --mm:#fb923c;  /* 图谱家族色:gnn=青, train=灰(横切底座), mm=橙(多模态) */
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  header.hero{
+    padding:70px 22px 50px;text-align:center;
+    background:
+      radial-gradient(1200px 400px at 50% -10%, rgba(79,140,255,.18), transparent 60%),
+      radial-gradient(900px 360px at 80% 0%, rgba(176,124,255,.14), transparent 55%);
+    border-bottom:1px solid var(--line);
+  }
+  header.hero h1{
+    font-size:clamp(28px,5vw,44px);margin:0 0 12px;letter-spacing:.5px;
+    font-weight:800;
+  }
+  header.hero p{color:var(--ink-dim);max-width:640px;margin:0 auto;font-size:16px}
+  .tagrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+  .tag{font-family:var(--mono);font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+  .tag.mlp{color:var(--mlp);border-color:rgba(79,140,255,.4)}
+  .tag.cnn{color:var(--cnn);border-color:rgba(34,192,139,.4)}
+  .tag.rnn{color:var(--rnn);border-color:rgba(242,163,60,.4)}
+  .tag.trf{color:var(--trf);border-color:rgba(176,124,255,.4)}
+
+  /* sticky nav */
+  nav.toc{position:sticky;top:0;z-index:50;background:rgba(15,17,23,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding:10px 22px}
+  nav.toc a{font-size:13.5px;color:var(--ink-dim);text-decoration:none;padding:7px 12px;border-radius:8px;white-space:nowrap;transition:.15s}
+  nav.toc a:hover{color:var(--ink);background:var(--panel)}
+
+  section{padding:54px 0 10px;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2.sec{font-size:26px;margin:0 0 6px;display:flex;align-items:center;gap:12px}
+  h2.sec .dot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+  .sub{color:var(--ink-dim);margin:0 0 26px;font-size:15px}
+  h3{font-size:18px;margin:30px 0 10px}
+  .wrap h4{font-size:15.5px;margin:20px 0 6px;color:var(--ink);font-weight:700}
+  p{margin:0 0 14px}
+  .lead{font-size:15.5px}
+
+  /* formula */
+  .formula{
+    font-family:var(--mono);background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:16px 18px;margin:14px 0;font-size:15px;overflow-x:auto;
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .formula .big{font-size:18px}
+  .v-mlp{color:var(--mlp)} .v-cnn{color:var(--cnn)} .v-rnn{color:var(--rnn)} .v-trf{color:var(--trf)}
+  .muted{color:var(--ink-dim)}
+
+  .note{
+    background:var(--panel-2);border-left:3px solid var(--line);
+    padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;color:var(--ink-dim);font-size:14.5px
+  }
+  .note b{color:var(--ink)}
+
+  /* timeline 历史时间轴 */
+  .timeline{position:relative;margin:18px 0 6px}
+  .timeline::before{content:"";position:absolute;left:31px;top:8px;bottom:14px;width:2px;background:var(--line)}
+  .tl{position:relative;display:grid;grid-template-columns:64px 1fr;gap:16px;margin-bottom:16px}
+  .tl-year{position:relative;z-index:1;font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink);background:var(--panel-2);border:2px solid var(--line);border-radius:10px;height:40px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1}
+  .tl.key .tl-year{border-color:var(--cnn);color:var(--cnn)}
+  .tl-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 14px}
+  .tl.key .tl-card{border-left:3px solid var(--cnn)}
+  .tl-card h4{margin:0 0 4px;font-size:15px}
+  .tl-card p{margin:0;font-size:13.5px;color:var(--ink-dim);line-height:1.65}
+  .gsq{width:15px;height:15px;border-radius:3px;display:inline-block;border:1px solid var(--line);flex:0 0 auto}
+  .garr{color:var(--ink-dim);font-family:var(--mono);font-size:12px;margin:0 2px}
+  /* 加权求和拆解 token: 权重蓝 / 输入绿 / 平加黄 */
+  .lw{color:#9cc0ff;font-weight:700}
+  .lx{color:#7fe0c0;font-weight:700}
+  .lp{color:#ffd34d;font-weight:800;padding:0 3px}
+  /* MLP/LCN/Tiled/CNN 四档对照：宽屏 4 列，中屏 2×2，窄屏 1 列；矩阵随卡片自适应 */
+  .lcngrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start}
+  @media(max-width:880px){.lcngrid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:450px){.lcngrid{grid-template-columns:1fr}}
+
+  /* ---------- matrices ---------- */
+  .mathline{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0;justify-content:center}
+  .matblock{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .matlabel{font-family:var(--mono);font-size:12.5px;color:var(--ink-dim)}
+  .matlabel b{color:var(--ink)}
+  .bracket{display:inline-grid;gap:4px;padding:6px;border-radius:6px;
+    border-left:2px solid var(--line);border-right:2px solid var(--line);position:relative}
+  .cell{
+    width:38px;height:34px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:13px;border-radius:6px;background:var(--panel-2);
+    color:var(--ink);transition:background .25s, color .25s, transform .25s, box-shadow .25s;
+  }
+  .cell.empty{color:var(--ink-dim);opacity:.5}
+  .op{font-family:var(--mono);font-size:22px;color:var(--ink-dim)}
+  .eq{font-family:var(--mono);font-size:22px;color:var(--ink-dim)}
+
+  /* CNN 配色规范: 输入(激活值)=绿, 卷积核权重=蓝；两通道用深浅两档 */
+  .cell.inp { background:rgba(34,192,139,.14) }
+  .cell.inp2{ background:rgba(34,192,139,.28) }
+  .cell.inp3{ background:rgba(34,192,139,.44) }
+  .cell.ker { background:rgba(79,140,255,.16) }
+  .cell.ker2{ background:rgba(79,140,255,.30) }
+  .cell.ker3{ background:rgba(79,140,255,.48) }
+
+  /* highlight states (放在上面之后，激活时覆盖底色) */
+  .cell.row-hi{background:rgba(79,140,255,.28);color:#cfe0ff;box-shadow:inset 0 0 0 1px rgba(79,140,255,.6)}
+  .cell.col-hi{background:rgba(255,211,77,.22);color:#ffe9a8;box-shadow:inset 0 0 0 1px rgba(255,211,77,.55)}
+  .cell.out-hi{background:rgba(34,192,139,.28);color:#bff3df;box-shadow:inset 0 0 0 1px rgba(34,192,139,.6);transform:scale(1.06)}
+  .cell.win{background:rgba(34,192,139,.30);color:#bff3df;box-shadow:inset 0 0 0 1px rgba(34,192,139,.7)}
+  .cell.dim{opacity:.32}
+
+  /* controls */
+  .controls{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0 4px}
+  button.btn{
+    font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:9px 16px;cursor:pointer;transition:.15s
+  }
+  button.btn:hover{border-color:var(--mlp);color:#fff}
+  button.btn.accent{background:linear-gradient(180deg,#2a3550,#1f263a);border-color:rgba(79,140,255,.5)}
+  button.btn:disabled{opacity:.4;cursor:not-allowed}
+  .stepinfo{font-family:var(--mono);font-size:13px;color:var(--ink-dim);min-height:22px;text-align:center;margin-top:6px}
+  .stepinfo .k{color:var(--hi)}
+
+  /* compare grid */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}.cell{width:32px;height:30px;font-size:12px}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h4{margin:0 0 6px;font-size:16px}
+  .card.mlp{border-top:3px solid var(--mlp)}
+  .card.cnn{border-top:3px solid var(--cnn)}
+
+  table.cmp{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  table.cmp th{background:var(--panel-2);font-weight:700}
+  ul.tight{margin:8px 0;padding-left:22px} ul.tight li{margin:4px 0;font-size:14px;color:var(--ink-dim)} ul.tight li b{color:var(--ink)}
+  table.cmp td:first-child{color:var(--ink-dim);white-space:nowrap}
+
+  .pill{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line)}
+
+  footer{padding:40px 22px 70px;text-align:center;color:var(--ink-dim);font-size:13px}
+  .kbd{font-family:var(--mono);font-size:12px;background:var(--panel-2);border:1px solid var(--line);padding:1px 6px;border-radius:5px}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:10px 0 0;font-size:12.5px;color:var(--ink-dim)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+  /* ===== 合并:发展图谱(全宽 + 泳道) ===== */
+  .full{padding:0 clamp(16px,2.6vw,44px)}
+  .tlbar{padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel-2);margin-top:8px}
+  .tlbar .wrap{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .chip{font-size:13px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;color:var(--ink-dim)}
+  .chip:hover{color:var(--ink)} .chip.on{color:var(--ink);background:var(--panel-2)}
+  .chip .sw{width:11px;height:11px}
+  .lh{font-size:12px;color:var(--ink-dim)}
+  .scroll-hint{text-align:center;color:var(--ink-dim);font-size:12px;margin:14px 0 6px}
+  .swim-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+  .swim{display:grid;min-width:1080px;grid-template-columns:74px repeat(18,minmax(52px,1fr));grid-template-rows:auto auto repeat(8,minmax(58px,auto));position:relative}
+  .corner{grid-column:1;grid-row:1/3;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-dim)}
+  .era-b{grid-row:1;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink-dim);padding:7px 2px;border-bottom:1px solid var(--line);border-left:1px solid rgba(154,163,178,.14)}
+  .yr-h{grid-row:2;font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);text-align:center;padding:6px 1px;border-bottom:1px solid var(--line)}
+  .row-band{grid-column:1/-1;z-index:0}
+  .fam-l{grid-column:1;z-index:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border-right:1px solid var(--line);border-top:1px solid var(--line)}
+  .tcell{z-index:1;padding:4px;display:flex;flex-direction:column;gap:4px;justify-content:center;border-top:1px solid var(--line)}
+  .ms{font-size:11px;line-height:1.2;border-left:3px solid var(--line);background:var(--panel-2);border-radius:5px;padding:4px 6px;cursor:pointer;transition:.15s}
+  .ms:hover{filter:brightness(1.25)} .ms .y{font-family:var(--mono);font-size:9px;color:var(--ink-dim);display:block} .ms.sel{outline:2px solid var(--hi)}
+  .tdim{opacity:.18}
+  .detail{margin:14px auto 4px;max-width:920px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;padding:14px 16px;min-height:64px}
+  .detail .dy{font-family:var(--mono);font-size:13px;color:var(--hi)} .detail h3{margin:2px 0 2px;font-size:17px} .detail .who{font-size:12.5px;color:var(--ink-dim);font-family:var(--mono)} .detail p{margin:6px 0 0;font-size:14px;color:var(--ink-dim)}
+  .tcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .tcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;border-top:3px solid var(--line)}
+  .tcard h4{margin:0 0 8px;font-size:15px} .tcard .flow{font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);line-height:1.9}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>神经网络里的矩阵运算</h1>
+  <p>用最少的符号、最直观的方块，看清 <b>全连接 / CNN / RNN / Transformer</b> 到底在乘什么、加什么。最后回答一个好问题：<b>卷积能不能看成很多个 MLP 拼起来？</b></p>
+  <div class="tagrow">
+    <span class="tag mlp">全连接 y = Wx + b</span>
+    <span class="tag cnn">CNN im2col → 矩阵乘</span>
+    <span class="tag rnn">RNN 沿时间展开</span>
+    <span class="tag trf">Transformer 注意力 QKᵀV</span>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#map" style="color:var(--hi)">◎ 图谱</a>
+  <a href="#backprop">◆ 反向传播</a>
+  <a href="#basics">① 方块</a>
+  <a href="#mlp">② MLP</a>
+  <a href="#cnn">③ CNN</a>
+  <a href="#rnn">④ RNN</a>
+  <a href="#liquid">✦ 液态网络</a>
+  <a href="#ode">◈ 连续/ODE</a>
+  <a href="#trf">⑤ Transformer</a>
+  <span style="color:var(--cnn);font-size:12.5px;padding:7px 8px;white-space:nowrap">┃ Ⅱ 从MLP到CNN</span>
+  <a href="#cnn-mlp">A 受限的MLP</a>
+  <a href="#spectrum">B 光谱</a>
+  <a href="#why">C 两条约束</a>
+  <a href="#channels">D 多通道</a>
+  <a href="#why-sum">E 延伸</a>
+  <a href="#knowledge" style="color:var(--hi)">★ 收尾</a>
+</div></nav>
+
+<!-- ============ 宏观:发展图谱 ============ -->
+<section id="map" style="padding-top:42px">
+  <div class="wrap">
+    <h2 class="sec"><span class="dot" style="background:var(--hi)"></span>◎ 先看全局:深度学习发展图谱</h2>
+    <p class="sub">拆解矩阵运算之前,先用<b>五条并行家族泳道</b>(基础 / 视觉 / 序列 / 注意力 / 生成)把每个网络在历史里的位置看清:<b>横看</b>一条线怎么演化,<b>纵看</b>同一时期各家在干什么。点节点看详情,点色块只看一条线。</p>
+  </div>
+  <div class="tlbar"><div class="wrap">
+    <span class="lh">只看一条线:</span>
+    <span class="chip on" data-f="all">全部</span>
+    <span class="chip" data-f="found"><i class="sw" style="background:var(--found)"></i>基础</span>
+    <span class="chip" data-f="cnn"><i class="sw" style="background:var(--cnn)"></i>CNN 视觉</span>
+    <span class="chip" data-f="rnn"><i class="sw" style="background:var(--rnn)"></i>RNN 序列</span>
+    <span class="chip" data-f="attn"><i class="sw" style="background:var(--attn)"></i>注意力</span>
+    <span class="chip" data-f="gen"><i class="sw" style="background:var(--gen)"></i>生成</span>
+    <span class="chip" data-f="gnn"><i class="sw" style="background:var(--gnn)"></i>GNN 图</span>
+    <span class="chip" data-f="train"><i class="sw" style="background:var(--train)"></i>训练术</span>
+    <span class="chip" data-f="mm"><i class="sw" style="background:var(--mm)"></i>多模态</span>
+  </div></div>
+  <div class="full">
+    <div class="scroll-hint">↔ 窄屏可横向滚动 · 点任一节点看详情</div>
+    <div class="swim-scroll"><div class="swim" id="swim"></div></div>
+  </div>
+  <div class="wrap"><div class="detail" id="detail"></div></div>
+  <div class="wrap" style="padding-bottom:6px">
+    <h3 style="margin-top:24px">三条主线 + 一个底座</h3>
+    <p class="sub" style="margin:0 0 14px">把泳道压成四句话,就是整张图谱的骨架。</p>
+    <div class="tcards">
+      <div class="tcard" style="border-top-color:var(--cnn)"><h4 style="color:var(--cnn)">视觉线(CNN)</h4><div class="flow">Neocognitron(1980)<br>→ LeNet(1989/98)<br>→ AlexNet(2012)<br>→ VGG / ResNet(14/15)<br>→ ViT(2020)</div></div>
+      <div class="tcard" style="border-top-color:var(--rnn)"><h4 style="color:var(--rnn)">序列线(RNN→注意力)</h4><div class="flow">Hopfield / Elman(82/90)<br>→ LSTM / GRU(97/14)<br>→ Seq2Seq + Attention(14)<br>→ <b style="color:var(--attn)">Transformer(2017)</b><br>→ Mamba / SSM(2023)</div></div>
+      <div class="tcard" style="border-top-color:var(--gen)"><h4 style="color:var(--gen)">生成线</h4><div class="flow">RBM(06)<br>→ GAN · VAE(14)<br>→ 自回归(17)<br>→ Diffusion(20)<br>→ CLIP / DiT / 流匹配(21–23)<br>→ Sora(24)<br>→ MeanFlow(25)</div></div>
+      <div class="tcard" style="border-top-color:var(--gnn)"><h4 style="color:var(--gnn)">图线(GNN)</h4><div class="flow">原始 GNN(2009)<br>→ 谱图 CNN(2014)<br>→ GCN / GAT(16/18)<br>→ 图 Transformer / 几何DL(20+)</div></div>
+      <div class="tcard" style="border-top-color:var(--found)"><h4 style="color:var(--found)">底座(让上面都成立)</h4><div class="flow">反向传播(1986)<br>＋ <span style="color:var(--train)">ReLU / Norm / 初始化</span><br>＋ GPU 算力(09+)<br>＋ 大数据(09)<br>＋ Scaling(20+)</div></div>
+    </div>
+    <p class="sub" style="margin-top:18px"><b>一句话宏观把握:</b> <span style="color:var(--found)">反向传播</span>给了"可训练"的发动机;<span style="color:var(--cnn)">CNN</span> 用空间共享拿下视觉、<span style="color:var(--rnn)">RNN/LSTM</span> 用时间共享拿下序列、<span style="color:var(--gnn)">GNN</span> 把卷积推广到图(关系/分子/社交);2006 <span style="color:var(--found)">DBN</span> 让"深"重新可训、点燃复兴;2012 <span style="color:var(--cnn)">AlexNet</span>+GPU+大数据引爆;2017 <span style="color:var(--attn)">Transformer</span> 用注意力统一序列、再蔓延到视觉与生成,直通今天的大模型。<b>2023+</b> 又进入新阶段:<span style="color:var(--attn)">开源大模型 + 推理模型</span>(o1 / DeepSeek-R1,推理时算力)、<span style="color:var(--rnn)">Mamba 状态空间</span>(挑战 Transformer)、<span style="color:var(--gen)">文生视频 Sora</span>,2024 神经网络还拿下了诺贝尔物理奖。<span class="muted">下面开始逐个拆解它们的矩阵运算 ↓</span></p>
+  </div>
+</section>
+
+<!-- ============ 反向传播的意义 + 之前怎么优化 ============ -->
+<section id="backprop"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--found)"></span>◆ 反向传播之前,神经网络怎么"优化"?</h2>
+  <p class="sub">1986 反向传播普及之前,神经网络主要靠下面这些方式"优化"——它们大多只能训<b>单层</b>或局部,正是这个局限引发了第一次 AI 寒冬。</p>
+
+  <h3>核心瓶颈:信用分配问题(隐藏层没有"标准答案")</h3>
+  <p>多层网络卡了二十年,根子在<b>信用分配(credit assignment)</b>:隐藏层的神经元<b>没有"标准答案"</b>,你不知道该把多少误差算到它头上 —— 所以早期规则都只能优化<b>输出层 / 单层</b>。Minsky &amp; Papert《Perceptrons》(1969)指出单层连 XOR 都解不了,而当时又训不了多层 → 研究停滞。</p>
+  <p>反向传播解决的正是这一点:用<b>链式法则</b>把输出端的误差<b>逐层回传</b>,给每个隐藏层权重都算出梯度。点按钮切换"前向算预测"和"反向传误差"两步:</p>
+  <div id="bp-net"></div>
+
+  <h3>反向传播之前的几种"优化"</h3>
+  <table class="cmp">
+    <tr><th>方法</th><th>规则</th><th>能训多层?</th><th>关键局限</th></tr>
+    <tr><td>感知机规则<br><span class="muted">Rosenblatt 1958</span></td><td><code>w ← w + η(目标−输出)·x</code></td><td>✗ 只单层</td><td>有收敛定理,但<b>只解线性可分</b>;误差<b>进不了隐藏层</b></td></tr>
+    <tr><td>Delta / LMS<br><span class="muted">Widrow-Hoff 1960</span></td><td><code>w ← w + η(目标−净输入)·x</code></td><td>✗ 只单层</td><td>已是"单层的梯度下降"(反向传播在单层的特例);但隐藏层的"目标"未知</td></tr>
+    <tr><td>Hebbian<br><span class="muted">Hebb 1949</span></td><td><code>Δw ∝ 输入 × 输出</code></td><td>— 局部/无监督</td><td>"一起激活就增强";不最小化全局损失,<b>不能做判别训练</b></td></tr>
+    <tr><td>无梯度方法</td><td>手工设权 / 竞争学习 / 随机搜索</td><td>—</td><td>M-P(1943)手工设逻辑门(根本不"学");随机/进化搜索<b>维度一高极低效</b></td></tr>
+  </table>
+
+  <h3>可视化:四种"优化"各自怎么动</h3>
+  <p class="sub" style="margin-bottom:8px">选一种方法,点"步进 / 自动"看它如何调整权重。<b>共同点</b>:它们都只盯着<b>输出 / 单层</b>,够不到隐藏层。<span class="muted">绿/橙=两类样本,黄圈=当前分错,蓝线=决策边界;Hebbian 用单团无标签点 + 蓝箭头=权重方向。</span></p>
+  <div id="opt-demos"></div>
+
+  <h3>反向传播的意义有多大?</h3>
+  <p>关键不在"用链式法则求导"本身,而在<b>效率</b>:</p>
+  <ul class="tight">
+    <li><b>一次反向传播,同时算出所有参数的梯度</b>,代价和一次前向差不多(<code>O(网络规模)</code>)。</li>
+    <li>对照:数值微分要为<b>每个参数</b>单独扰动跑一遍前向 → <code>O(参数量 × 前向)</code>,对上亿参数<b>天文数字、根本不可行</b>。</li>
+    <li><b>通用</b>:MLP / CNN / RNN / Transformer / GNN 全靠它训练;PyTorch / TensorFlow 的自动微分本质就是它。</li>
+    <li><b>底座的底座</b>:Adam、归一化、初始化……都建立在"反向传播能廉价给出梯度"之上。</li>
+  </ul>
+  <div class="note" style="border-left-color:var(--found)"><b>一句话:没有反向传播,就没有任何能训练的深网。</b>它是整个领域唯一的训练引擎。</div>
+
+  <h3>那为什么过了二十年才流行?(其实早被想到、却被埋没)</h3>
+  <p>反向传播<b>并非没人想到</b> —— Linnainmaa(1970,反向模式自动微分)、Werbos(1974 博士论文用于神经网络)早已提出。它沉睡多年,是因为:</p>
+  <table class="cmp">
+    <tr><th>原因</th><th>说明</th></tr>
+    <tr><td>领域已放弃神经网络</td><td>1969《Perceptrons》之后连接主义被边缘化、经费枯竭,<b>没人在找"怎么训多层"</b></td></tr>
+    <tr><td>算力太弱</td><td>70 年代计算机即便用它也跑不出像样结果,<b>说服不了人</b></td></tr>
+    <tr><td>理论悲观</td><td>普遍认为多层非凸、会卡在局部极小,"算了也没用"</td></tr>
+    <tr><td>缺演示 + 对的圈子</td><td>Werbos 的工作在控制 / 经济学语境;直到 <b>1986 Rumelhart 等</b>在认知科学(PDP)圈、配上"学出隐藏层表示、解 XOR"的实验,才真正点着</td></tr>
+  </table>
+  <div class="note"><b>事后看它"显然"</b>(无非链式法则),但当时的<b>寒冬 + 悲观 + 弱算力 + 错圈子</b>,让它沉睡了十几年 —— 直到 1986 被讲清、被验证,深度学习才真正起步。<br><span class="muted">附:Hinton 的 2024 诺贝尔<b>物理</b>奖是因<b>玻尔兹曼机</b>(用统计物理),<b>不是</b>因反向传播;反向传播也非他一人发明。</span></div>
+</div></section>
+
+<!-- ============ BASICS ============ -->
+<section id="basics"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--ink)"></span>① 先看懂一个方块代表什么</h2>
+  <p class="sub">所有网络层的核心其实只有一件事：<b>矩阵乘法</b>（再加个偏置、过个激活函数）。</p>
+
+  <p class="lead">一个矩阵就是一张数表。规则只有一条 —— <b>“左边的行” 点乘 “右边的列”</b>：</p>
+
+  <div class="formula"><span class="muted">输出[ i , j ]　=　</span> Σ<sub>k</sub>　A[ i , k ] × B[ k , j ]</div>
+
+  <p>下面 <span class="pill">A (2×3)</span> 乘 <span class="pill">B (3×2)</span> 得到 <span class="pill">C (2×2)</span>。点“下一步”，看高亮的<span style="color:#cfe0ff">一行</span>和<span style="color:#ffe9a8">一列</span>如何配对相乘、再相加填进<span style="color:#bff3df">输出格</span>。</p>
+
+  <div id="demo-basic"></div>
+  <div class="legend">
+    <span><i class="sw" style="background:rgba(79,140,255,.4)"></i>当前行（A）</span>
+    <span><i class="sw" style="background:rgba(255,211,77,.4)"></i>当前列（B）</span>
+    <span><i class="sw" style="background:rgba(34,192,139,.45)"></i>算出的输出格</span>
+  </div>
+
+  <div class="note"><b>记住一个尺寸规则：</b> <span class="pill">(m×n)·(n×p) = (m×p)</span>。中间那个 <b>n 必须相等</b>（行长 = 列高），结果的形状取两头。后面所有网络都在反复用这条。</div>
+</div></section>
+
+<!-- ============ MLP ============ -->
+<section id="mlp"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--mlp)"></span>② 全连接层（MLP / Dense / Linear）</h2>
+  <p class="sub">最朴素的一层：每个输出神经元，都连到<b>所有</b>输入。</p>
+
+  <div class="formula big"><span class="v-mlp">y</span> = <span class="v-mlp">W</span> <span class="v-mlp">x</span> + <span class="v-mlp">b</span>　<span class="muted">　然后 a = σ(y)，σ 是激活函数</span></div>
+
+  <p>设输入是 4 维向量 <b>x</b>，输出是 3 维向量 <b>y</b>。那么权重 <b>W</b> 就是一张 <span class="pill">3×4</span> 的表：第 <i>i</i> 行专门负责“怎么把 4 个输入加权成第 <i>i</i> 个输出”。</p>
+
+  <p>点“下一步”，逐个算出 3 个输出神经元。<b>W 的第 i 行</b> 与 <b>整列 x</b> 做点积，加上偏置 b<sub>i</sub>，就是 y<sub>i</sub>。</p>
+
+  <div id="demo-mlp"></div>
+
+  <div class="note"><b>本质：</b> 一层 MLP = 一次矩阵乘 + 一次加偏置。<b>“全连接”</b> 三个字，对应的就是 W 里<b>没有一个 0</b> —— 每个输出都看了全部输入。参数量 = 3×4 + 3 = 15。记住这个“稠密、看全局”的特点，第⑥节对比 CNN 时要用。</p>
+</div></section>
+
+<!-- ============ CNN ============ -->
+<section id="cnn"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--cnn)"></span>③ CNN（卷积）</h2>
+  <p class="sub">卷积看起来像“小窗口在图上滑动”，但底层一样是<b>一次大矩阵乘法</b>。</p>
+
+  <div class="legend" style="margin:0 0 18px">
+    <span><i class="sw" style="background:rgba(34,192,139,.5)"></i>绿 = 输入 / 激活值（输出也是激活，仍为绿）</span>
+    <span><i class="sw" style="background:rgba(79,140,255,.55)"></i>蓝 = 卷积核权重</span>
+    <span><i class="sw" style="background:linear-gradient(90deg,rgba(34,192,139,.22),rgba(34,192,139,.5))"></i>深浅 = 不同通道</span>
+  </div>
+
+  <p>一张 <span class="pill">4×4</span> 的输入，用一个 <span class="pill">2×2</span> 的卷积核（kernel）去扫。核停在每个位置，就把它盖住的 4 个数和核的 4 个权重<b>对应相乘再求和</b>，得到输出图上的一个数。滑过整张图，得到 <span class="pill">3×3</span> 输出。</p>
+
+  <h3>第一步：核在滑动</h3>
+  <p>点“滑动一格”，看绿色窗口怎么移动，以及每一步算出的输出。</p>
+  <div id="demo-cnn-slide"></div>
+
+  <h3>第二步：把卷积“摊平”成矩阵乘法（im2col）</h3>
+  <p>计算机其实不会真的“滑动”。它把每个窗口盖住的 4 个数<b>抽出来拉成一行</b>，9 个窗口堆成一个 <span class="pill">9×4</span> 的大矩阵（叫 <b>im2col</b>）；卷积核拉成 <span class="pill">4×1</span> 的列。两者一乘，<span class="pill">9×4 · 4×1 = 9×1</span>，再 reshape 回 3×3 —— 卷积就变成了<b>一次和 MLP 一模一样的矩阵乘</b>。</p>
+  <div id="demo-cnn-im2col"></div>
+
+  <h3>⊙ 还是 · ？为什么"一步看像逐元素积，整体却是矩阵乘"</h3>
+  <p>这正是最容易混的地方。盯着<b>一个</b>窗口时，patch 和 kernel 都是 2×2、摆正对齐，"对应位置相乘"看起来就是<b>哈达玛积（⊙，逐元素积）</b>。但别忘了后面还有一步：<b>把 4 个乘积全部加起来</b>，塌成一个数。"⊙ 之后整体求和"——把两个 2×2 都拉直成向量后，恰好就是一次<b>点积（内积）</b>，而点积正是矩阵乘法里"一个格子"的算法。</p>
+  <div id="demo-hadamard"></div>
+  <div class="note"><b>所以卷积并没有"变成"哈达玛积：</b> 单个位置是 <b>⊙ + 求和 = 点积 = 矩阵乘里的一个格子</b>；把所有位置打包起来，就是一次完整矩阵乘法。<b>滑动视角</b>只看一个格子(于是看到 ⊙)，<b>im2col 视角</b>一次看全部格子(于是看到 matmul)，是同一运算的两种粒度。提醒：纯哈达玛积 A⊙B 是<b>不求和</b>的、结果仍是同形状矩阵 —— 卷积比它多了"求和塌成标量"这一步，正是这一步让它等于点积、从而能拼成矩阵乘法。</div>
+
+  <div class="note"><b>两个关键不同（相对全连接）：</b><br>
+  ① <b>局部连接</b>：每个输出只看一个 2×2 的小邻域，不是整张图。<br>
+  ② <b>权重共享</b>：9 个窗口用的是<b>同一套</b> 4 个权重。所以一个卷积核只有 4 个参数，而不是 16×9 个。这正是 CNN 参数少、又能抓“平移不变”特征的原因。</div>
+</div></section>
+
+<!-- ============ RNN ============ -->
+<section id="rnn"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--rnn)"></span>④ RNN（循环网络）</h2>
+  <p class="sub">处理序列。诀窍是：<b>同一套权重，沿时间一遍遍复用</b>，并把“记忆” h 往后传。</p>
+
+  <div class="formula big"><span class="v-rnn">h</span><sub>t</sub> = tanh( <span class="v-rnn">W<sub>xh</sub></span> <span class="v-rnn">x</span><sub>t</sub> + <span class="v-rnn">W<sub>hh</sub></span> <span class="v-rnn">h</span><sub>t-1</sub> + <span class="v-rnn">b</span> )</div>
+
+  <p>每个时间步 <i>t</i> 做两次矩阵乘再相加：<br>
+  · <b>W<sub>xh</sub> · x<sub>t</sub></b>：当前这一帧输入带来的信息；<br>
+  · <b>W<sub>hh</sub> · h<sub>t-1</sub></b>：上一时刻的隐藏状态（记忆）带来的信息。<br>
+  两者相加、过 tanh，得到新的记忆 h<sub>t</sub>，再传给下一步。</p>
+
+  <p>点“前进一个时间步”，看记忆 h 如何从左向右流动。注意：<b>W<sub>xh</sub> 和 W<sub>hh</sub> 在每一步都是同一张表</b>（又一次权重共享，只不过这次是沿“时间”共享）。</p>
+  <div id="demo-rnn"></div>
+
+  <div class="note"><b>和 CNN 的呼应：</b> CNN 沿<b>空间</b>共享权重，RNN 沿<b>时间</b>共享权重。两者都是把“一个小 MLP（W）”反复套用到不同位置/时刻上。</div>
+</div></section>
+
+<!-- ============ LTC / NCP ============ -->
+<section id="liquid"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--rnn)"></span>✦ 液态神经网络：LTC / NCP</h2>
+  <p class="sub">RNN 谱系里很别致的一支 —— 把"记忆快慢"做成<b>随输入流动</b>的连续时间动力学,再配上仿线虫的稀疏接线。</p>
+
+  <h3>① LTC 神经元：时间常数会"流动"</h3>
+  <p>上面的 RNN 是<b>离散时间</b>、动态固定。推到<b>连续时间</b>就是 CT-RNN / Neural ODE:<span class="pill">dx/dt = −x/τ + f(x,I)</span>,τ 是固定的时间常数(决定遗忘/记忆的快慢)。<b>LTC(Liquid Time-Constant,Hasani 等,AAAI 2021)</b>把 τ 变成<b>随输入变化</b>的:</p>
+  <div class="formula" style="justify-content:center">dx/dt = −[ 1/τ + <b class="v-rnn">f(x, I)</b> ]·x + f(x, I)·A</div>
+  <p>方括号里的 <code>1/τ + f(x,I)</code> 就是<b>"液态"的有效时间常数</b> —— <b>输入越强,神经元响应/遗忘越快</b>。灵感来自线虫(C. elegans)神经元的非线性突触动力学,还能<b>证明稳定</b>(状态与时间常数都有界),且比固定 τ 更会拟合时间序列。拖滑块看 τ_sys 随输入变(琥珀=LTC 自适应,灰=固定 τ 的普通 RNN):</p>
+  <div id="ltc-demo"></div>
+
+  <h3>② NCP 网络：用 LTC 神经元搭一张"线虫接线图"</h3>
+  <p><b>NCP(Neural Circuit Policies,Lechner 等,Nature MI 2020)</b> = 一批 LTC 神经元 + 一张<b>稀疏、仿线虫连接组</b>的接线。经典的四层结构(连接很稀疏,每个神经元只接几根):</p>
+  <div id="ncp-wiring"></div>
+  <p><b>感觉 → 中间 → 指令(有循环连接=记忆)→ 运动</b>。惊人结果:<b>约 19 个控制神经元</b> + 一个卷积感知头,就能<b>端到端开自动驾驶车</b>(车道保持);而且网络<b>小到能逐个神经元看懂</b>,做到了"<b>可审计的自治</b>"。</p>
+
+  <div class="note"><b>串到本页主线:</b> RNN 沿<b>时间</b>共享权重;<b>LTC</b> 把它升级成连续时间 + <b>输入自适应的时间常数</b>(更稳、更省、更像生物);<b>NCP</b> 再配上<b>稀疏结构先验</b>(接线刻进网络形状)。又是"<b>同一种矩阵乘法 + 不同结构约束</b>"的一例:用极少神经元换来鲁棒与可解释。后续 <b>CfC(2022)</b>还把 LTC 的 ODE 求解写成闭式,跑得更快。</div>
+</div></section>
+
+<!-- ============ 连续视角 / Neural ODE ============ -->
+<section id="ode"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--mm)"></span>◈ 连续视角:ResNet = 欧拉法 → Neural ODE</h2>
+  <p class="sub">上一节的 LTC 已经是个"ODE 神经元"。其实整套思路只有一句:把<b>层数 / 时间</b>从离散变连续,让网络拟合<b>变化率(导数)</b>,再用 ODE 求解器积分。</p>
+  <p>关键观察:残差网络的一层 <span class="pill">h + f(h)</span> 正好是<b>欧拉法解微分方程的一步</b>(<code>h<sub>t+Δ</sub> = h<sub>t</sub> + Δ·f</code>)。堆 N 层残差 = 用欧拉法把 ODE 积分 N 步。把 N 推到连续,就是 <b>Neural ODE(Chen 等,2018)</b>:<span class="pill">dh/dt = f<sub>θ</sub>(h, t)</span>,前向 = 调一个 ODE 求解器。</p>
+  <h3>欧拉法:看斜率 → 走一步(微分方程怎么"解")</h3>
+  <p class="sub" style="margin-bottom:6px">微分方程只告诉你<b>每一点的斜率</b> <code>dy/dt = f(y,t)</code>,没直接给曲线;欧拉法就<b>顺着斜率一小步步走</b>,把曲线拼成折线。下图<b>淡蓝细线 = 斜率场</b>(每点该往哪个方向走),<b style="color:var(--found)">蓝曲线 = 真解</b>。点"走一步",看它<b>在当前点看一眼斜率(黄箭头)、沿它迈 Δt 到新点</b>:</p>
+  <div id="euler-demo"></div>
+
+  <h3>N 步欧拉 = N 层 ResNet,N→∞ = Neural ODE</h3>
+  <p>每一步 <code>y + Δt·f(y)</code> 就是一层残差。把<b>步数 N</b> 一路调大:N 小时折线糙、偏离真解;N 越大越逼近那条光滑曲线 —— <b>N→∞ 就是连续的 Neural ODE</b>。</p>
+  <div id="ode-demo"></div>
+
+  <h3>ODE 在神经网络里的四个落点(其实都在本页图谱里)</h3>
+  <table class="cmp">
+    <tr><th>落点</th><th>形式</th><th>对应</th></tr>
+    <tr><td>连续深度</td><td><code>dh/dt = f(h)</code>,深度=时间</td><td>ResNet(2015)→ <b>Neural ODE</b>(2018)</td></tr>
+    <tr><td>连续时间序列</td><td><code>dh/dt = −h/τ + …</code>,真实时间</td><td><b>LTC / 液态网络</b>、ODE-RNN —— 处理<b>不规则采样</b></td></tr>
+    <tr><td>状态空间 SSM</td><td>线性 ODE <code>dh/dt = Ah + Bx</code> 离散化</td><td><b>Mamba / S4</b></td></tr>
+    <tr><td>连续生成流</td><td>学速度场 <code>dx/dt = v(x,t)</code>,积分即生成</td><td>扩散概率流 ODE、<b>Flow Matching / MeanFlow</b></td></tr>
+  </table>
+  <div class="note"><b>怎么训练它:</b>用<b>伴随法(adjoint)</b> —— 反向再解一个伴随 ODE 倒着积分回起点,就能拿到梯度,而且 <b>O(1) 显存</b>(不存中间每一层)。<br><b>一句话:</b>ODE 融进神经网络,就是"<b>让网络拟合一个导数场 dh/dt = f<sub>θ</sub>,再交给数值积分器</b>"。残差、液态、Mamba、流匹配看似四件事,底下是同一条"<b>连续模型</b>"的线。</div>
+
+  <h3>拓展:微分方程 —— 常微分(ODE)与偏微分(PDE)</h3>
+  <p><b>先说"微分方程"是什么。</b>普通方程(<code>x+3=7</code>)解出来是一个<b>数</b>;微分方程的未知量是一个<b>函数</b>,它给的是"函数和它自己的<b>变化率(导数)</b>之间的关系"。为什么有用?——自然界往往只给我们"<b>变化的规律</b>",不直接给结果:"冷却速度正比于温差""加速度 = 力 / 质量""人口增长正比于现有人口"……这些都是关于<b>导数</b>的规则。<b>"解"微分方程,就是从"变化的规则"反推出"那个实际的函数"。</b></p>
+
+  <h4>① 常微分 ODE:未知函数只依赖<u>一个</u>变量</h4>
+  <p><b>它和普通方程差在哪、又解决什么问题?</b>普通方程 <code>x+3=7</code> 的未知量是一个<b>数</b> → 解是一个点(x=4);常微分方程的未知量是一个<b>函数</b> → 解是<b>一整条曲线</b>。它解决的处境是:<b>我们只知道"变化的规律(速率)",却不知道量本身</b> —— 给定<b>规律 + 一个起点</b>,反推出<b>整条轨迹</b>。</p>
+  <p><b>拿牛顿第二定律(F = ma)举个具体例子:一个下落的物体。</b>重力 <code>mg</code> 往下拉(让它加速),空气阻力 <code>k·v</code> 往上顶(速度越快阻力越大)。把 F = ma 写出来,就是一个 ODE:</p>
+  <p style="text-align:center;margin:6px 0"><span class="pill" style="font-size:15px">m·(dv/dt) = mg − k·v　⟹　dv/dt = (k/m)·(v<sub>终</sub> − v)</span></p>
+  <p>它只告诉你"<b>此刻速度变化多快</b>"(=加速度),没直接给速度。<b>解</b>这个 ODE 得到的,就是<b>速度随时间的曲线 v(t)</b>:一开始重力占上风、加速;速度越大阻力越大,直到两者抵消(加速度=0),速度稳在<b>终速 v<sub>终</sub> = mg/k</b>(就是跳伞员的"终端速度")。</p>
+  <p><b>所以"点选的曲线"到底是什么?</b>就是这条 <b>v(t)</b>。每点一下 = 在某时刻给物体一个<b>初始速度</b>,画布就画出它之后<b>速度随时间的真实轨迹(= 这条 ODE 的解)</b>。细箭头是规律(每点 <code>dv/dt</code> 朝哪),曲线就是顺着箭头一路走出来的。<b>不同初速 → 不同曲线,但都收敛到同一个终速</b>。</p>
+  <div id="ode-intro-demo"></div>
+  <p>"常"= 未知函数只依赖<b>一个</b>自变量(通常是时间 t),式子里只有普通导数 <code>dy/dt</code>。规则 <code>dy/dt = f(y,t)</code> 给出每一点的<b>斜率</b>,再加一个<b>初始条件</b> <code>y(0)=y₀</code> 钉住"是哪条解"。从简单到不简单:</p>
+  <ul class="tight">
+    <li><code>dy/dt = k</code>:匀速变化 → 直线 <code>y = y₀ + kt</code>;</li>
+    <li><code>dy/dt = k·y</code>:变化正比于当前量 → 指数 <code>y = y₀·e<sup>kt</sup></code>(人口、放射衰变、复利);</li>
+    <li><code>d²x/dt² = −k·x</code>:二阶 → 来回<b>振荡</b> sin/cos(弹簧、单摆)。</li>
+  </ul>
+  <p>几何上就是前面那个<b>斜率场</b>:每点一个方向箭头,解 = 从起点<b>顺着箭头走出的一条曲线</b>。<span class="muted">→ 一个状态,沿一条轴演化。</span></p>
+
+  <h4>② 偏微分 PDE:未知函数依赖<u>两个以上</u>变量</h4>
+  <p>当未知量是 <code>u(x,t)</code>(同时依赖<b>位置 x 和时间 t</b>),求导只能"对其中一个变量、按住其余"——这就叫<b>偏导</b> <code>∂u/∂t、∂u/∂x</code>。它把"<b>随时间的变化</b>"和"<b>随空间的变化</b>"联系起来。最经典的<b>热传导方程</b>:</p>
+  <p style="text-align:center;margin:6px 0"><span class="pill" style="font-size:15px">∂u/∂t = α · ∂²u/∂x²</span></p>
+  <p>读法:某点升温 / 降温的速度(<code>∂u/∂t</code>)正比于它周围温度的"<b>弯曲程度</b>"(<code>∂²u/∂x²</code>)。<b>比邻居平均更冷</b>(处于"低谷",∂²u/∂x²&gt;0)就<b>升温</b>,更热就降温 → 温度被不断<b>抹平 = 扩散</b>。PDE 除了初始条件(t=0 时整片场长啥样),还需要<b>边界条件</b>(杆两端怎么处理),因为空间是有边的。<span class="muted">→ 一整片分布,随空间 + 时间演化。</span></p>
+
+  <h4>③ 放在一起对照</h4>
+  <table class="cmp">
+    <tr><th></th><th>常微分 ODE</th><th>偏微分 PDE</th></tr>
+    <tr><td>未知函数</td><td><code>y(t)</code>,依赖 <b>1 个</b>变量(通常时间)</td><td><code>u(x,t)</code>,依赖 <b>2+ 个</b>(空间 + 时间)</td></tr>
+    <tr><td>导数</td><td>普通导数 <code>dy/dt</code>(只一条轴 → "全/常")</td><td>偏导 <code>∂u/∂t、∂u/∂x</code>(对一个、按住其余 → "偏")</td></tr>
+    <tr><td>解长什么样</td><td>一条<b>曲线</b></td><td>一整片<b>场 / 曲面</b></td></tr>
+    <tr><td>例子</td><td>人口、电路、神经元、<b>Neural ODE / LTC</b></td><td>热传导、波动、流体(Navier-Stokes)、扩散</td></tr>
+    <tr><td>一句直觉</td><td>一个温度计读数随时间</td><td>一台热成像的<b>整张图</b>随时间</td></tr>
+  </table>
+  <p>左:<b style="color:var(--found)">ODE</b> = 一个数随时间画出<b>一条曲线</b>;右:<b style="color:var(--mm)">PDE</b>(热传导 <code>∂u/∂t = α·∂²u/∂x²</code>)= <b>整根杆的温度分布</b>随时间扩散、抹平。点播放对照看:</p>
+  <div id="odepde-demo"></div>
+  <div class="note"><b>它们在 ML 里也分两摊:</b><br>· <b>ODE</b> —— 状态沿"深度 / 时间"<b>一条轴</b>演化:<span class="pill">Neural ODE</span><span class="pill">LTC</span><span class="pill">Mamba</span><br>· <b>PDE</b> —— 一整个<b>场</b>随空间+时间演化:<span class="pill">PINN(把 PDE 写进损失,解物理)</span><span class="pill">神经算子 / FNO(学 PDE 解的映射,做天气/流体)</span>;扩散模型里"概率密度怎么流"也由一条 PDE(Fokker-Planck)描述。<br><b>桥:</b>把 PDE 的<b>空间方向离散成网格</b>,就变成一大堆<b>耦合的 ODE</b>(method of lines)—— 这也正是"<b>连续 GNN = 图上的扩散 PDE</b>"的由来。<br>📖 想从头了解微分方程的来历(牛顿/莱布尼茨/伯努利/欧拉,悬链线·最速降线·单摆·振动弦的可视化)→ <a href="differential-equations.html" style="color:var(--mm)"><b>《微分方程的故事》</b></a>。</div>
+</div></section>
+
+<!-- ============ TRANSFORMER ============ -->
+<section id="trf"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--trf)"></span>⑤ Transformer（自注意力）</h2>
+  <p class="sub">不再逐步循环，而是让序列里<b>每个词同时看所有词</b>，用一张“注意力分数表”决定该关注谁。</p>
+
+  <p>输入是 <span class="pill">序列长度 × 维度</span> 的矩阵 <b>X</b>（这里 3 个词、每个 4 维）。先用三张投影矩阵把它变成 Query / Key / Value：</p>
+  <div class="formula"><span class="v-trf">Q</span>=<span class="v-trf">X·W<sub>Q</sub></span>　　<span class="v-trf">K</span>=<span class="v-trf">X·W<sub>K</sub></span>　　<span class="v-trf">V</span>=<span class="v-trf">X·W<sub>V</sub></span>　<span class="muted">（三次 MLP 式的矩阵乘）</span></div>
+
+  <p>然后是注意力的核心公式：</p>
+  <div class="formula big">Attention = softmax( <span class="v-trf">Q</span> <span class="v-trf">Kᵀ</span> ⁄ √d ) · <span class="v-trf">V</span></div>
+
+  <p><b>Q · Kᵀ</b>（3×4 · 4×3 = 3×3）：让每个词的 Query 和每个词的 Key 做点积，得到一张“谁该关注谁”的<b>相关性分数表</b>。每行经过 softmax 变成一组和为 1 的权重，再去对 <b>V</b> 加权求和，就得到融合了上下文的新表示。</p>
+
+  <p>点“下一步”，依次看：① 算出 Q、K、V　② Q·Kᵀ 得到注意力分数表　③ softmax 归一化　④ 乘 V 得到输出。</p>
+  <div id="demo-trf"></div>
+
+  <div class="note"><b>一句话：</b> Transformer 把所有“关系”都压进了一次 <span class="pill">Q·Kᵀ</span> 的矩阵乘里 —— 这就是它能并行、能抓长距离依赖、又特别吃 GPU（矩阵乘最擅长的活）的根本原因。</div>
+
+  <h3>深入：QKᵀ 能合并成一个矩阵吗？</h3>
+  <p>一个很自然的疑问：<span class="pill">Q·Kᵀ = X·(W_Q·W_Kᵀ)·Xᵀ</span>，那把 <b>W_Q·W_Kᵀ 合并成一个矩阵 M</b> 不就行了？数学上完全成立——但实际不这么做。展开看为什么:</p>
+  <details style="border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:2px 16px;margin:8px 0">
+  <summary style="cursor:pointer;padding:14px 2px;font-weight:700;color:var(--ink)">▸ 展开：合并恒等式、低秩瓶颈、与 QK circuit</summary>
+
+  <div class="formula"><span class="v-trf">Q Kᵀ</span> = (X<span class="v-trf">W_Q</span>)(X<span class="v-trf">W_K</span>)ᵀ = X·(<span class="v-trf">W_Q W_Kᵀ</span>)·Xᵀ = X·<b>M</b>·Xᵀ<span class="muted">　(M = W_Q W_Kᵀ, d×d, 秩 ≤ d_k)</span></div>
+  <div class="note" style="border-left-color:var(--trf)"><b>先说清 d 和 d_k(两个维度)：</b><br>
+  · <b>d = 模型维度</b>（文献里常写作 <b>d_model</b>，和这里的 d 是<b>同一个东西</b>，别被两种写法搞混）：每个 token 向量的长度(词嵌入维)。输入 X 是 <span class="pill">序列长 n × d</span>。<br>
+  · <b>d_k = 每个注意力头里 Q/K 的维度</b>。多头时 <b>d_k = d / h</b>(d 被 h 个头平分)。投影矩阵 <span class="pill">W_Q、W_K 形状 d×d_k</span>，作用是把每个 d 维 token <b>压成 d_k 维</b>的 query / key(所以 Q=X·W_Q 是 n×d_k)。<br>
+  · 例:上面 ⑤ 的演示里 <b>d=4、d_k=2</b>(W_Q 就是 4×2)。下面滑块为看得清取 <b>d=12</b>，拖 h 看 d_k=d/h 怎么缩、M 怎么变低秩。</div>
+  <p>对固定模型,这步<b>严格相等</b>——scores 完全一样,所以纯是<b>参数化方式</b>之争。拖滑块感受核心那条理由(<b>低秩瓶颈</b>):头数 h 越大,每头 d_k=d/h 越小,M 越低秩。</p>
+  <div id="qk-merge"></div>
+
+  <div class="note"><b>三个不合并的理由：</b><br>
+  <b>① 低秩瓶颈(最主要)：</b> M=W_QW_Kᵀ 是 d×d 但秩 ≤ d_k=d/h(多头里 d_k≪d)。两个 d×d_k 矩阵是 M 的<b>低秩分解</b>;合并成满秩 M,参数从 <b>2·d·d_k</b> 涨到 <b>d²</b>。这个瓶颈是<b>特意的归纳偏置+正则</b>,也是多头省参的根本。<br>
+  <b>② 计算更贵：</b> 分解让 Q、K 活在更小的 d_k 空间,投影和 n² 打分都便宜约 h 倍;合并反把它们拽回 d 空间。连推理都不会合并。<br>
+  <b>③ 多头：</b> 每头各有低秩 M⁽ʰ⁾,压不成一个矩阵。<br>
+  <span class="muted">(注意:实现里把 W_Q/W_K/W_V 拼成 d×3d 做一次 matmul 是另一回事——只是并投影省 kernel,Q、K 仍分开,没把 W_QW_Kᵀ 乘成 M。)</span></div>
+
+  <div class="note"><b>优化上的区别(你问的重点)：</b> 即使把 M 限成同样的秩、表达同一函数,<b>训练 (W_Q,W_K) ≠ 训练 M</b>:<br>
+  · 损失对 (W_Q,W_K) 是<b>矩阵乘积、非凸</b>(有鞍点),对 M 则线性;<br>
+  · 梯度<b>互为预条件</b>:∂L/∂W_Q = (∂L/∂M)·W_K(反之亦然),等价 M 上的有效梯度被这套耦合动力学重塑;<br>
+  · 自带<b>隐式低秩偏好</b>(深度矩阵分解的 implicit bias)+ 显式 rank≤d_k 约束 = 正则,泛化常更好;<br>
+  · 有<b>规范冗余</b>:W_Q→W_QA、W_K→W_KA⁻ᵀ 给同一个 M(过参数化,通常利于优化)。</div>
+
+  <div class="note"><b>漂亮的呼应 —— QK circuit：</b> Anthropic《A Mathematical Framework for Transformer Circuits》里,做<b>理解/可解释性</b>时人们确实把 W_QW_Kᵀ 当<b>一个</b>双线性矩阵分析(称 QK circuit,同理 W_OW_V 是 OV circuit);但做<b>计算和训练</b>时保持分解。<b>"理解时合并,计算时分解"</b>——正是这个问题的最佳注脚。</div>
+  </details>
+
+  <h3>深入：rank(M)=d_k 的夹逼 + 乘法压秩 / 加法升秩</h3>
+  <p>承接上面。借<b>矩阵的秩 = 像空间(列空间)的维数</b>这把尺子,把 rank(M)=d_k <b>夹</b>出来,并讲清"乘法只压秩、加法才升秩"。<span class="muted">(这套线代基础已单独整理成一页:<a href="linear-algebra-foundations.html" style="color:var(--trf)">线性代数公共基础 →</a> 含矩阵变换、秩↔特征向量的交互讲解。)</span></p>
+  <details style="border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:2px 16px;margin:8px 0">
+  <summary style="cursor:pointer;padding:14px 2px;font-weight:700;color:var(--ink)">▸ 展开：秩的几何 + 夹逼定理 + 乘法/加法的秩</summary>
+
+  <p><b>① 乘法压秩 —— 像穿不过比它窄的瓶颈。</b> M=W_Q W_Kᵀ 把向量<b>先压进 d_k 维"细腰",再展开</b>:</p>
+  <div class="formula" style="justify-content:center">v ∈ ℝ<sup>d</sup> <span class="muted">—— W_Kᵀ ——▶</span> ℝ<sup>d_k</sup><span class="muted">(细腰)</span> <span class="muted">—— W_Q ——▶</span> ℝ<sup>d</sup></div>
+  <p>两步定界:<b>im(AB) ⊆ im(A)</b> → rank ≤ rank A;<b>AB 只作用在 im(B) 上</b> → rank ≤ rank B。合起来 <span class="pill">rank(AB) ≤ min(rank A, rank B)</span>。<b>乘法绝不升秩</b>——像空间穿不过比它窄的瓶颈,所以 M 名义 d×d、秩却卡在 d_k。</p>
+
+  <p><b>② 加法升秩 —— 两个像空间的"和"。</b> (A+B)v = Av+Bv,落在 <b>im(A)+im(B)</b> 里;两个子空间的和,维数 ≤ 各自维数之和: <span class="pill">rank(A+B) ≤ rank A + rank B</span>。<b>加法能升秩</b>(最多到两者之和)。</p>
+
+  <p><b>③ 夹逼出 rank(M)=d_k。</b> 上界 = 乘法压秩 = min = d_k;下界 = <b>Sylvester 秩不等式</b> rank W_Q + rank W_Kᵀ − d_k = 2d_k − d_k = d_k(当 W_Q、W_K 列满秩,随机/训练后几乎必然)。两边都 d_k,夹死:</p>
+  <div class="formula" style="justify-content:center">d_k <span class="muted">(下界·Sylvester)</span> ≤ rank(M) ≤ d_k <span class="muted">(上界·min)</span> ⟹ <b>rank(M) = d_k</b></div>
+  <div id="rank-viz"></div>
+
+  <div class="note"><b>合起来 = 多头的代数动机：</b> 单头里 M=W_QW_Kᵀ 是<b>乘法</b>,秩被压死在 d_k;想升秩不能靠加大 d_k(>d 纯浪费),只能靠<b>加法</b> —— 多头输出 Σ 各头贡献,h 个 rank-d_k <b>相加</b> → 总秩可达 h·d_k=d。<b>乘法压秩 ⇒ 单头低秩;加法升秩 ⇒ 多头补回 d。</b> 这就是"低秩瓶颈 + 多头"在线性代数上的真正动机。</div>
+  </details>
+</div></section>
+
+<!-- ============ PART II BANNER ============ -->
+<section style="padding:48px 0 28px;border-bottom:1px solid var(--line);background:radial-gradient(900px 300px at 50% 0%, rgba(34,192,139,.10), transparent 60%)"><div class="wrap" style="text-align:center">
+  <div style="font-family:var(--mono);font-size:13px;color:var(--cnn);letter-spacing:3px">PART Ⅱ</div>
+  <h2 style="font-size:26px;margin:6px 0 8px">从 MLP 到 CNN：一次彻底的拆解</h2>
+  <p style="color:var(--ink-dim);max-width:660px;margin:0 auto;font-size:15px">上半场是"每种网络在乘什么"的巡览；下半场只做一件事 —— 把 <b>CNN 和 MLP 的关系</b>彻底讲透：从"CNN 是受限的 MLP"，到 LCN / Tiled 的完整光谱，再到多通道与"为什么偏偏是相加"。</p>
+  <div style="margin-top:12px;font-size:13px;color:var(--ink-dim)">A 受限的 MLP　·　B 一根光谱　·　C 两条约束　·　D 多通道　·　E 延伸</div>
+</div></section>
+
+<!-- ============ A. CNN = 受限的 MLP ============ -->
+<section id="cnn-mlp"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--cnn)"></span>A · CNN 其实是受限的 MLP</h2>
+  <p class="sub">可以，而且这是个很有洞察力的看法 —— 但要加两个限定词。</p>
+
+  <p class="lead"><b>答案：能。</b> 一个卷积核，本质上就是<b>同一个小型全连接层（MLP），被复制贴到图像的每一个局部窗口上</b>。把图“摊平”成 im2col 之后，卷积和 MLP 的计算<b>完全是同一次矩阵乘法</b>（见第③节）。所以：</p>
+
+  <div class="formula">卷积层　≈　<span class="v-mlp">一个小 MLP</span>　×　<span class="v-cnn">在所有位置上重复使用（权重共享）</span>　+　<span class="muted">只连局部（局部连接）</span></div>
+
+  <div class="grid2">
+    <div class="card mlp">
+      <h4 style="color:var(--mlp)">全连接 MLP（稠密）</h4>
+      <p style="font-size:13.5px;color:var(--ink-dim);margin:0 0 6px">每个输出连<b>全部</b>输入；每条连接都有<b>独立</b>权重。</p>
+      <div id="mini-mlp"></div>
+    </div>
+    <div class="card cnn">
+      <h4 style="color:var(--cnn)">卷积 = 受约束的 MLP</h4>
+      <p style="font-size:13.5px;color:var(--ink-dim);margin:0 0 6px">把它的 W 加两条规矩，就变成卷积：</p>
+      <div id="mini-cnn"></div>
+    </div>
+  </div>
+
+  <p>右边其实就是左边那张 W，只不过被强行加了两条约束：</p>
+  <table class="cmp">
+    <tr><th>角度</th><th style="color:var(--mlp)">全连接 MLP</th><th style="color:var(--cnn)">CNN（卷积）</th></tr>
+    <tr><td>连接范围</td><td>每个输出看<b>整张图</b>（全局、稠密）</td><td>每个输出只看一个<b>局部窗口</b>（稀疏）</td></tr>
+    <tr><td>权重</td><td>每条连接<b>各不相同</b></td><td>所有位置<b>共享同一套</b>核权重</td></tr>
+    <tr><td>等价说法</td><td>—</td><td>把一个小 MLP <b>滑遍全图</b>，W 是一个稀疏 + 重复的“块状”矩阵</td></tr>
+    <tr><td>参数量(本页例子)</td><td>16→? 稠密，参数随输入暴涨</td><td>一个核仅 <b>4</b> 个参数，与图大小无关</td></tr>
+    <tr><td>带来的好处</td><td>表达力最强，但易过拟合、算不动大图</td><td>参数少、<b>平移不变</b>、适合图像</td></tr>
+  </table>
+
+  <div class="note"><b>那 PyTorch 里到底变换谁？——变换 img，不是变换核。</b><br>
+  上面这张"稀疏 + 共享"的 W（把<b>卷积核</b>铺成一个巨大的稀疏 Toeplitz 矩阵、让图保持摊平）是<b>数学等价的教学视角</b>，专门用来理解"conv = 受限 MLP"，但<b>实际不这么算</b>——那个矩阵巨大且几乎全是 0，乘一堆零纯属浪费内存和算力。<br>
+  真正的实现（就是第③节的 im2col）<b>反过来</b>：把<b>输入图展开</b>成 im2col 矩阵（<span class="pill">torch.nn.Unfold</span> / <span class="pill">F.unfold</span>，这步会复制数据），而<b>卷积核只做一次廉价的 reshape（view）</b>、权重本身不变、不复制，最后一次稠密 GEMM 搞定。<br>
+  原因：<b>权重共享意味着核要被复用到所有位置</b>，所以核保持<b>一份、小而密</b>，要被"摊开铺满"的自然是图——展开图、而非展开核，才能把这种复用喂给 GPU 上最快的稠密矩阵乘。</div>
+
+  <div class="note"><b>但有两点不能忽略，否则会说反：</b><br>
+  ① <b>不是“多个不同的 MLP 拼接”，而是“同一个 MLP 被复用很多次”。</b> 9 个输出位置共用一套权重，不是 9 个独立的全连接层。<br>
+  ② <b>反过来要分情况：</b> 卷积（指<b>小核滑动</b>那种）是 MLP 的<b>特例 / 受限版</b>（加了局部 + 共享约束）。任何卷积都能写成一个稀疏、参数绑定的全连接；反过来，任意全连接也能写成一个<b>核 = 整图</b>的卷积（见下方"反过来想"），只是写不成<b>小核滑动</b>的那种卷积。</div>
+
+  <p class="lead">所以更精确的一句话是 ——
+  <b style="color:var(--cnn)">“卷积 = 一个共享权重的小 MLP，在输入上滑动复用”</b>；
+  而当 kernel 大到覆盖整张图、且每个位置不再共享权重时，CNN 就退化回了普通 MLP。这条线索其实贯穿全篇：CNN 沿空间复用、RNN 沿时间复用、Transformer 把复用换成”一次性两两点积”，但<b>最底层都是同一种矩阵乘法</b>。</p>
+
+</div></section>
+
+<!-- ============ B. 一根光谱 ============ -->
+<section id="spectrum"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--cnn)"></span>B · 一根光谱：MLP → LCN → Tiled → CNN</h2>
+  <p class="sub">把"受限"做成一个连续旋钮 —— 两个轴：① 要不要局部（核多大）？② 共享多少（G）？</p>
+
+  <h3>反过来想：MLP 就是“核 = 整张图”的卷积</h3>
+  <p>既然"卷积是受限的 MLP"，那反过来呢？<b>一个全连接层，严格等于把卷积核放大到和输入一样大、只剩一个窗口（M=1）的卷积</b> —— 不是"类似"，是<b>逐项相等</b>：<span class="pill">Linear(N→C)</span> 与 <span class="pill">Conv(核=整图)</span> 的权重一一对应。</p>
+  <p>原因：CNN 的两个约束（<b>局部</b> + <b>共享</b>）会随核变大而<b>同时失效</b> —— 核盖住整图，"局部"就等于"全局"；只剩一个窗口，就没有别的位置可"共享"。两个开关一起关掉，每个输出就连到了全部像素 = MLP。拖动核大小 k 同步看两张图：<b>①</b> 卷积 <span class="pill">输入 ✲ 核 = 输出</span>（核长大→输出从 5×5=25 个神经元塌成 1 个、感受野涨满整图）；<b>②</b> 它<b>等价的 MLP 权重矩阵 W</b>——直接回答"一个 k×k 卷积写成全连接到底长什么样"。核越大，W 越稠密；k=5 时 W 塌成<b>一行 25 个独立权重</b>，就是 MLP：</p>
+  <div id="spectrum-demo"></div>
+  <p class="muted" style="text-align:center;font-size:13px;margin-top:4px">（全 2D。①里绿=输入/输出神经元、蓝框=当前输出感受野、蓝=核；②里每行是一个输出神经元的全部 25 个权重，蓝=非零（各行共享同一套核）、暗=0。这张 W 就是第①节"等价全连接"的真身。）</p>
+
+  <div class="note"><b>所以"谁是谁的特例"别用 X⊂Y 硬套，而是一根连续的轴：</b><br>
+  <span class="pill">核 1×1</span> —— 最受限的 CNN（局部+共享最强）—— …… —— <span class="pill">核 = 整图</span> 完全自由 = MLP。<br>
+  · <b>小核滑动卷积</b>（M&gt;1、真共享）是 MLP 的<b>严格子集</b> —— 这种卷积 MLP 写不成；<br>
+  · <b>整图核卷积</b>（M=1）与 MLP <b>完全重合</b>。<br>
+  于是"卷积是受限 MLP"和"MLP 是整图核 CNN"<b>两句都对</b>，只是指着这根轴的两端，并不矛盾。</div>
+
+  <div class="note"><b>这不只是理论：</b> 把全连接层重写成"核 = 特征图大小"的卷积，正是 <b>全卷积网络 FCN</b>（Long 等, 2015）和 <b>OverFeat</b> 的核心技巧 —— 换成卷积后再喂进<b>更大的图</b>，它会自动滑动、输出一张<b>类别热力图</b>而不是单个向量，直接拿去做分割 / 检测。</div>
+
+  <h3>从 MLP 到 CNN 的完整演化：MLP → LCN → Tiled → 卷积</h3>
+  <p>"局部 + 共享"这两条约束不仅能拆开、还能<b>分档</b>——中间卡着 <b>LCN(局部但<u>不</u>共享)</b> 和 <b>Tiled 平铺卷积(周期共享)</b> 两个过渡档。先看四者<b>怎么处理一张图</b>,再看它们落成的权重矩阵。</p>
+  <p>① <b>处理方式：</b>点按钮,四个面板在<b>同一个输出格</b>上各自取数。盯两件事——<b>读取范围</b>(整图 / 局部)、<b>滤波器</b>(每处都换 / 周期换 / 始终同一个):</p>
+  <div id="lcn-process"></div>
+  <p class="muted" style="text-align:center;font-size:12.5px;margin-top:2px">(MLP 输出本是一个向量,这里摆成 2×2 只为和另两者对齐比较)</p>
+  <p>② <b>落成权重矩阵：</b>把上面的连接写成等价 W(行=输出、列=输入,<b>字母=权重,字母相同=共享同一个</b>),"切分"和"共享"各买到什么就一目了然:</p>
+  <div id="lcn-compare"></div>
+  <div class="note"><b>读法 —— 这就是从 MLP 到 CNN 的演化:</b><br>
+  · <b>MLP → LCN</b>:加<b>局部</b>(连整图 → 只连窗口)。参数 36 → 16,但每个权重<b>仍只被 N 训练</b>(每个只出现 1 次)。<br>
+  · <b>LCN → Tiled → 卷积</b>:逐步<b>共享</b>(不同核数 <b>G:4 → 2 → 1</b>)。参数 16 → 8 → 4,同一个权重出现 <b>1 → 2 → 4</b> 次 → 被 1×N → 2×N → <b>4×N</b> 个 patch 训练(点权重 a 看高亮个数)。<br>
+  <b>一根旋钮 G(不同核个数)统一全程:每个核的有效样本 ≈ (M/G)×N。G 越小 → 共享越多 → 样本放大越大。</b>MLP 是"还没局部",LCN 是"局部但 G=M 不共享",CNN 是"局部 + G=1 共享到顶"。<b>切分是机会,共享是兑现。</b></div>
+  <div class="note"><b>LCN 是谁、什么时候提出的?</b> 「局部连接但不共享」(locally-connected layer,又叫 unshared convolution)<b>没有单一发明人</b>——它是夹在全连接与卷积之间的自然变体。源头是 <b>Hubel &amp; Wiesel(1962)</b> 在猫视觉皮层发现的<b>局部感受野</b>;"共享 vs 不共享"的区分在 <b>LeCun</b> 的卷积网框架里就已内含,后被规范成"locally connected / unshared convolution"(见《Deep Learning》2016 第 9 章)。</div>
+  <div class="note"><b>它最有名的实战 —— DeepFace(Taigman 等,Facebook,CVPR 2014),效果到底如何?</b><br>
+  先把人脸做 <b>3D 对齐(正脸化)</b>,于是每张脸的眼/鼻/嘴都落在<b>固定像素位置</b>——同一位置统计稳定、<b>不同位置差别很大</b>。这时卷积"同一个滤波器到处都好用"的假设反而<b>浪费容量</b>;于是 DeepFace 在中间几层改用 <b>LCN,让每个位置学自己的滤波器</b>(就是上图 LCN 那种)。<br>
+  <b>结果:</b>在 <b>LFW</b> 人脸验证基准上达到 <b>97.35%</b>,把当时最好成绩的<b>错误率砍掉约 27%</b>,逼近人类水平(~97.53%)——这是当年的轰动结果。<br>
+  <b>但有两个前提,缺一不可:</b>① 人脸<b>已对齐</b>(位置才携带固定语义,不共享才划算);② 有 <b>440 万</b>张标注人脸,撑得住 LCN 暴涨的参数(否则立刻过拟合)。<br>
+  <b>所以这不是反对共享,而是恰好划出共享的边界:当"位置"本身固定且有语义、数据又足够多时,不共享反而更好;反之(位置会平移、数据有限),共享(卷积)才对。</b></div>
+
+  <p class="lead" style="margin-top:8px">至此闭环 —— <b style="color:var(--mlp)">MLP</b> —(加局部)→ <b>LCN</b> —(周期共享)→ <b>Tiled</b> —(全共享)→ <b style="color:var(--cnn)">CNN</b>。一条轴、两个旋钮(<b>要不要局部</b>？<b>共享多少 G</b>？),就把全连接平滑地演化成了卷积。</p>
+</div></section>
+
+<!-- ============ Why not flatten ============ -->
+<section id="why"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--cnn)"></span>C · 局部 ＋ 共享，到底换来什么</h2>
+  <p class="sub">直觉上”加限制”像是坏事——表达力更弱了。但对图像来说，<b>这两条限制恰好是对的先验</b>，于是换来四个全连接给不了的好处。</p>
+
+  <h3>① 参数量：全连接随图像暴涨，卷积恒定不变</h3>
+  <p>”摊平像素”最致命的问题：全连接的参数量 = <b>输入像素数 × 输出神经元数</b>，图越大参数越离谱。卷积的参数量只取决于<b>核大小 × 通道 × 核数量</b>，<b>和图像尺寸无关</b>——同一个核能扫任意大的图。拿一张标准 224×224×3 的彩色图、各接一层做对比：</p>
+  <table class="cmp">
+    <tr><th>方案</th><th>参数量公式</th><th>224×224×3 图（输出到 1000 单元）</th></tr>
+    <tr><td style="color:var(--mlp)">摊平 + 全连接</td><td>像素数 × 输出数</td><td>150,528 × 1000 ≈ <b>1.5 亿</b>（仅一层！）</td></tr>
+    <tr><td style="color:var(--cnn)">一个卷积层</td><td>核大小 × 通道 × 核数</td><td>64 × (3×3×3) ≈ <b>1,792</b></td></tr>
+  </table>
+  <p>差了约 <b>8 万倍</b>。下面拖动滑块，看 N 越大、差距越离谱：</p>
+  <div id="param-demo"></div>
+
+  <h3>② 平移等变性：学一次，全图通用</h3>
+  <p>在全连接里，连接”左上角像素”的权重和连接”右下角像素”的权重是<b>完全独立、各学各的</b>。这意味着：哪怕网络在左上角学会了”检测一只眼睛”，它对右下角的同一只眼睛<b>一无所知</b>——得用另一批权重、另一批训练样本，从头再学一遍每个位置。<br>
+  卷积因为<b>权重共享</b>，同一个核滑遍全图：边缘 / 眼睛检测器<b>只学一次，就在任何位置自动生效</b>。物体平移一下，特征图也跟着平移——这正符合图像的本质（一只猫不会因为挪到右边就变成别的东西）。</p>
+
+  <h3>③ 保留空间结构：摊平会把”谁挨着谁”丢掉</h3>
+  <p>一旦 flatten 成一长串，像素 (0,0) 和它的邻居 (0,1)、(1,0) 就变成了下标 0、1、4 —— 在全连接眼里，下标 0 和下标 1 的关系，跟下标 0 和下标 500 的关系<b>没有任何区别</b>。也就是说，”哪些像素在空间上相邻”这件事，全连接得<b>从数据里硬学</b>；而卷积一开始就把”邻近像素该一起看”刻进了结构里，白送的。</p>
+
+  <h3>④ 数据效率与泛化：正确的先验 = 少参数、少数据、不易过拟合</h3>
+  <p>②③ 这两条（局部性 + 平移共享）是对自然图像<b>正确的归纳偏置</b>。先验对了，就能用更少的参数、更少的数据，得到更好的泛化、更不容易过拟合。理论上全连接是 CNN 的超集、能表达同样的函数，但它得<b>用海量数据，自己重新发现</b>卷积一开始就假设好的那些结构。</p>
+
+  <div class="note"><b>公平地说，这是一把双刃剑：</b> 卷积的好处全来自”限制”，所以当任务<b>没有</b>平移 / 局部结构时，这个先验反而是包袱。这也是为什么在数据和算力足够大时，限制更少的模型（如 Vision Transformer）能靠”从数据里自己学结构”反超 CNN——少偏置 + 大数据 vs 强偏置 + 小数据，是一组经典权衡。<br>
+  另外补一个精确说法：卷积层本身是<b>平移等变</b>（输入平移→输出跟着平移），真正的<b>平移不变</b>（输入平移→输出不变）是靠后面的 pooling / 全局平均池化补上的。</div>
+
+  <p class="lead" style="margin-top:18px">一句话收束：<b style="color:var(--mlp)">摊平 + 全连接</b>是"什么都能学，但什么都得从零学"；<b style="color:var(--cnn)">CNN</b>是"先把图像的两条物理常识（局部性 + 平移共享）告诉它，于是用极少参数就学得又快又稳"。</p>
+</div></section>
+
+<!-- ============ Channels ============ -->
+<section id="channels"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--cnn)"></span>D · 多通道怎么算：C_in、C_out 与跨通道求和</h2>
+  <p class="sub">你的"切块 → 过 MLP → 拼回去"直觉对了八成。补三个修正，再说清通道维度。</p>
+
+  <h3>先把那句话精确化（三处修正）</h3>
+  <table class="cmp">
+    <tr><th>常见说法</th><th>更精确的说法</th></tr>
+    <tr><td>划分成多个子图像</td><td>在每个位置<b>抠出一个窗口</b>，窗口之间<b>会重叠</b>(stride=1时)，不是不相交的切块 —— 这正是 im2col 要复制数据的原因</td></tr>
+    <tr><td>每块过一个 1×n 的 MLP</td><td>过的是<b>同一个、共享</b>的 MLP；而且通常有 <b>C_out 个输出通道</b>，所以是 <b>C_out×n</b> 的 MLP，不是 1×n(除非只有 1 个卷积核)</td></tr>
+    <tr><td>拼回二维矩阵</td><td>拼回 <b>H_out × W_out × C_out</b> 的<b>三维</b>张量 —— 每个位置吐出的是一个 C_out 维向量，不是单个数</td></tr>
+  </table>
+  <p class="lead">一句话精确版：<b style="color:var(--cnn)">在每个(重叠)窗口上，用同一个共享的 Linear(C_in·kH·kW → C_out)，再把结果按空间位置摆回去。</b></p>
+
+  <h3>卷积核怎么扫多通道输入？（C_in / C_out 的来历）</h3>
+  <p>先看真实的卷积过程，再回到矩阵。设输入有 <b>3 个通道</b>(C_in=3，就像 RGB)，那么<b>一个 filter 内部就有 3 个 2×2 子核</b>——每个子核盯一个输入通道。窗口停在某处时：<b>每个通道各自 ⊙ 求和，再把所有通道的结果加到一起</b>，得到输出的一个数。点"滑动一格"，看这个跨通道相加：</p>
+  <div id="conv-process"></div>
+  <p>关键就在那个 <b style="color:var(--cnn)">跨通道相加</b>：一个 filter 不管输入有多少通道，最后都<b>塌成一个数 → 一张输出图（一个输出通道）</b>。两个维度的来历就清楚了：</p>
+  <ul style="margin:6px 0 14px;padding-left:22px;color:var(--ink-dim);font-size:14.5px;line-height:1.9">
+    <li><b style="color:var(--cnn)">输入通道数 = C_in</b> → 决定每个 filter 内部配<b>几个子核</b>（图里 2 个），它们被跨通道求和后"看不见"了。</li>
+    <li><b style="color:var(--mlp)">filter 的个数 = C_out</b> → 决定输出有<b>几个通道</b>。换一组权重不同的 filter，就多扫出一张输出图：</li>
+  </ul>
+  <div id="cout-maps"></div>
+  <p class="muted" style="text-align:center;font-size:13px;margin-top:6px">↑ 同一份 3 通道输入，3 个不同 filter → 3 张输出图，堆成 H_out × W_out × <b>C_out=3</b> 的输出张量</p>
+
+  <h3>回到矩阵：把"位置 (0,0)"摊平</h3>
+  <p>沿用上面<b>同一份输入和同样 3 个 filter</b>，我们就取卷积过程里 <b>位置 (0,0)</b> 的那个窗口（含 3 个通道）。分四步：① 取窗口 → ② 把 3 个通道的窗口拉平成向量 <b>x</b> → ③ 把 3 个 filter 各自拉平成 <b>W</b> 的 3 行 → ④ 算 <span class="pill">W·x = y</span>。最后你会看到 <b>y = [7, 6, 7] 正好等于上面 3 张输出图在 (0,0) 的值</b>——前后对得上：</p>
+  <div id="channel-demo"></div>
+  <table class="cmp">
+    <tr><th>维度</th><th>是什么</th><th>在"小 MLP"里对应</th></tr>
+    <tr><td><b style="color:var(--cnn)">C_in</b> 输入特征维</td><td>输入图/特征图的<b>通道数</b>。每个核内部有 C_in 个 2D 子核，<b>同时看全部输入通道</b>再加权求和</td><td>MLP 输入维的一部分(n = C_in·kH·kW)</td></tr>
+    <tr><td>kH × kW 空间核</td><td><b>感受野</b>大小(看多大一块)，<b>不是</b>特征维度</td><td>输入维的另一部分</td></tr>
+    <tr><td><b style="color:var(--mlp)">C_out</b> 输出特征维</td><td><b>卷积核的个数</b> = 输出通道数。每个核检测一种特征、产出一个通道</td><td>MLP 的<b>输出维度</b>(有多少个"神经元")</td></tr>
+  </table>
+
+  <div class="note"><b>具体例子：</b> RGB 图进第一层卷积，<b>C_in=3</b>；用 <b>64</b> 个 3×3 核，则 <b>C_out=64</b>，权重形状 <span class="pill">(64,3,3,3)</span>，每个核 3×3×3=27 个权重。等价于在每个像素位置共享一个 <span class="pill">Linear(27 → 64)</span>：输入维 27、输出维 64。<b>特征维度从 3 升到 64。</b></div>
+
+  <div class="note"><b>最干净的特例 —— 1×1 卷积：</b> 当 kH=kW=1，n = C_in，每个位置就是一个不折不扣的 <span class="pill">Linear(C_in → C_out)</span>，<b>逐像素</b>独立过同一个 MLP。这正是"每个子图(这里=单像素)过同一个 MLP"的最纯粹形态：<b>输入通道→MLP 输入维，卷积核个数→MLP 输出维</b>，一目了然。</div>
+
+  <h3>那"RGB 是 3×H×W、是不是更像 MLP 了"？——对，但只在通道维</h3>
+  <p>有了多通道（RGB=3 通道），确实更像 MLP 了，但"像"只发生在<b>通道这一维</b>。看完整求和式就清楚了：</p>
+  <div class="formula"><span class="muted">output[</span>c<sub>o</sub>,i,j<span class="muted">] = Σ</span><sub>c<sub>i</sub>,a,b</sub>　<span class="v-cnn">input[c<sub>i</sub>, i+a, j+b]</span> · <span class="v-mlp">W[c<sub>o</sub>, c<sub>i</sub>, a, b]</span></div>
+  <table class="cmp">
+    <tr><th>维度</th><th>怎么处理</th><th>像什么</th></tr>
+    <tr><td><b>通道 c<sub>i</sub></b></td><td>每个 filter 对<b>全部</b>输入通道求和（稠密、全连接）</td><td><b style="color:var(--mlp)">MLP</b></td></tr>
+    <tr><td><b>空间 (a,b)</b></td><td>只看 kH×kW <b>局部</b>，且每个位置<b>共享同一套 W</b></td><td><b style="color:var(--cnn)">卷积</b></td></tr>
+  </table>
+  <p class="lead">所以一句话：<b style="color:var(--cnn)">卷积 = 通道维上是 MLP（稠密混合），空间维上是卷积（局部 + 共享）。</b>RGB 只是<b>把"通道维的 MLP"激活了</b>（灰度图时它是平凡的），但<b>空间维仍是卷积</b>。</p>
+  <div class="note"><b>关键别混："摊平窗口" ≠ "摊平整图"。</b><br>
+  · <b>卷积</b>摊平的是<b>每个局部窗口</b>（含所有通道 C_in·kH·kW），所有位置<b>共享</b>同一个 MLP —— 保留了空间局部性。<br>
+  · <b>纯 MLP</b>摊平的是<b>整张 3×H×W 图</b>成一根巨向量，接一个<b>不共享</b>的大 W —— 丢掉空间结构。<br>
+  RGB 是 3×H×W 只让<b>通道维变稠密</b>，并没有让空间维也摊平。卷积始终是"摊平窗口、滑动复用"，不是"摊平整图"。<b>1×1 卷积</b>就是把空间那一半砍掉、只剩通道 MLP → 退化成逐像素纯 MLP。</div>
+
+  <h3>落到地面：RGB→灰度，就是一个写死权重的 1×1 卷积</h3>
+  <p>前面说"1×1 卷积 = 逐像素的通道 MLP"。最日常的例子就是 <b>RGB 转灰度</b>：</p>
+  <div class="formula big">灰度 = <span class="v-mlp">0.299</span>·R + <span class="v-mlp">0.587</span>·G + <span class="v-mlp">0.114</span>·B</div>
+  <p>这<b>就是</b>一个 <span class="pill">C_in=3 → C_out=1</span> 的 1×1 卷积，核权重 = <span class="pill">(0.299, 0.587, 0.114)</span>。灰度转换不是"像"卷积，它<b>本身就是卷积的一个特例</b>——只不过权重<b>写死</b>、且<b>和为 1</b>（保亮度的加权平均）。点"看下一个像素"，看每个像素怎么被三通道加权合成：</p>
+  <div id="gray-demo"></div>
+  <p class="muted" style="text-align:center;font-size:13px;margin-top:4px">（这里特意用 R/G/B 三色显示三个输入通道，比统一绿色更直观；×系数=核权重）</p>
+
+  <p>所以"CNN 处理 RGB 是把通道相加"这句话，精确版是 <b>加权相加</b>（每通道先乘自己的核权重再求和），和灰度公式是<b>同一个操作</b>，只差三点：</p>
+  <table class="cmp">
+    <tr><th></th><th>RGB→灰度</th><th>CNN 的通道处理</th></tr>
+    <tr><td>权重</td><td><b>固定</b>（感知系数，和=1）</td><td><b>可学习</b>，任意值</td></tr>
+    <tr><td>输出通道数</td><td><b>1</b>（一张灰度图）</td><td><b>C_out</b> 个（多组不同的加权组合）</td></tr>
+    <tr><td>空间范围</td><td>1×1（逐像素）</td><td>1×1 或 kH×kW（可带邻域）</td></tr>
+  </table>
+  <p class="lead"><b style="color:var(--cnn)">灰度转换 = 最简单的"通道 MLP"（3→1、权重写死）；一个卷积层 = 可学习的"通道 MLP"（C_in→C_out），在每个像素共享、外加一点空间邻域。</b></p>
+
+  <h3>历史：这种"每通道一套核、再求和"是什么时候出现的？</h3>
+  <p>答案：<b>从最早的反向传播 CNN 起就是内建机制</b>。沿时间轴看它怎么一步步成为标配 —— 小方块 = 通道 / 特征平面，<span class="garr" style="margin:0">→Σ→</span> = 跨通道求和：</p>
+  <div id="history-timeline"></div>
+
+</div></section>
+
+<!-- ============ E. 延伸：为什么是相加 ============ -->
+<section id="why-sum"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--cnn)"></span>E · 延伸：为什么偏偏是「相加」</h2>
+  <p class="sub">更底层的"为什么" —— 抽象但闭环。默认收起，想深读再展开（内容一字未删）。</p>
+  <details style="border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:2px 16px;margin:8px 0">
+  <summary style="cursor:pointer;padding:14px 2px;font-weight:700;color:var(--ink)">▸ 展开：相加的家谱 ＋ MLP 的加 vs CNN 的加</summary>
+
+  <h3>为什么是「相加」？——相加的家谱</h3>
+  <p>时间轴讲了"什么时候用"；这张<b>家谱</b>讲"为什么是相加"。它一路继承自<b>神经元的加权求和</b>，根子在<b>"线性"的定义本身</b>——而卷积的空间求和另有一条信号处理的根：</p>
+  <div id="lineage-diagram" style="overflow-x:auto">
+  <svg viewBox="0 0 840 400" style="width:100%;min-width:680px;height:auto;display:block;margin:8px auto" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif">
+    <defs>
+      <marker id="lhArrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L7,3 L0,6 Z" fill="#9aa3b2"/>
+      </marker>
+    </defs>
+    <g stroke="#3a4255" stroke-width="2" fill="none" marker-end="url(#lhArrow)">
+      <path d="M135,96 L222,154"/>
+      <path d="M412,96 L358,154"/>
+      <path d="M290,230 L368,294"/>
+      <path d="M700,98 L548,294"/>
+    </g>
+    <g font-size="11.5" fill="#9aa3b2" font-weight="700">
+      <text x="296" y="268">跨通道求和</text>
+      <text x="598" y="206">跨空间求和</text>
+    </g>
+    <g>
+      <rect x="20" y="24" width="230" height="72" rx="10" fill="#171a23" stroke="#2c3242"/>
+      <text x="135" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#e7eaf0">生物根 · 突触整合</text>
+      <text x="135" y="74" text-anchor="middle" font-size="11" fill="#9aa3b2">神经元把带权突触输入相加</text>
+    </g>
+    <g>
+      <rect x="285" y="24" width="255" height="72" rx="10" fill="#171a23" stroke="#2c3242"/>
+      <text x="412" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#e7eaf0">数学根 · 线性 ⟺ 加权求和</text>
+      <text x="412" y="74" text-anchor="middle" font-size="11" fill="#9aa3b2">= 内积 ⟨w,x⟩（线性的定义）</text>
+    </g>
+    <g>
+      <rect x="585" y="24" width="235" height="72" rx="10" fill="#171a23" stroke="#2c3242"/>
+      <text x="702" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#e7eaf0">信号处理根 · LTI 系统</text>
+      <text x="702" y="74" text-anchor="middle" font-size="11" fill="#9aa3b2">线性 + 平移不变 ⇒ 卷积</text>
+    </g>
+    <g>
+      <rect x="140" y="154" width="300" height="74" rx="10" fill="#1f232f" stroke="#4f8cff" stroke-width="2"/>
+      <text x="290" y="183" text-anchor="middle" font-size="13.5" font-weight="700" fill="#cfe0ff">人工神经元的加权求和 Σ wᵢxᵢ + b</text>
+      <text x="290" y="206" text-anchor="middle" font-size="11" fill="#9aa3b2">McCulloch-Pitts 1943 · 感知机 1958</text>
+    </g>
+    <g>
+      <rect x="200" y="296" width="440" height="78" rx="12" fill="#22c08b" fill-opacity="0.12" stroke="#22c08b" stroke-width="2"/>
+      <text x="420" y="327" text-anchor="middle" font-size="15.5" font-weight="800" fill="#bff3df">CNN 里的「相加」</text>
+      <text x="420" y="352" text-anchor="middle" font-size="12.5" fill="#cfe0ff">= 矩阵乘法的 Σₖ = 内积 ⟨w,x⟩</text>
+    </g>
+  </svg>
+  </div>
+  <p>所以这个"相加" = 矩阵乘法里的 <span class="pill">Σₖ</span> = 内积。它不是随便选的——四条"道理"：</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:12px;margin:14px 0">
+    <div class="card"><h4 style="font-size:14px;margin:0 0 5px;color:var(--mlp)">① 想要线性，就只能相加</h4><p style="font-size:13px;color:var(--ink-dim);margin:0;line-height:1.6">骨架是"线性混合 + 逐点非线性"。<b>线性 ⟺ 加权求和</b>，求和是被逼出来的，不是随便选的。</p></div>
+    <div class="card"><h4 style="font-size:14px;margin:0 0 5px;color:var(--cnn)">② 加权求和 = 匹配滤波</h4><p style="font-size:13px;color:var(--ink-dim);margin:0;line-height:1.6">⟨w,x⟩ 衡量输入与模板的对齐度，求和把逐点吻合汇成总分。匹配滤波器是噪声中检测已知模式的<b>最优线性检测器</b>。</p></div>
+    <div class="card"><h4 style="font-size:14px;margin:0 0 5px;color:var(--rnn)">③ 相加 = 累积证据</h4><p style="font-size:13px;color:var(--ink-dim);margin:0;line-height:1.6">每个加权输入是一票证据，神经元把证据加起来、够了就激活。可微、可叠加、数值稳定。</p></div>
+    <div class="card"><h4 style="font-size:14px;margin:0 0 5px;color:var(--trf)">④ 对通道顺序无关</h4><p style="font-size:13px;color:var(--ink-dim);margin:0;line-height:1.6">通道没有天然先后，求和（可交换、可结合）是最自然的<b>对称聚合</b>——换通道顺序结果不变。</p></div>
+  </div>
+  <div class="note"><b>一句话：</b>这个"相加" = 矩阵乘法的内层 Σ = 内积 = 线性的定义本身。它一头连着 1943 年把神经元建模成"突触求和"的生物直觉，一头连着信号处理里"线性时不变 ⇒ 卷积"的定理。<b>之所以是相加而非别的：我们要让混合保持线性、把非线性单独交给激活函数——而线性，按定义，就是加权求和。</b></div>
+
+  <h3>MLP 的"加" vs CNN 的"加"——其实是同一个</h3>
+  <p>常有个误会：以为 MLP 是"加权求和"、CNN 是"直接相加"。其实两者都是<b>同样的两步</b>：先 <b>乘权重</b>（权重在这一步进入），再 <b>平加</b>（系数为 1）。下面用同一套配色标出来——<span class="lp">黄色的 +</span> 就是"平加"，它在 MLP 和 CNN 里<b>是同一个东西</b>：</p>
+  <div class="legend" style="margin:0 0 14px">
+    <span><i class="sw" style="background:rgba(127,224,192,.7)"></i>绿 = 输入 x</span>
+    <span><i class="sw" style="background:rgba(156,192,255,.7)"></i>蓝 = 权重 w</span>
+    <span><i class="sw" style="background:rgba(255,211,77,.7)"></i>黄 + = 平加（系数 1，到处一样）</span>
+  </div>
+  <div class="grid2">
+    <div class="card mlp">
+      <h4 style="color:var(--mlp)">MLP 的加权求和</h4>
+      <div class="formula" style="font-size:15px">y = <span class="lw">w₀</span>×<span class="lx">x₀</span> <span class="lp">+</span> <span class="lw">w₁</span>×<span class="lx">x₁</span> <span class="lp">+</span> <span class="lw">w₂</span>×<span class="lx">x₂</span> <span class="lp">+</span> …</div>
+      <p style="font-size:13px;color:var(--ink-dim);margin:8px 0 0">每项 <span class="lw">蓝</span>×<span class="lx">绿</span> = 加权；再用 <span class="lp">+</span> 平加。</p>
+    </div>
+    <div class="card cnn">
+      <h4 style="color:var(--cnn)">CNN 的跨通道求和</h4>
+      <div class="formula" style="font-size:13.5px">out = ( <span class="lw">w</span>×<span class="lx">x</span>+<span class="lw">w</span>×<span class="lx">x</span>+… )<sub style="color:var(--ink-dim)">通道0</sub> <span class="lp">+</span> ( … )<sub style="color:var(--ink-dim)">通道1</sub> <span class="lp">+</span> ( … )<sub style="color:var(--ink-dim)">通道2</sub></div>
+      <p style="font-size:13px;color:var(--ink-dim);margin:8px 0 0">每个括号内部<b>还是</b> <span class="lw">蓝</span>×<span class="lx">绿</span> 的加权和；通道间那个 <span class="lp">+</span> 和左边 MLP 的 <span class="lp">+</span> <b>一模一样</b>。</p>
+    </div>
+  </div>
+  <div class="note"><b>所以"加"是同一个：</b>两边都 = 一个点积 <span class="pill">Σₖ wₖ xₖ</span>。<span class="lw">×</span> 那一步把权重乘进去了，所以外层的 <span class="lp">+</span> 看起来"无权"——其实它<b>本来就该是系数 1 的平加</b>，MLP、CNN 完全一样。CNN 只是把这同一个 Σ <b>按通道加了层括号</b>而已。<b>真正"无权直接相加"的地方是残差连接 <span class="pill">out = F(x) + x</span></b>，那是另一回事。</div>
+  </details>
+</div></section>
+
+<!-- ============ 收尾：四种网络的知识 ============ -->
+<section id="knowledge"><div class="wrap">
+  <h2 class="sec"><span class="dot" style="background:var(--hi)"></span>★ 全篇收尾：四种网络的权重各装什么知识</h2>
+  <p class="sub">底层都是同一种矩阵乘法;装的"知识种类"之所以不同,是因为给权重加了不同的<b>结构约束 —— 沿什么轴复用 + 比较谁</b>。</p>
+  <div id="knowledge-cmp"></div>
+
+  <h3>其实是"两层知识"</h3>
+  <table class="cmp">
+    <tr><th>知识的两层</th><th>是什么</th><th>四种网络</th></tr>
+    <tr><td>① 显式学到的<br>(activations × weights 点积)</td><td>模板 / 方向 / 关系 / 转移规则</td><td>四者都有,本质都是"<b>和谁对齐</b>"</td></tr>
+    <tr><td>② 结构先验<br>(刻进 W 的<b>形状/共享</b>,不是学的)</td><td>无 / 局部+平移 / 时间因果 / 置换等变+内容寻址</td><td>MLP 无 · CNN 局部+共享 · RNN 时间共享 · Transformer 位置共享+内容路由</td></tr>
+  </table>
+
+  <p class="lead">一句话收口:<b>它们底层都是同一种矩阵乘法;装的知识之所以不同,全因我们给权重矩阵加了不同的结构约束</b> —— <span style="color:var(--mlp)">MLP 装全局组合</span>、<span style="color:var(--cnn)">CNN 装局部可复用模式</span>、<span style="color:var(--rnn)">RNN 装时序动态</span>、<span style="color:var(--trf)">Transformer 装 token 间的关系</span>。这正是本篇从"全连接 → 卷积 → 注意力"一路拆下来的同一条主线。</p>
+</div></section>
+
+<footer>
+  交互说明：每个演示点 <span class="kbd">下一步 / 滑动</span> 推进，<span class="kbd">重置</span> 复位。<br>
+  全部为纯静态 HTML，可离线打开。数字均为示意，重点在“形状”和“谁乘谁”。
+</footer>
+
+<script>
+/* ---------------- helpers ---------------- */
+function el(tag, cls, txt){const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e;}
+
+// build a matrix DOM; data = 2D array (numbers or "" for empty); returns {root, cells:[[..]]}
+function makeMatrix(data, label){
+  const block = el('div','matblock');
+  if(label){ const l=el('div','matlabel'); l.innerHTML=label; block.appendChild(l); }
+  const rows=data.length, cols=data[0].length;
+  const br = el('div','bracket'); br.style.gridTemplateColumns=`repeat(${cols},auto)`;
+  const cells=[];
+  for(let i=0;i<rows;i++){
+    const rowArr=[];
+    for(let j=0;j<cols;j++){
+      const c=el('div','cell');
+      const val=data[i][j];
+      if(val===''||val==null){ c.classList.add('empty'); c.textContent='·'; }
+      else c.textContent=val;
+      br.appendChild(c); rowArr.push(c);
+    }
+    cells.push(rowArr);
+  }
+  block.appendChild(br);
+  return {root:block, cells, data};
+}
+function clearHi(cells){ cells.flat().forEach(c=>c.classList.remove('row-hi','col-hi','out-hi','win','dim')); }
+function opSpan(s){ const e=el('div','op'); e.textContent=s; return e; }
+function eqSpan(s){ const e=el('div','eq'); e.textContent=s; return e; }
+
+/* ---------------- ① basic A·B ---------------- */
+(function(){
+  const A=[[1,2,0],[0,1,3]];
+  const B=[[2,1],[0,3],[1,0]];
+  // C = A·B  (2x2)
+  function dot(i,j){let s=0;for(let k=0;k<3;k++)s+=A[i][k]*B[k][j];return s;}
+  const Cdata=[['',''],['','']];
+  const host=document.getElementById('demo-basic');
+  const line=el('div','mathline');
+  const mA=makeMatrix(A,'<b>A</b> · 2×3');
+  const mB=makeMatrix(B,'<b>B</b> · 3×2');
+  const mC=makeMatrix(Cdata,'<b>C = A·B</b> · 2×2');
+  line.append(mA.root,opSpan('·'),mB.root,eqSpan('='),mC.root);
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='下一步 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  host.append(line,ctrl,info);
+
+  const seq=[[0,0],[0,1],[1,0],[1,1]];
+  let step=0;
+  function render(){
+    clearHi(mA.cells); clearHi(mB.cells); clearHi(mC.cells);
+    if(step===0){ info.innerHTML='点“下一步”开始 —— 共 4 个输出格'; return; }
+    const [i,j]=seq[step-1];
+    mA.cells[i].forEach(c=>c.classList.add('row-hi'));
+    mB.cells.forEach(r=>r[j].classList.add('col-hi'));
+    const v=dot(i,j);
+    mC.cells[i][j].textContent=v; mC.cells[i][j].classList.remove('empty'); mC.cells[i][j].classList.add('out-hi');
+    const terms=[];for(let k=0;k<3;k++)terms.push(`${A[i][k]}×${B[k][j]}`);
+    info.innerHTML=`C[<span class="k">${i}</span>,<span class="k">${j}</span>] = ${terms.join(' + ')} = <span class="k">${v}</span>`;
+  }
+  next.onclick=()=>{ if(step<4){step++;render(); if(step===4)next.disabled=true;} };
+  reset.onclick=()=>{ step=0;next.disabled=false; mC.cells.forEach(r=>r.forEach(c=>{c.textContent='·';c.classList.add('empty');})); render(); };
+  render();
+})();
+
+/* ---------------- ② MLP  y=Wx+b ---------------- */
+(function(){
+  const W=[[ 2,-1, 0, 1],[ 1, 0, 3,-1],[-2, 1, 1, 0]];
+  const x=[[1],[2],[1],[3]];
+  const b=[[1],[0],[2]];
+  const host=document.getElementById('demo-mlp');
+  const line=el('div','mathline');
+  const mW=makeMatrix(W,'<b>W</b> · 3×4');
+  const mx=makeMatrix(x,'<b>x</b> · 4×1');
+  const mb=makeMatrix(b,'<b>b</b> · 3×1');
+  const yData=[[''],[''],['']];
+  const my=makeMatrix(yData,'<b>y</b> · 3×1');
+  line.append(mW.root,opSpan('·'),mx.root,opSpan('+'),mb.root,eqSpan('='),my.root);
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='算下一个神经元 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  host.append(line,ctrl,info);
+
+  let step=0;
+  function render(){
+    clearHi(mW.cells);clearHi(mx.cells);clearHi(mb.cells);clearHi(my.cells);
+    if(step===0){info.innerHTML='点按钮，逐个算出 3 个输出神经元 y₀..y₂';return;}
+    const i=step-1;
+    mW.cells[i].forEach(c=>c.classList.add('row-hi'));
+    mx.cells.forEach(r=>r[0].classList.add('col-hi'));
+    mb.cells[i][0].classList.add('col-hi');
+    let s=0;const terms=[];
+    for(let k=0;k<4;k++){s+=W[i][k]*x[k][0];terms.push(`${W[i][k]}×${x[k][0]}`);}
+    s+=b[i][0];
+    my.cells[i][0].textContent=s; my.cells[i][0].classList.remove('empty'); my.cells[i][0].classList.add('out-hi');
+    info.innerHTML=`y<span class="k">${i}</span> = (${terms.join(' + ')}) + ${b[i][0]} = <span class="k">${s}</span>`;
+  }
+  next.onclick=()=>{if(step<3){step++;render();if(step===3)next.disabled=true;}};
+  reset.onclick=()=>{step=0;next.disabled=false;my.cells.forEach(r=>{r[0].textContent='·';r[0].classList.add('empty');});render();};
+  render();
+})();
+
+/* ---------------- ③a CNN sliding ---------------- */
+(function(){
+  const IMG=[[3,1,2,0],[0,4,1,2],[1,2,3,1],[2,0,1,3]];
+  const K=[[1,0],[0,2]];   // 2x2 kernel
+  const host=document.getElementById('demo-cnn-slide');
+  const line=el('div','mathline');
+  const mImg=makeMatrix(IMG,'<b>输入</b> · 4×4');
+  const mK=makeMatrix(K,'<b>卷积核</b> · 2×2');
+  mImg.cells.flat().forEach(c=>c.classList.add('inp'));   // 输入 = 绿
+  mK.cells.flat().forEach(c=>c.classList.add('ker'));     // 卷积核 = 蓝
+  const outData=[['','',''],['','',''],['','','']];
+  const mOut=makeMatrix(outData,'<b>输出</b> · 3×3');
+  line.append(mImg.root,opSpan('✲'),mK.root,eqSpan('='),mOut.root);
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='滑动一格 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  host.append(line,ctrl,info);
+
+  let step=0; // 0..9
+  function render(){
+    clearHi(mImg.cells);clearHi(mK.cells);clearHi(mOut.cells);
+    if(step===0){info.innerHTML='绿色窗口 2×2，从左上角开始，逐格滑动 →';return;}
+    const idx=step-1; const oi=Math.floor(idx/3), oj=idx%3;
+    let s=0;const terms=[];
+    for(let a=0;a<2;a++)for(let c=0;c<2;c++){
+      mImg.cells[oi+a][oj+c].classList.add('win');
+      mK.cells[a][c].classList.add('row-hi');
+      s+=IMG[oi+a][oj+c]*K[a][c];
+      terms.push(`${IMG[oi+a][oj+c]}×${K[a][c]}`);
+    }
+    mOut.cells[oi][oj].textContent=s;mOut.cells[oi][oj].classList.remove('empty');mOut.cells[oi][oj].classList.add('out-hi');
+    info.innerHTML=`输出[<span class="k">${oi}</span>,<span class="k">${oj}</span>] = ${terms.join(' + ')} = <span class="k">${s}</span>`;
+  }
+  next.onclick=()=>{if(step<9){step++;render();if(step===9)next.disabled=true;}};
+  reset.onclick=()=>{step=0;next.disabled=false;mOut.cells.forEach(r=>r.forEach(c=>{c.textContent='·';c.classList.add('empty');}));render();};
+  render();
+})();
+
+/* ---------------- ③b CNN im2col ---------------- */
+(function(){
+  const IMG=[[3,1,2,0],[0,4,1,2],[1,2,3,1],[2,0,1,3]];
+  const K=[[1,0],[0,2]];
+  // build im2col: 9 x 4   (each window flattened row-major)
+  const cols=[];
+  for(let oi=0;oi<3;oi++)for(let oj=0;oj<3;oj++){
+    cols.push([IMG[oi][oj],IMG[oi][oj+1],IMG[oi+1][oj],IMG[oi+1][oj+1]]);
+  }
+  const kvec=[[K[0][0]],[K[0][1]],[K[1][0]],[K[1][1]]]; // 4x1
+  const host=document.getElementById('demo-cnn-im2col');
+  const line=el('div','mathline');
+  const mC=makeMatrix(cols,'<b>im2col</b> · 9×4 <span class="muted">(每行=一个窗口)</span>');
+  const mKv=makeMatrix(kvec,'<b>核拉直</b> · 4×1');
+  const outData=cols.map(()=>['']);
+  const mOut=makeMatrix(outData,'<b>=结果</b> · 9×1 <span class="muted">→reshape 3×3</span>');
+  mC.cells.flat().forEach(c=>c.classList.add('inp'));    // im2col 来自输入 = 绿
+  mKv.cells.flat().forEach(c=>c.classList.add('ker'));   // 核拉直 = 蓝
+  line.append(mC.root,opSpan('·'),mKv.root,eqSpan('='),mOut.root);
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='下一行 ▶';
+  const all=el('button','btn'); all.textContent='全部算完';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,all,reset);
+  const info=el('div','stepinfo');
+  host.append(line,ctrl,info);
+
+  let step=0;
+  function fill(i){
+    let s=0;for(let k=0;k<4;k++)s+=cols[i][k]*kvec[k][0];
+    mOut.cells[i][0].textContent=s;mOut.cells[i][0].classList.remove('empty');
+    return s;
+  }
+  function render(){
+    clearHi(mC.cells);clearHi(mKv.cells);clearHi(mOut.cells);
+    if(step===0){info.innerHTML='每一行（一个窗口）× 核列 = 输出一个数。和第②节 MLP 的 Wx 一模一样！';return;}
+    const i=step-1;
+    mC.cells[i].forEach(c=>c.classList.add('win'));      // 输入行 = 绿高亮
+    mKv.cells.forEach(r=>r[0].classList.add('row-hi'));  // 核 = 蓝高亮
+    const s=fill(i); mOut.cells[i][0].classList.add('out-hi');
+    info.innerHTML=`第 <span class="k">${i}</span> 行：im2col · 核 = <span class="k">${s}</span> （= 滑动演示里的第 ${i} 个输出）`;
+  }
+  next.onclick=()=>{if(step<9){step++;render();if(step===9)next.disabled=true;}};
+  all.onclick=()=>{for(let i=0;i<9;i++)fill(i);step=9;next.disabled=true;clearHi(mC.cells);clearHi(mKv.cells);clearHi(mOut.cells);info.innerHTML='9 个输出全部 = 一次 <span class="k">9×4 · 4×1</span> 矩阵乘搞定。';};
+  reset.onclick=()=>{step=0;next.disabled=false;mOut.cells.forEach(r=>{r[0].textContent='·';r[0].classList.add('empty');});render();};
+  render();
+})();
+
+/* ---------------- ④ RNN：显式画出两次矩阵乘 ---------------- */
+(function(){
+  const host=document.getElementById('demo-rnn'); if(!host) return;
+  const Wxh=[[1,0],[0,1]], Whh=[[0,1],[1,0]];
+  const xs=[[[1],[0]],[[0],[1]],[[1],[1]]];
+  const tanh=v=>Math.round(Math.tanh(v)*100)/100;
+  const mul=(M,v)=>[[M[0][0]*v[0][0]+M[0][1]*v[1][0]],[M[1][0]*v[0][0]+M[1][1]*v[1][0]]];
+
+  const wrap=el('div');
+  // 固定权重(蓝=权重,每步复用同一套)
+  const wlab=el('div','matlabel'); wlab.style.textAlign='center'; wlab.innerHTML='两套权重 —— 每个时间步<b>复用同一套</b>(蓝=权重):';
+  const wrow=el('div','mathline'); wrow.style.margin='4px 0 6px';
+  const mWxh=makeMatrix(Wxh,'<b>W<sub>xh</sub></b> · 2×2'); const mWhh=makeMatrix(Whh,'<b>W<sub>hh</sub></b> · 2×2');
+  mWxh.cells.flat().forEach(c=>c.classList.add('ker')); mWhh.cells.flat().forEach(c=>c.classList.add('ker'));
+  wrow.append(mWxh.root, mWhh.root);
+  wrap.append(wlab, wrow);
+
+  // 时间流 strip
+  const flowLab=el('div','matlabel'); flowLab.style.cssText='text-align:center;margin-top:4px'; flowLab.innerHTML='每个 h<sub>t</sub> = <span class="muted">x<sub>t</sub>(经 W<sub>xh</sub>,从上)＋ h<sub>t-1</sub>(经 W<sub>hh</sub>,从左)</span>:';
+  const flow=el('div','mathline'); flow.style.cssText='margin:2px 0;align-items:flex-end';
+  const hBoxes=[];
+  for(let t=0;t<=3;t++){
+    const colb=el('div','matblock'); colb.style.gap='3px';
+    if(t>=1){
+      const mx=makeMatrix(xs[t-1],'x<sub>'+t+'</sub>'); mx.cells.flat().forEach(c=>c.classList.add('inp'));
+      const arr=el('div','op'); arr.textContent='↓Wₓₕ'; arr.style.fontSize='12px';
+      colb.append(mx.root, arr);
+    }
+    const mh=makeMatrix(t===0?[[0],[0]]:[[''],['']],'h<sub>'+t+'</sub>');
+    if(t===0) mh.cells.flat().forEach(c=>c.classList.add('inp'));
+    colb.append(mh.root); hBoxes.push(mh);
+    flow.append(colb);
+    if(t<3){ const a=el('div','op'); a.textContent='→Wₕₕ→'; a.style.cssText='font-size:12.5px;align-self:flex-end;margin-bottom:16px'; flow.append(a); }
+  }
+  wrap.append(flowLab, flow);
+
+  // 当前步计算面板
+  const stage=el('div'); stage.style.cssText='border-top:1px solid var(--line);margin-top:10px;padding-top:8px';
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='前进一个时间步 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  wrap.append(stage, ctrl, info);
+  host.appendChild(wrap);
+
+  let step=0, hPrev=[[0],[0]];
+  function row(W,Wl,v,vl,res,resl){
+    const r=el('div','mathline'); r.style.margin='4px 0';
+    const mW=makeMatrix(W,Wl); mW.cells.flat().forEach(c=>c.classList.add('ker'));
+    const mv=makeMatrix(v,vl); mv.cells.flat().forEach(c=>c.classList.add('inp'));
+    const mr=makeMatrix(res,resl); mr.cells.flat().forEach(c=>c.classList.add('out-hi'));
+    r.append(mW.root,opSpan('·'),mv.root,eqSpan('='),mr.root);
+    return r;
+  }
+  function render(){
+    stage.innerHTML='';
+    if(step===0){ info.innerHTML='初始记忆 h₀=[0,0]。点按钮:每步都做 <b>W<sub>xh</sub>·x</b> 和 <b>W<sub>hh</sub>·h</b> 两次矩阵乘,相加再 tanh。'; return; }
+    const t=step-1, a=mul(Wxh,xs[t]), c=mul(Whh,hPrev);
+    const hNew=[[tanh(a[0][0]+c[0][0])],[tanh(a[1][0]+c[1][0])]];
+    const hd=el('div','matlabel'); hd.style.cssText='text-align:center;margin-bottom:2px'; hd.innerHTML='<b>t = '+(t+1)+'</b> 这一步:两次矩阵乘 → 相加 → tanh';
+    const rowA=row(Wxh,'W<sub>xh</sub>',xs[t],'x<sub>'+(t+1)+'</sub>(输入)',a,'= a 输入贡献');
+    const plus=el('div'); plus.style.cssText='text-align:center;font-size:20px;color:var(--ink-dim);margin:0'; plus.textContent='+';
+    const rowB=row(Whh,'W<sub>hh</sub>',hPrev,'h<sub>'+t+'</sub>(记忆)',c,'= c 记忆贡献');
+    const down=el('div','stepinfo'); down.innerHTML='↓ a + c 再过 tanh ↓';
+    const rowC=el('div','mathline');
+    const C=makeMatrix(hNew,'<b>h<sub>'+(t+1)+'</sub></b> = tanh(a+c)'); C.cells.flat().forEach(c2=>c2.classList.add('out-hi'));
+    rowC.append(C.root);
+    stage.append(hd, rowA, plus, rowB, down, rowC);
+    [0,1].forEach(i=>{ const cell=hBoxes[t+1].cells[i][0]; cell.textContent=hNew[i][0]; cell.classList.remove('empty'); cell.classList.add('inp','out-hi'); });
+    info.innerHTML='h<sub>'+(t+1)+'</sub> = tanh( W<sub>xh</sub>·x<sub>'+(t+1)+'</sub> + W<sub>hh</sub>·h<sub>'+t+'</sub> ) = ['+hNew[0][0]+', '+hNew[1][0]+']　<span class="muted">(W 每步相同)</span>';
+    hPrev=hNew;
+  }
+  next.onclick=()=>{ if(step<3){step++;render(); if(step===3)next.disabled=true;} };
+  reset.onclick=()=>{ step=0; hPrev=[[0],[0]]; next.disabled=false;
+    hBoxes.forEach((m,t)=>{ if(t>0) m.cells.flat().forEach(c=>{c.textContent='·';c.classList.add('empty');c.classList.remove('inp','out-hi');}); });
+    render(); };
+  render();
+})();
+
+/* ---------------- ⑤ Transformer attention ---------------- */
+(function(){
+  const host=document.getElementById('demo-trf');
+  // 3 tokens, dim 4 -> project to dim 2 for Q,K,V to keep small
+  const X=[[1,0,1,0],[0,1,0,1],[1,1,0,0]];
+  const Wq=[[1,0],[0,1],[1,0],[0,1]];
+  const Wk=[[0,1],[1,0],[0,1],[1,0]];
+  const Wv=[[1,0],[1,1],[0,1],[1,0]];
+  function matmul(A,B){const r=A.length,c=B[0].length,n=B.length;const o=[];for(let i=0;i<r;i++){o.push([]);for(let j=0;j<c;j++){let s=0;for(let k=0;k<n;k++)s+=A[i][k]*B[k][j];o[i].push(s);}}return o;}
+  const Q=matmul(X,Wq), K=matmul(X,Wk), V=matmul(X,Wv);
+  const Kt=[[K[0][0],K[1][0],K[2][0]],[K[0][1],K[1][1],K[2][1]]];
+  const scores=matmul(Q,Kt); // 3x3
+  // softmax per row (rounded)
+  const soft=scores.map(row=>{const m=Math.max(...row);const ex=row.map(v=>Math.exp((v-m)));const s=ex.reduce((a,b)=>a+b,0);return ex.map(v=>Math.round(v/s*100)/100);});
+  const outAttn=matmul(soft,V).map(r=>r.map(v=>Math.round(v*100)/100));
+
+  const wrap=el('div');
+  // stage 1: X·Wq etc -> show Q K V
+  const s1=el('div','mathline');
+  const mX=makeMatrix(X,'<b>X</b> 3×4 <span class="muted">(3词×4维)</span>');
+  const mQ=makeMatrix([['',''],['',''],['','']],'<b>Q</b> 3×2');
+  const mK=makeMatrix([['',''],['',''],['','']],'<b>K</b> 3×2');
+  const mV=makeMatrix([['',''],['',''],['','']],'<b>V</b> 3×2');
+  const grp=el('div','matblock'); grp.style.gap='10px';
+  const inner=el('div','mathline'); inner.style.margin='0';
+  inner.append(mQ.root,mK.root,mV.root);
+  grp.append(el('div','matlabel'),inner); grp.querySelector('.matlabel').innerHTML='Q,K,V = X · W<sub>Q/K/V</sub>';
+  s1.append(mX.root,opSpan('→'),grp);
+
+  // stage 2: scores + softmax + out
+  const s2=el('div','mathline');
+  const mScore=makeMatrix([['','',''],['','',''],['','','']],'<b>Q·Kᵀ</b> 3×3 <span class="muted">分数表</span>');
+  const mSoft=makeMatrix([['','',''],['','',''],['','','']],'<b>softmax</b> 3×3');
+  const mOut=makeMatrix([['',''],['',''],['','']],'<b>·V = 输出</b> 3×2');
+  s2.append(mScore.root,opSpan('→'),mSoft.root,opSpan('·V'),mOut.root);
+
+  wrap.append(s1, s2);
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='下一步 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  wrap.append(ctrl,info);
+  host.appendChild(wrap);
+
+  function setMat(m,data){for(let i=0;i<data.length;i++)for(let j=0;j<data[0].length;j++){m.cells[i][j].textContent=data[i][j];m.cells[i][j].classList.remove('empty');}}
+  function clearMat(m){m.cells.forEach(r=>r.forEach(c=>{c.textContent='·';c.classList.add('empty');c.classList.remove('out-hi','row-hi','col-hi','win');}));}
+
+  let step=0;
+  function render(){
+    [mQ,mK,mV,mScore,mSoft,mOut].forEach(m=>m.cells.forEach(r=>r.forEach(c=>c.classList.remove('out-hi'))));
+    if(step===0){info.innerHTML='① 先把输入 X 投影成 Q、K、V（三次矩阵乘）';return;}
+    if(step>=1){setMat(mQ,Q);setMat(mK,K);setMat(mV,V);[mQ,mK,mV].forEach(m=>m.cells.forEach(r=>r.forEach(c=>c.classList.add('out-hi'))));}
+    if(step===1){info.innerHTML='① Q=X·W_Q, K=X·W_K, V=X·W_V 完成。每个词得到自己的 Query/Key/Value。';}
+    if(step>=2){setMat(mScore,scores);}
+    if(step===2){mScore.cells.forEach(r=>r.forEach(c=>c.classList.add('out-hi')));[mQ,mK,mV].forEach(m=>m.cells.forEach(r=>r.forEach(c=>c.classList.remove('out-hi'))));info.innerHTML='② Q·Kᵀ：每个词的Q和每个词的K点积 → 3×3「谁关注谁」分数表。';}
+    if(step>=3){setMat(mSoft,soft);}
+    if(step===3){mSoft.cells.forEach(r=>r.forEach(c=>c.classList.add('out-hi')));info.innerHTML='③ 每一行 softmax → 变成和为1的注意力权重。';}
+    if(step>=4){setMat(mOut,outAttn);}
+    if(step===4){mOut.cells.forEach(r=>r.forEach(c=>c.classList.add('out-hi')));info.innerHTML='④ 权重 · V → 每个词得到「融合了上下文」的新表示。完成！';}
+  }
+  next.onclick=()=>{if(step<4){step++;render();if(step===4)next.disabled=true;}};
+  reset.onclick=()=>{step=0;next.disabled=false;[mQ,mK,mV,mScore,mSoft,mOut].forEach(clearMat);render();};
+  render();
+})();
+
+/* ---------------- ⑥ mini compare W matrices ---------------- */
+(function(){
+  // MLP dense W (4 outputs x 9 inputs) all nonzero
+  const dense=[];
+  for(let i=0;i<4;i++){const r=[];for(let j=0;j<9;j++)r.push('w');dense.push(r);}
+  const mm=makeMatrix(dense,'<b>W</b> 4×9 · <span class="muted">全是独立权重</span>');
+  mm.cells.flat().forEach(c=>{c.style.background='rgba(79,140,255,.22)';c.style.color='#cfe0ff';c.style.fontSize='11px';c.style.width='30px';c.style.height='26px';});
+  document.getElementById('mini-mlp').appendChild(mm.root);
+
+  // CNN: structured/sparse W: each output row only 4 entries, same letters a,b,c,d shifted
+  // represent 4 output positions over 9 inputs (3x3 -> 2x2 out)... use 4 outputs x 9 inputs
+  const pat=['a','b','c','d'];
+  const sparse=[
+    ['a','b','','c','d','','','',''],
+    ['','a','b','','c','d','','',''],
+    ['','','','a','b','','c','d',''],
+    ['','','','','a','b','','c','d'],
+  ];
+  const cn=makeMatrix(sparse,'<b>W</b> 4×9 · <span class="muted">稀疏+共享(a,b,c,d)</span>');
+  cn.cells.forEach((row)=>row.forEach((c)=>{
+    c.style.fontSize='11px';c.style.width='30px';c.style.height='26px';
+    if(c.textContent==='·'){c.style.opacity='.25';}
+    else{c.style.background='rgba(79,140,255,.25)';c.style.color='#cfe0ff';}  // 卷积核权重 = 蓝(与左侧 MLP 的 W 同色)
+  }));
+  document.getElementById('mini-cnn').appendChild(cn.root);
+  const cap=el('div','matlabel'); cap.style.marginTop='8px';
+  cap.innerHTML='同样的 a,b,c,d 在每行<b>重复出现</b>(权重共享)，其余全是0(局部连接)。这就是卷积藏在 MLP 里的样子。';
+  document.getElementById('mini-cnn').appendChild(cap);
+})();
+
+/* ---------------- ③c Hadamard ⊙ vs dot · ---------------- */
+(function(){
+  const host=document.getElementById('demo-hadamard');
+  if(!host) return;
+  const patch=[[3,1],[0,4]], ker=[[1,0],[0,2]], prod=[[3,0],[0,8]];
+
+  // View A: 二维对齐 → 哈达玛积 ⊙ → 求和
+  const lineA=el('div','mathline');
+  const mp=makeMatrix(patch,'<b>窗口</b> 2×2');
+  const mk=makeMatrix(ker,'<b>核</b> 2×2');
+  mp.cells.flat().forEach(c=>c.classList.add('inp'));   // 窗口 = 输入 = 绿
+  mk.cells.flat().forEach(c=>c.classList.add('ker'));   // 核 = 蓝
+  const mpr=makeMatrix(prod,'<b>⊙ 逐元素积</b> 2×2');
+  const sumBox=makeMatrix([[11]],'<b>Σ 求和</b> → 标量');
+  lineA.append(mp.root,opSpan('⊙'),mk.root,eqSpan('='),mpr.root,opSpan('Σ→'),sumBox.root);
+  mpr.cells.flat().forEach(c=>c.classList.add('out-hi'));
+  sumBox.cells[0][0].classList.add('out-hi');
+
+  const bridge=el('div','stepinfo');
+  bridge.innerHTML='↓ 把上面两个 2×2 都<b>拉直成向量</b>，"⊙ + 求和" 立刻就变成 "行 · 列" 点积 ↓';
+
+  // View B: 拉直成向量 → 点积 · = matmul 的一个格子
+  const lineB=el('div','mathline');
+  const fp=makeMatrix([[3,1,0,4]],'<b>窗口拉直</b> 1×4');
+  const fk=makeMatrix([[1],[0],[0],[2]],'<b>核拉直</b> 4×1');
+  const dotBox=makeMatrix([[11]],'<b>· 点积</b> = matmul 一格');
+  lineB.append(fp.root,opSpan('·'),fk.root,eqSpan('='),dotBox.root);
+  fp.cells.flat().forEach(c=>c.classList.add('win'));     // 窗口拉直 = 输入 = 绿
+  fk.cells.flat().forEach(c=>c.classList.add('row-hi'));  // 核拉直 = 蓝
+  dotBox.cells[0][0].classList.add('out-hi');
+
+  const label=el('div','stepinfo');
+  label.innerHTML='两条路得到<span class="k">同一个数 11</span>：3×1 + 1×0 + 0×0 + 4×2 = <span class="k">11</span>';
+
+  host.append(lineA, bridge, lineB, label);
+})();
+
+/* ---------------- ⑦ param count: FC vs Conv ---------------- */
+(function(){
+  const host=document.getElementById('param-demo');
+  if(!host) return;
+  const card=el('div','card'); card.style.borderTop='3px solid var(--cnn)';
+  const ctrl=el('div'); ctrl.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px';
+  const lab=el('div','matlabel'); lab.innerHTML='拖动图像边长 N（彩色图 N×N×3）：';
+  const slider=document.createElement('input');
+  slider.type='range'; slider.min='4'; slider.max='256'; slider.step='4'; slider.value='32';
+  slider.style.cssText='flex:1;min-width:160px;accent-color:#22c08b';
+  const nVal=el('span','pill');
+  ctrl.append(lab, slider, nVal);
+
+  const grid=el('div','grid2');
+  const fcCard=el('div','card mlp');
+  const cnCard=el('div','card cnn');
+  grid.append(fcCard,cnCard);
+  const ratio=el('div','stepinfo');
+  card.append(ctrl, grid, ratio);
+  host.appendChild(card);
+
+  const fmt=n=>n.toLocaleString('en-US');
+  const human=n=> n>=1e8 ? (n/1e8).toFixed(1)+' 亿' : n>=1e4 ? (n/1e4).toFixed(1)+' 万' : ''+n;
+  function update(){
+    const N=+slider.value; nVal.textContent='N = '+N;
+    const fc = N*N*3*1000 + 1000;     // flatten(N×N×3) → 1000 hidden units
+    const cn = 64*(3*3*3+1);          // 64 filters, 3×3×3 kernel
+    fcCard.innerHTML='<h4 style="color:var(--mlp)">摊平 + 全连接</h4>'+
+      '<p style="font-size:13px;color:var(--ink-dim);margin:4px 0">flatten('+N+'×'+N+'×3 = '+fmt(N*N*3)+') → 1000 神经元</p>'+
+      '<div style="font-family:var(--mono);font-size:26px;color:var(--mlp);font-weight:700">'+human(fc)+'</div>'+
+      '<div style="font-size:12px;color:var(--ink-dim)">'+fmt(fc)+' 个参数 · <b>随图变大暴涨</b></div>';
+    cnCard.innerHTML='<h4 style="color:var(--cnn)">一个卷积层</h4>'+
+      '<p style="font-size:13px;color:var(--ink-dim);margin:4px 0">64 个 3×3×3 卷积核 → 输出 '+N+'×'+N+'×64</p>'+
+      '<div style="font-family:var(--mono);font-size:26px;color:var(--cnn);font-weight:700">'+fmt(cn)+'</div>'+
+      '<div style="font-size:12px;color:var(--ink-dim)">'+fmt(cn)+' 个参数 · <b>与图像大小无关</b></div>';
+    ratio.innerHTML='全连接参数量 ≈ 卷积的 <span class="k">'+fmt(Math.round(fc/cn))+' 倍</span> —— N 越大，差距越夸张。';
+  }
+  slider.addEventListener('input',update); update();
+})();
+
+/* ---------------- ⑧d 回到矩阵：把位置(0,0)摊平（3 通道，与⑧b/⑧c同一套数字）---------------- */
+(function(){
+  const host=document.getElementById('channel-demo');
+  if(!host) return;
+  const w0=[[1,0],[3,1]];   // 通道0 在 (0,0) 的窗口
+  const w1=[[0,1],[2,0]];   // 通道1
+  const w2=[[2,1],[0,2]];   // 通道2
+  const xCol=[[1],[0],[3],[1], [0],[1],[2],[0], [2],[1],[0],[2]];  // 3 通道各 4 个
+  const W=[[1,0,0,1, 0,1,1,0, 1,0,1,0],   // filter0 = 卷积过程那个 filter
+           [0,1,1,0, 1,0,0,1, 0,1,0,1],   // filter1
+           [1,1,0,0, 0,0,1,1, 1,0,0,1]];  // filter2
+  const yVal=[7,6,7];
+
+  const winLabel=el('div','matlabel'); winLabel.style.textAlign='center';
+  winLabel.innerHTML='取卷积过程里 <b>位置 (0,0)</b> 的窗口（3 个通道）';
+  const winRow=el('div','mathline'); winRow.style.margin='4px 0 2px';
+  const mw0=makeMatrix(w0,'<b>通道0</b> 窗口');
+  const mw1=makeMatrix(w1,'<b>通道1</b> 窗口');
+  const mw2=makeMatrix(w2,'<b>通道2</b> 窗口');
+  winRow.append(mw0.root, mw1.root, mw2.root);
+  mw0.cells.flat().forEach(c=>c.classList.add('inp'));
+  mw1.cells.flat().forEach(c=>c.classList.add('inp2'));
+  mw2.cells.flat().forEach(c=>c.classList.add('inp3'));
+
+  const flat=el('div','stepinfo'); flat.innerHTML='↓ 拉平：[通道0 的 4 个 → 通道1 的 4 个 → 通道2 的 4 个] ↓';
+
+  const mW=makeMatrix(W,'<b>W</b> = 3 个 filter 各自拉平 · 3×12');
+  const mx=makeMatrix(xCol,'<b>x</b> = 窗口拉平 · 12×1');
+  const my=makeMatrix([[''],[''],['']],'<b>y</b> = (0,0) 的输出 · 3×1');
+  const mmRow=el('div','mathline');
+  mmRow.append(mW.root, opSpan('·'), mx.root, eqSpan('='), my.root);
+  const kcl=j=> j<4?'ker':(j<8?'ker2':'ker3');
+  const icl=i=> i<4?'inp':(i<8?'inp2':'inp3');
+  mW.cells.forEach(r=>r.forEach((c,j)=>{c.classList.add(kcl(j)); c.style.fontSize='11px'; c.style.width='30px'; c.style.height='28px';}));  // 核权重=蓝(三通道深浅)
+  mx.cells.forEach((r,i)=>r[0].classList.add(icl(i)));   // 输入向量=绿(三通道深浅)
+
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='下一步 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  const cap=el('div','stepinfo');
+  cap.innerHTML='<span class="muted">W 的 3 行 = 3 个 filter = <b>C_out</b>；12 列 = C_in·kH·kW = 3×2×2 = <b>输入维度</b>；深浅 = 3 个输入通道</span>';
+
+  host.append(winLabel, winRow, flat, mmRow, ctrl, info, cap);
+
+  let step=0;
+  function render(){
+    [mw0,mw1,mw2,mW,mx].forEach(m=>clearHi(m.cells));
+    my.cells.forEach(r=>r[0].classList.remove('out-hi'));
+    if(step===0){ info.innerHTML='这就是卷积过程里 <b>位置(0,0)</b> 的窗口（3 通道各一个 2×2）。点"下一步"。'; return; }
+    if(step>=1){ [mw0,mw1,mw2].forEach(m=>m.cells.flat().forEach(c=>c.classList.add('win'))); mx.cells.forEach(r=>r[0].classList.add('win')); }
+    if(step===1){ info.innerHTML='① 三通道窗口按顺序拉平 → <b>x</b>（长度 12 = C_in·kH·kW = 3×2×2）。每 4 个来自一个通道。'; return; }
+    if(step>=2){ mW.cells.flat().forEach(c=>c.classList.add('row-hi')); }
+    if(step===2){ mx.cells.forEach(r=>r[0].classList.remove('win')); info.innerHTML='② 上面 3 个 filter 各自拉平 → <b>W 的 3 行</b>（第 0 行就是卷积过程用的那个 filter）。'; return; }
+    if(step===3){
+      mx.cells.forEach(r=>r[0].classList.add('win'));
+      mW.cells.flat().forEach(c=>c.classList.remove('row-hi'));
+      yVal.forEach((v,i)=>{ my.cells[i][0].textContent=v; my.cells[i][0].classList.remove('empty'); my.cells[i][0].classList.add('out-hi'); });
+      info.innerHTML='③ W·x = <b>y = [7, 6, 7]</b> —— 正是上面 3 张输出图在 <b>(0,0)</b> 的值！其中 y₀=7 就是卷积过程那个 filter 在(0,0)算出的数。闭环了。';
+      return;
+    }
+  }
+  next.onclick=()=>{ if(step<3){step++;render(); if(step===3)next.disabled=true;} };
+  reset.onclick=()=>{ step=0;next.disabled=false; my.cells.forEach(r=>{r[0].textContent='·';r[0].classList.add('empty');}); render(); };
+  render();
+})();
+
+/* ---------------- ⑧b multi-channel conv process (3 通道) ---------------- */
+(function(){
+  const host=document.getElementById('conv-process');
+  if(!host) return;
+  const CH=[ [[1,0,2],[3,1,0],[0,2,1]], [[0,1,1],[2,0,1],[1,1,0]], [[2,1,0],[0,2,1],[1,0,2]] ];
+  const KS=[ [[1,0],[0,1]], [[0,1],[1,0]], [[1,0],[1,0]] ];   // filter0 的 3 个子核
+  const inpc=['inp','inp2','inp3'], kerc=['ker','ker2','ker3'], sub=['₀','₁','₂'];
+  function c2(C,K,oi,oj){let s=0;for(let a=0;a<2;a++)for(let b=0;b<2;b++)s+=C[oi+a][oj+b]*K[a][b];return s;}
+
+  const Rw=[];
+  CH.forEach((Ch,ci)=>{
+    const m=makeMatrix(Ch,'<b>输入·通道'+ci+'</b> 3×3');
+    const mk=makeMatrix(KS[ci],'核·对通道'+ci);
+    const s=makeMatrix([['']],'= Σ'+sub[ci]);
+    m.cells.flat().forEach(c=>c.classList.add(inpc[ci]));
+    mk.cells.flat().forEach(c=>c.classList.add(kerc[ci]));
+    const row=el('div','mathline'); row.style.margin='5px 0';
+    row.append(m.root,opSpan('⊙'),mk.root,eqSpan('='),s.root);
+    Rw.push({m,mk,s,row,Ch,K:KS[ci]});
+  });
+  function plusDiv(){ const p=el('div'); p.textContent='+'; p.style.cssText='text-align:center;font-size:20px;color:var(--ink-dim);margin:0'; return p; }
+
+  const down=el('div','stepinfo'); down.innerHTML='↓ <b>跨通道相加</b>：Σ₀ + Σ₁ + Σ₂ ↓';
+  const out=makeMatrix([['',''],['','']],'<b>输出·这个 filter</b> 2×2');
+  const rowOut=el('div','mathline'); rowOut.append(out.root);
+
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='滑动一格 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  host.append(Rw[0].row, plusDiv(), Rw[1].row, plusDiv(), Rw[2].row, down, rowOut, ctrl, info);
+
+  function blankBox(b){b.cells[0][0].textContent='·';b.cells[0][0].classList.add('empty');b.cells[0][0].classList.remove('out-hi');}
+  let step=0;
+  function render(){
+    Rw.forEach(o=>{clearHi(o.m.cells);clearHi(o.mk.cells);blankBox(o.s);});
+    out.cells.flat().forEach(c=>c.classList.remove('out-hi'));
+    if(step===0){info.innerHTML='一个 filter 内有 <b>3 个子核</b>（各盯一个输入通道）。点按钮，绿窗从左上角开始滑。';return;}
+    const idx=step-1, oi=Math.floor(idx/2), oj=idx%2;
+    let tot=0; const parts=[];
+    Rw.forEach((o,ci)=>{
+      for(let a=0;a<2;a++)for(let b=0;b<2;b++){ o.m.cells[oi+a][oj+b].classList.add('win'); }
+      o.mk.cells.flat().forEach(c=>c.classList.add('row-hi'));
+      const s=c2(o.Ch,o.K,oi,oj); tot+=s;
+      o.s.cells[0][0].textContent=s; o.s.cells[0][0].classList.remove('empty'); o.s.cells[0][0].classList.add('out-hi');
+      parts.push('Σ'+sub[ci]+'=<span class="k">'+s+'</span>');
+    });
+    out.cells[oi][oj].textContent=tot; out.cells[oi][oj].classList.remove('empty'); out.cells[oi][oj].classList.add('out-hi');
+    info.innerHTML='位置('+oi+','+oj+')：'+parts.join(', ')+'，<b>跨通道相加</b> = <span class="k">'+tot+'</span>';
+  }
+  next.onclick=()=>{if(step<4){step++;render();if(step===4)next.disabled=true;}};
+  reset.onclick=()=>{step=0;next.disabled=false;out.cells.flat().forEach(c=>{c.textContent='·';c.classList.add('empty');});render();};
+  render();
+})();
+
+/* ---------------- ⑧c C_out filters → C_out output maps (3 通道) ---------------- */
+(function(){
+  const host=document.getElementById('cout-maps');
+  if(!host) return;
+  const CH=[ [[1,0,2],[3,1,0],[0,2,1]], [[0,1,1],[2,0,1],[1,1,0]], [[2,1,0],[0,2,1],[1,0,2]] ];
+  function c2(C,K,oi,oj){let s=0;for(let a=0;a<2;a++)for(let b=0;b<2;b++)s+=C[oi+a][oj+b]*K[a][b];return s;}
+  function full(ks){const o=[];for(let oi=0;oi<2;oi++){o.push([]);for(let oj=0;oj<2;oj++){let v=0;for(let ci=0;ci<3;ci++)v+=c2(CH[ci],ks[ci],oi,oj);o[oi].push(v);}}return o;}
+  const filters=[
+    [[[1,0],[0,1]],[[0,1],[1,0]],[[1,0],[1,0]]],   // filter0 = 卷积过程那个 filter
+    [[[0,1],[1,0]],[[1,0],[0,1]],[[0,1],[0,1]]],
+    [[[1,1],[0,0]],[[0,0],[1,1]],[[1,0],[0,1]]],
+  ];
+  const line=el('div','mathline');
+  filters.forEach((ks,i)=>{
+    const m=makeMatrix(full(ks),'<b>filter'+i+'</b> → 输出通道'+i);
+    m.cells.flat().forEach(c=>{ c.style.boxShadow='inset 0 0 0 1.5px rgba(34,192,139,.6)'; c.style.background='rgba(34,192,139,.14)'; });  // 输出 = 绿(激活值)
+    line.appendChild(m.root);
+  });
+  host.appendChild(line);
+})();
+
+/* ---------------- ⑥b MLP↔CNN 光谱：核扩张（全2D）+ 等价MLP权重矩阵 ---------------- */
+(function(){
+  const host=document.getElementById('spectrum-demo');
+  if(!host) return;
+  const N=5;
+
+  const ctrl=el('div'); ctrl.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:12px';
+  const lab=el('div','matlabel'); lab.innerHTML='拖动核大小 k：';
+  const slider=document.createElement('input');
+  slider.type='range'; slider.min='1'; slider.max='5'; slider.step='1'; slider.value='2';
+  slider.style.cssText='flex:0 0 180px;accent-color:#4f8cff';
+  const kval=el('span','pill');
+  ctrl.append(lab, slider, kval);
+
+  const t1=el('div','matlabel'); t1.style.cssText='text-align:center;margin-top:4px';
+  t1.innerHTML='① 卷积视角：<b>输入 ✲ 核 = 输出</b>（核长大 → 输出塌小，感受野涨满）';
+  const stage1=el('div');
+  const cap1=el('div','stepinfo');
+
+  const t2=el('div','matlabel'); t2.style.cssText='text-align:center;margin-top:18px';
+  t2.innerHTML='② 它等价的 <b>MLP 权重矩阵 W</b>（行 = 输出神经元，列 = 25 个输入像素）';
+  const stage2=el('div'); stage2.style.cssText='display:flex;justify-content:center';
+  const cap2=el('div','stepinfo');
+
+  host.append(ctrl, t1, stage1, cap1, t2, stage2, cap2);
+
+  function fillBlank(m, cls){ m.cells.flat().forEach(c=>{c.textContent='';c.classList.remove('empty');c.classList.add(cls);}); }
+
+  function build(){
+    const k=+slider.value, M=N-k+1;
+    kval.textContent='k = '+k;
+
+    // ① 卷积视角：输入 ✲ 核 = 输出
+    stage1.innerHTML='';
+    const inp=makeMatrix(Array.from({length:N},()=>Array(N).fill('')), '<b>输入</b> 5×5');
+    fillBlank(inp,'inp');
+    inp.cells.forEach((row,i)=>row.forEach((c,j)=>{ if(i<k&&j<k){c.classList.add('win'); c.style.boxShadow='inset 0 0 0 2px var(--mlp)';} }));
+    const ker=makeMatrix(Array.from({length:k},()=>Array(k).fill('')), '<b>核</b> '+k+'×'+k);
+    fillBlank(ker,'ker');
+    const out=makeMatrix(Array.from({length:M},()=>Array(M).fill('')), '<b>输出</b> '+M+'×'+M);
+    fillBlank(out,'inp'); out.cells[0][0].classList.add('win');
+    const line=el('div','mathline'); line.append(inp.root, opSpan('✲'), ker.root, eqSpan('='), out.root);
+    stage1.appendChild(line);
+    cap1.innerHTML='<span class="muted">输出神经元数 = M×M = '+M+'×'+M+' = <b>'+(M*M)+'</b>　·　每个只看一个 '+k+'×'+k+' 窗口（高亮的是左上角那个）</span>';
+
+    // ② 等价 MLP 权重矩阵 W：R=M² 个输出神经元 × 25 个输入像素
+    stage2.innerHTML='';
+    const R=M*M, Cc=N*N, W=[];
+    for(let oi=0;oi<M;oi++)for(let oj=0;oj<M;oj++){
+      const row=new Array(Cc).fill('');
+      for(let a=0;a<k;a++)for(let b=0;b<k;b++){ row[(oi+a)*N+(oj+b)]='x'; }
+      W.push(row);
+    }
+    const mW=makeMatrix(W, '');
+    const br=mW.root.querySelector('.bracket'); if(br){ br.style.gap='2px'; }
+    mW.cells.forEach((row,r)=>row.forEach((c,cc)=>{
+      c.style.cssText='width:13px;height:13px;font-size:0;border-radius:2px';
+      if(W[r][cc]==='x'){ c.style.background = (r===0) ? 'rgba(79,140,255,.62)' : 'rgba(79,140,255,.28)'; }
+      else { c.style.background='var(--panel-2)'; c.style.opacity='.2'; }
+    }));
+    stage2.appendChild(mW.root);
+    const m2 = (k===N)
+      ? 'W = <b>1×25</b>：只剩 1 行、25 个权重<b>全部非零且各自独立</b> → 这就是一个 <b>5×5 卷积对应的 MLP 权重</b>：一个连到全部 25 像素的神经元。'
+      : 'W = <b>'+R+'×25</b>：每行只有 <b>'+(k*k)+'</b> 个非零（蓝=核权重，<b>所有行共享同一套</b>），其余为 0（=局部连接）。<b style="color:#9cc0ff">亮蓝那行</b> = 左图高亮输出(0,0)的权重。';
+    cap2.innerHTML='<span class="muted">'+m2+'</span>';
+  }
+  slider.addEventListener('input', build); build();
+})();
+
+/* ---------------- ⑧e RGB→灰度 = 固定权重的 1×1 卷积 ---------------- */
+(function(){
+  const host=document.getElementById('gray-demo');
+  if(!host) return;
+  const R=[[8,2,5],[1,7,3],[4,6,0]];
+  const G=[[3,9,1],[6,2,8],[0,5,7]];
+  const B=[[1,4,6],[2,0,3],[8,1,2]];
+  const wR=0.299, wG=0.587, wB=0.114;
+  const gray=R.map((row,i)=>row.map((_,j)=>Math.round(wR*R[i][j]+wG*G[i][j]+wB*B[i][j])));
+
+  const mR=makeMatrix(R,'<b>R</b> 红'), mG=makeMatrix(G,'<b>G</b> 绿'), mB=makeMatrix(B,'<b>B</b> 蓝');
+  const mGray=makeMatrix(gray,'<b>灰度</b>');
+  function tint(m,rgb){ m.cells.forEach((row,i)=>row.forEach((c,j)=>{ const v=m.data[i][j]; c.style.background='rgba('+rgb+','+(0.12+v/9*0.5).toFixed(2)+')'; })); }
+  tint(mR,'255,90,90'); tint(mG,'70,210,130'); tint(mB,'80,150,255');
+  mGray.cells.forEach((row,i)=>row.forEach((c,j)=>{ const v=gray[i][j]; c.style.background='rgba(232,236,246,'+(0.10+v/9*0.72).toFixed(2)+')'; c.style.color='#0f1117'; }));
+
+  function wpill(t){ const p=el('span','pill'); p.textContent=t; p.style.cssText='font-size:12.5px;color:#cfe0ff;border-color:rgba(79,140,255,.5)'; return p; }
+  const rowR=el('div','mathline'); rowR.style.margin='4px 0'; rowR.append(mR.root, wpill('× 0.299'));
+  const rowG=el('div','mathline'); rowG.style.margin='4px 0'; rowG.append(mG.root, wpill('× 0.587'));
+  const rowB=el('div','mathline'); rowB.style.margin='4px 0'; rowB.append(mB.root, wpill('× 0.114'));
+  const down=el('div','stepinfo'); down.innerHTML='↓ <b>加权相加</b>（这就是一次 1×1 卷积，3 → 1）↓';
+  const rowOut=el('div','mathline'); rowOut.append(mGray.root);
+
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='看下一个像素 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  host.append(rowR,rowG,rowB,down,rowOut,ctrl,info);
+
+  let p=-1;
+  function show(){
+    [mR,mG,mB,mGray].forEach(m=>m.cells.flat().forEach(c=>{c.style.boxShadow='';}));
+    if(p<0){ info.innerHTML='点"看下一个像素"，逐个看 R/G/B 怎么加权合成灰度。'; return; }
+    const i=Math.floor(p/3), j=p%3, raw=wR*R[i][j]+wG*G[i][j]+wB*B[i][j];
+    [mR,mG,mB,mGray].forEach(m=>{ m.cells[i][j].style.boxShadow='inset 0 0 0 2px var(--hi)'; });
+    info.innerHTML='像素('+i+','+j+')：0.299×'+R[i][j]+' + 0.587×'+G[i][j]+' + 0.114×'+B[i][j]+' = <span class="k">'+raw.toFixed(2)+'</span> ≈ <span class="k">'+gray[i][j]+'</span>';
+  }
+  next.onclick=()=>{ p=(p+1)%9; show(); };
+  reset.onclick=()=>{ p=-1; show(); };
+  show();
+})();
+
+/* ---------------- ⑧f 历史时间轴：跨通道求和的由来 ---------------- */
+(function(){
+  const host=document.getElementById('history-timeline');
+  if(!host) return;
+  const grn='rgba(34,192,139,.32)', grn2='rgba(34,192,139,.6)', blu='rgba(79,140,255,.45)';
+  function sq(bg){ const s=el('span','gsq'); s.style.background=bg; return s; }
+  function arr(t){ const a=el('span','garr'); a.textContent=t; return a; }
+  function table(){ // 迷你连接表（稀疏）
+    const g=el('div'); g.style.cssText='display:inline-grid;grid-template-columns:repeat(6,9px);gap:2px';
+    [1,0,1,1,0,1, 0,1,1,0,1,1, 1,1,0,1,1,0, 1,0,1,0,1,1].forEach(v=>{
+      const c=el('span'); c.style.cssText='width:9px;height:9px;border-radius:1px;background:'+(v?blu:'var(--panel-2)')+';opacity:'+(v?1:.4); g.appendChild(c);
+    });
+    return g;
+  }
+  function glyph(kind){
+    const g=el('div'); g.style.cssText='display:flex;align-items:center;gap:4px;margin-top:9px;flex-wrap:wrap';
+    if(kind==='planes') g.append(sq(grn),sq(grn),sq(grn),arr('→Σ→'),sq(grn2),arr('多平面 → 一个'));
+    else if(kind==='deep') g.append(sq(grn2),arr('1通道 →深层→'),sq(grn),sq(grn),sq(grn),arr('→Σ→'),sq(blu),arr('深层才求和'));
+    else if(kind==='table') g.append(table(),arr('连接表挑选 → 各自卷积 → 相加'));
+    else if(kind==='rgb') g.append(sq('rgba(255,90,90,.65)'),sq('rgba(70,210,130,.65)'),sq('rgba(80,150,255,.65)'),arr('→Σ→'),sq('rgba(225,230,240,.55)'),arr('RGB 直接进第一层'));
+    else if(kind==='oneone') g.append(sq(grn),sq(grn),sq(grn),sq(grn),arr('→[1×1]→'),sq(blu),sq(blu),arr('纯通道混合'));
+    return g;
+  }
+  const items=[
+    {year:'1980', title:'Neocognitron（福岛邦彦）', desc:'一个细胞平面已会综合<b>多个前层平面</b> —— 多通道相加的<b>雏形</b>（非反向传播学习）。', glyph:'planes'},
+    {year:'1989', title:'LeCun 手写邮编 CNN', tag:'首个反向传播 CNN', key:true, desc:'隐层特征图已<b>对多个前层特征图各用一套核、求和</b>。只是<b>第一层</b>是单通道灰度数字（C_in=1），跨通道求和到<b>第二层</b>才启动。', glyph:'deep'},
+    {year:'1998', title:'LeNet-5', desc:'正式化 —— C3 层用一张<b>连接表</b>挑选 S2 的若干特征图、各自卷积再相加。', glyph:'table'},
+    {year:'2012', title:'AlexNet', tag:'第一层直接吃 RGB', key:true, desc:'<b>第一层直接吃 3 通道 RGB</b>（11×11×3 的核对 RGB 求和）成标配；机制与 LeNet 的层间求和<b>完全一样</b>，只是搬到了输入层。', glyph:'rgb'},
+    {year:'2013–14', title:'Network-in-Network / Inception', desc:'把<b>纯通道混合</b>显式拎出来当 <b>1×1 卷积</b>用（升降维、省算力）。', glyph:'oneone'},
+  ];
+  const wrap=el('div','timeline');
+  items.forEach(it=>{
+    const tl=el('div','tl'+(it.key?' key':''));
+    const y=el('div','tl-year'); y.innerHTML=it.year.replace('–','<br>–');
+    const card=el('div','tl-card');
+    const h=el('h4'); h.innerHTML=it.title+(it.tag?' <span class="pill" style="font-size:11px">'+it.tag+'</span>':'');
+    const p=el('p'); p.innerHTML=it.desc;
+    card.append(h,p,glyph(it.glyph));
+    tl.append(y,card);
+    wrap.appendChild(tl);
+  });
+  host.appendChild(wrap);
+
+  const lead=el('p','lead'); lead.style.marginTop='14px';
+  lead.innerHTML='<b style="color:var(--cnn)">一句话：跨通道加权求和，从 1989 第一个反向传播 CNN 起就是内建机制；只是手写数字第一层是单通道、看不到它，深层才用得上；到 AlexNet 才把它直接搬到 RGB 输入层。</b>';
+  host.appendChild(lead);
+})();
+
+/* ---------------- ⑥c MLP / LCN / 卷积 对照：切分 vs 共享 ---------------- */
+(function(){
+  const host=document.getElementById('lcn-compare');
+  if(!host) return;
+  // 与处理演示对齐：输入 3×3(9)、核 2×2、输出 2×2(4 个位置)；W 为 4×9
+  function buildW(kind){
+    const rows=[];
+    if(kind==='mlp'){ let c=0;
+      for(let r=0;r<4;r++){const row=[];for(let j=0;j<9;j++)row.push('u'+(c++));rows.push(row);} }
+    else { const lc='abcdefghijklmnop'; let li=0;
+      for(let oi=0;oi<2;oi++)for(let oj=0;oj<2;oj++){
+        const row=new Array(9).fill('');
+        for(let a=0;a<2;a++)for(let b=0;b<2;b++){ const col=(oi+a)*3+(oj+b);
+          row[col]= kind==='conv' ? ['a','b','c','d'][a*2+b]
+                  : kind==='tiled' ? ['a','b','c','d','e','f','g','h'][(oj%2)*4 + a*2+b]
+                  : lc[li++]; }
+        rows.push(row);
+      } }
+    return rows;
+  }
+  const specs=[
+    {kind:'mlp', name:'MLP 全连接', sub:'全局 · 权重<b>全不同</b>', params:36, samp:'N', G:'—', cls:'mlp'},
+    {kind:'lcn', name:'LCN', sub:'局部 · <b>不共享</b>', params:16, samp:'N', G:'4', cls:''},
+    {kind:'tiled', name:'Tiled 平铺', sub:'局部 · <b>周期共享</b>', params:8, samp:'N×2', G:'2', cls:''},
+    {kind:'conv', name:'卷积', sub:'局部 · <b>全共享</b>', params:4, samp:'N×4', G:'1', cls:'cnn'},
+  ];
+  const info=el('div','stepinfo');
+  function makeCard(sp){
+    const ids=buildW(sp.kind);
+    const showLetters = sp.kind!=='mlp';
+    const disp=ids.map(row=>row.map(v=> v==='' ? '' : (showLetters ? v : ' ')));
+    const card=el('div','card'+(sp.cls?' '+sp.cls:'')); card.style.padding='14px';
+    const h=el('div'); h.innerHTML='<b style="font-size:14.5px">'+sp.name+'</b><br><span style="font-size:12px;color:var(--ink-dim)">'+sp.sub+'</span>';
+    const m=makeMatrix(disp,''); m.root.style.width='100%';
+    const br=m.root.querySelector('.bracket'); if(br){ br.style.width='100%'; br.style.gridTemplateColumns='repeat(9,1fr)'; br.style.gap='2px'; br.style.padding='4px'; }
+    function hi(id){ let cnt=0; m.cells.flat().forEach(cc=>{ cc.style.boxShadow=''; if(cc.dataset.letter===id){cc.style.boxShadow='inset 0 0 0 2px var(--hi)';cnt++;} }); return cnt; }
+    m.cells.forEach((row,r)=>row.forEach((c,j)=>{
+      c.style.width='auto'; c.style.height='auto'; c.style.aspectRatio='1'; c.style.fontSize='clamp(8px,2.2vw,11px)';
+      const id=ids[r][j];
+      if(id===''){ c.style.opacity='.15'; }
+      else { c.classList.remove('empty'); c.classList.add('ker'); c.style.cursor='pointer'; c.dataset.letter=id;
+        c.onclick=()=>{ const n=hi(id);
+          info.innerHTML='这个权重（'+sp.name+'）在矩阵里出现 <span class="k">'+n+'</span> 次 → 被 <span class="k">'+n+'×N</span> 个 patch 训练。'+(n>1?' <b style="color:var(--cnn)">这就是共享带来的样本放大！</b>':' （只出现 1 次 = 没有放大）');
+        };
+      }
+    }));
+    const mwrap=el('div'); mwrap.style.cssText='margin:8px 0'; mwrap.appendChild(m.root);
+    const badge=el('div'); badge.style.cssText='text-align:center;margin-top:4px;line-height:1.9';
+    badge.innerHTML='<span class="pill">G='+sp.G+'</span> <span class="pill">参数 '+sp.params+'</span> <span class="pill">样本 '+sp.samp+'</span>';
+    card.append(h, mwrap, badge);
+    return {card, hi};
+  }
+  const grid=el('div','lcngrid');
+  const cards=specs.map(sp=>{ const o=makeCard(sp); grid.appendChild(o.card); return o; });
+  host.append(grid, info);
+  cards[1].hi('a'); cards[2].hi('a'); cards[3].hi('a');  // 跨档高亮同一个权重 a
+  info.innerHTML='默认高亮了权重 <b>a</b>：<b>LCN</b> 里出现 <span class="k">1</span> 次、<b>Tiled</b> <span class="k">2</span> 次、<b>卷积</b> <span class="k">4</span> 次 —— <b>共享越多（G 越小），同一个权重被越多 patch 训练</b>。点任意格子换权重看。';
+})();
+
+/* ---------------- ⑥d MLP / LCN / 卷积：怎么处理一张图 ---------------- */
+(function(){
+  const host=document.getElementById('lcn-process');
+  if(!host) return;
+  const IN=3, k=2, M=2;
+  function panel(kind,title){
+    const card=el('div','card'+(kind==='conv'?' cnn':(kind==='mlp'?' mlp':''))); card.style.padding='13px';
+    const h=el('div'); h.style.marginBottom='4px'; h.innerHTML='<b style="font-size:14px">'+title+'</b>';
+    const inp=makeMatrix(Array.from({length:IN},()=>Array(IN).fill('')),'<b>输入</b> 3×3');
+    inp.cells.flat().forEach(c=>{c.textContent='';c.classList.remove('empty');c.classList.add('inp');c.style.width='26px';c.style.height='24px';});
+    const badge=el('div'); badge.style.cssText='font-size:12px;color:var(--ink-dim);margin:6px 0;min-height:34px;text-align:center;display:flex;align-items:center;justify-content:center';
+    const out=makeMatrix(Array.from({length:M},()=>Array(M).fill('')),'<b>输出</b> 2×2');
+    out.cells.flat().forEach(c=>{c.textContent='';c.classList.remove('empty');c.classList.add('inp');c.style.width='26px';c.style.height='24px';});
+    const iw=el('div'); iw.style.cssText='display:flex;justify-content:center'; iw.appendChild(inp.root);
+    const ow=el('div'); ow.style.cssText='display:flex;justify-content:center'; ow.appendChild(out.root);
+    card.append(h, iw, badge, ow);
+    function clear(){ inp.cells.flat().forEach(c=>{c.classList.remove('win');c.style.boxShadow='';}); out.cells.flat().forEach(c=>c.classList.remove('out-hi')); badge.innerHTML=''; }
+    function render(p){
+      clear();
+      const oi=Math.floor(p/M), oj=p%M;
+      if(kind==='mlp'){
+        inp.cells.flat().forEach(c=>c.classList.add('win'));
+        badge.innerHTML='读 <b>整张图</b><br>权重 <b style="color:#ffd34d">W#'+p+'</b>（每输出一套，全不同）';
+      } else {
+        for(let a=0;a<k;a++)for(let b=0;b<k;b++){ const c=inp.cells[oi+a][oj+b]; c.classList.add('win'); c.style.boxShadow='inset 0 0 0 2px var(--mlp)'; }
+        badge.innerHTML = kind==='lcn'
+          ? '读 <b>局部窗口</b><br>滤波器 <b style="color:#ffd34d">F#'+p+'</b>（每位置一套，全不同）'
+          : kind==='tiled'
+          ? '读 <b>局部窗口</b><br>滤波器 <b style="color:#ffd34d">F_'+(oj%2===0?'A':'B')+'</b>（周期共享：每隔一列换）'
+          : '读 <b>局部窗口</b><br>滤波器 <b style="color:#7fe0c0">F</b>（同一个，滑动复用）';
+      }
+      out.cells[oi][oj].classList.add('out-hi');
+    }
+    return {card, render, clear};
+  }
+  const ps=[panel('mlp','MLP 全连接'), panel('lcn','LCN 局部连接'), panel('tiled','Tiled 平铺卷积'), panel('conv','卷积')];
+  const grid=el('div','lcngrid');
+  ps.forEach(o=>grid.appendChild(o.card));
+  const ctrl=el('div','controls');
+  const next=el('button','btn accent'); next.textContent='下一个输出位置 ▶';
+  const reset=el('button','btn'); reset.textContent='重置';
+  ctrl.append(next,reset);
+  const info=el('div','stepinfo');
+  host.append(grid, ctrl, info);
+  let p=-1;
+  function go(){
+    if(p<0){ ps.forEach(o=>o.clear()); info.innerHTML='点"下一个输出位置"，看三者在<b>同一个输出格</b>上各怎么取数、用什么滤波器。'; return; }
+    ps.forEach(o=>o.render(p));
+    info.innerHTML='第 <span class="k">'+p+'</span> 个输出：MLP 读<b>整图</b>，LCN / 卷积 只读<b>局部窗口</b>；滤波器上 MLP / LCN <b>每处都换</b>，卷积<b>始终同一个 F</b>（→ 这一个 F 被全部 4 个位置×所有图训练，正是上一张图里它出现 4 次的原因）。';
+  }
+  next.onclick=()=>{ p=(p+1)%(M*M); go(); };
+  reset.onclick=()=>{ p=-1; go(); };
+  go();
+})();
+
+/* ---------------- ⑤b QKᵀ 合并 / 低秩瓶颈 ---------------- */
+(function(){
+  const host=document.getElementById('qk-merge');
+  if(!host) return;
+  const d=12, heads=[1,2,3,4,6,12];
+  const wrap=el('div'); wrap.style.cssText='border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0;background:var(--panel-2)';
+
+  const ctrl=el('div'); ctrl.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:10px';
+  const lab=el('div','matlabel'); lab.innerHTML='拖动头数 h（模型维 d=12）：';
+  const slider=document.createElement('input'); slider.type='range'; slider.min='0'; slider.max='5'; slider.step='1'; slider.value='3';
+  slider.style.cssText='flex:0 0 160px;accent-color:#b07cff';
+  const hv=el('span','pill');
+  ctrl.append(lab, slider, hv);
+
+  const dim=el('div','stepinfo');
+  const rankRow=el('div'); rankRow.style.cssText='display:flex;gap:2px;justify-content:center;margin:8px 0';
+  const rankCap=el('div','stepinfo');
+  const sq=[];
+  for(let i=0;i<d;i++){ const c=el('span'); c.style.cssText='width:16px;height:16px;border-radius:3px;display:inline-block;border:1px solid var(--line)'; rankRow.appendChild(c); sq.push(c); }
+
+  const barWrap=el('div'); barWrap.style.cssText='margin:10px auto 0;max-width:430px';
+  function barRow(name,color){
+    const r=el('div'); r.style.cssText='margin:7px 0';
+    const top=el('div'); top.style.cssText='display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-dim);margin-bottom:3px';
+    const nm=el('span'); nm.innerHTML=name; const val=el('span'); top.append(nm,val);
+    const track=el('div'); track.style.cssText='height:14px;background:var(--panel);border-radius:7px;overflow:hidden;border:1px solid var(--line)';
+    const fill=el('div'); fill.style.cssText='height:100%;background:'+color+';border-radius:7px;transition:width .2s';
+    track.appendChild(fill); r.append(top,track);
+    return {val,fill,root:r};
+  }
+  const bFac=barRow('分解 W_Q,W_K：2·d·d_k','#22c08b');
+  const bFull=barRow('合并满秩 M：d²','#b07cff');
+  barWrap.append(bFac.root, bFull.root);
+  const take=el('div','stepinfo');
+
+  wrap.append(ctrl, dim, rankRow, rankCap, barWrap, take);
+  host.appendChild(wrap);
+
+  // --- 真实模型预设 ---
+  const real=el('div'); real.style.cssText='border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0;background:var(--panel-2)';
+  const rlab=el('div','matlabel'); rlab.innerHTML='真实模型里的对应（点一下，d 即 d_model）：'; rlab.style.cssText='margin-bottom:8px;text-align:center';
+  const btns=el('div'); btns.style.cssText='display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px';
+  const presets=[
+    {n:'原版 Transformer', d:512,   h:8,  dk:64},
+    {n:'BERT-base',        d:768,   h:12, dk:64},
+    {n:'GPT-2 XL',         d:1600,  h:25, dk:64},
+    {n:'LLaMA-65B',        d:8192,  h:64, dk:128},
+    {n:'GPT-3 175B',       d:12288, h:96, dk:128},
+  ];
+  const rInfo=el('div','stepinfo');
+  const rTrack=el('div'); rTrack.style.cssText='height:16px;background:var(--panel);border-radius:8px;overflow:hidden;border:1px solid var(--line);max-width:420px;margin:8px auto 0';
+  const rFill=el('div'); rFill.style.cssText='height:100%;background:rgba(176,124,255,.75);border-radius:8px;transition:width .2s'; rTrack.appendChild(rFill);
+  const rCap=el('div','stepinfo');
+  const bel=[];
+  function showReal(p){
+    const pct=100/p.h, save=p.h/2;
+    bel.forEach(x=>x.classList.remove('accent')); bel[presets.indexOf(p)].classList.add('accent');
+    rInfo.innerHTML='<b>'+p.n+'</b>：d = <b class="k">'+p.d+'</b>，头数 h = <b class="k">'+p.h+'</b> → d_k = d/h = <b class="k">'+p.dk+'</b>';
+    rFill.style.width=Math.max(pct,0.8)+'%';
+    rCap.innerHTML='M 是 '+p.d+'×'+p.d+'，但<b>秩 ≤ '+p.dk+'</b> = 全维的 <b class="k">1/'+p.h+' ≈ '+pct.toFixed(pct<2?2:1)+'%</b>　·　合并成满秩 M 要多 <b class="k">h/2 = '+save+'×</b> 参数';
+  }
+  presets.forEach(p=>{ const b=el('button','btn'); b.textContent=p.n; b.style.cssText='font-size:12.5px;padding:6px 10px'; b.onclick=()=>showReal(p); btns.appendChild(b); bel.push(b); });
+  real.append(rlab, btns, rInfo, rTrack, rCap);
+  host.appendChild(real);
+  showReal(presets[1]);   // 默认 BERT-base
+
+  function update(){
+    const h=heads[+slider.value], dk=d/h, fac=2*d*dk, full=d*d, mx=Math.max(fac,full);
+    hv.textContent='h = '+h;
+    dim.innerHTML='每头 d_k = d/h = <b class="k">'+dk+'</b>　·　M 形状 <b>12×12</b>，但<b>秩 ≤ '+dk+'</b>';
+    sq.forEach((c,i)=>{ c.style.background = i<dk ? 'rgba(176,124,255,.75)' : 'var(--panel)'; c.style.opacity = i<dk?'1':'.35'; });
+    rankCap.innerHTML='<span class="muted">紫格 = M 的有效秩（'+dk+' / 12）—— h 越大，d_k 越小，M 越低秩。</span>';
+    bFac.val.textContent=fac+' 个'; bFac.fill.style.width=(fac/mx*100).toFixed(1)+'%';
+    bFull.val.textContent=full+' 个'; bFull.fill.style.width=(full/mx*100).toFixed(1)+'%';
+    let t;
+    if(dk<d/2) t='满秩 M 要 <b class="k">'+full+'</b> 个参数，分解只要 <b class="k">'+fac+'</b> 个 → 分解省 <b>'+(full/fac).toFixed(1)+'×</b>。低秩瓶颈在这兑现。';
+    else if(dk===d/2) t='h=2（d_k=d/2）：两者恰好相等（'+full+' 个）。';
+    else t='头少（h='+h+'）时 d_k 偏大，分解（'+fac+'）反比满秩 M（'+full+'）还费 —— 低秩红利要 <b>h&gt;2</b> 才出现。真实 Transformer 的 h 常 8~16，所以分解远省。';
+    take.innerHTML=t;
+  }
+  slider.addEventListener('input',update); update();
+})();
+
+/* ---------------- ⑤c 秩的代数：夹逼 + 乘法压秩 / 加法升秩 ---------------- */
+(function(){
+  const host=document.getElementById('rank-viz');
+  if(!host) return;
+  const d=8;
+  const box=el('div'); box.style.cssText='border:1px solid var(--line);border-radius:10px;padding:14px;margin:8px 0;background:var(--panel-2)';
+  const ctrl=el('div'); ctrl.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:10px';
+  const lab=el('div','matlabel'); lab.innerHTML='拖动 d_k（细腰，d=8）：';
+  const sl=document.createElement('input'); sl.type='range'; sl.min='1'; sl.max='8'; sl.step='1'; sl.value='2'; sl.style.cssText='flex:0 0 160px;accent-color:#b07cff';
+  const kv=el('span','pill'); ctrl.append(lab,sl,kv);
+
+  function labeledBar(){
+    const row=el('div'); row.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;justify-content:center';
+    const name=el('div'); name.style.cssText='width:140px;font-size:12px;color:var(--ink-dim);text-align:right';
+    const track=el('div'); track.style.cssText='flex:0 0 240px;height:16px;background:var(--panel);border-radius:8px;border:1px solid var(--line);overflow:hidden';
+    const fill=el('div'); fill.style.cssText='height:100%;border-radius:8px;transition:width .2s'; track.appendChild(fill);
+    const num=el('div'); num.style.cssText='width:54px;font-size:12px;color:var(--ink)';
+    row.append(name,track,num); return {row,name,fill,num};
+  }
+  const b1=labeledBar(), b2=labeledBar(), b3=labeledBar();
+  b1.name.textContent='输入空间 ℝ^d'; b2.name.textContent='细腰 ℝ^{d_k}'; b3.name.innerHTML='<b>M 的像 = 秩</b>';
+  const fn=el('div'); fn.append(b1.row,b2.row,b3.row);
+  const fnCap=el('div','stepinfo'); fnCap.innerHTML='输入是满的 d 维,但被 W_Kᵀ 压进 d_k 细腰后,M 的像<b>回不到 d</b>,卡在 d_k —— 这就是乘法压秩。';
+
+  const axisWrap=el('div'); axisWrap.style.cssText='margin:16px auto 2px;max-width:300px;position:relative;height:56px';
+  const axis=el('div'); axis.style.cssText='position:absolute;left:6px;right:6px;top:27px;height:3px;background:var(--line);border-radius:2px';
+  const up=el('div'); up.style.cssText='position:absolute;top:4px;transform:translateX(-50%);font-size:11px;color:#ff8a8a;white-space:nowrap';
+  const dn=el('div'); dn.style.cssText='position:absolute;top:36px;transform:translateX(-50%);font-size:11px;color:#7fe0c0;white-space:nowrap';
+  const dot=el('div'); dot.style.cssText='position:absolute;top:22px;width:12px;height:12px;border-radius:50%;background:#b07cff;transform:translateX(-50%);box-shadow:0 0 0 3px rgba(176,124,255,.25)';
+  axisWrap.append(axis,up,dn,dot);
+  const axCap=el('div','stepinfo');
+
+  const maMul=labeledBar(), maAdd=labeledBar();
+  maMul.name.innerHTML='乘 A·B ≤ min(a,b)'; maAdd.name.innerHTML='加 A+B ≤ a+b';
+  const ma=el('div'); ma.style.marginTop='12px'; ma.append(maMul.row, maAdd.row);
+  const maCap=el('div','stepinfo');
+
+  box.append(ctrl, fn, fnCap, axisWrap, axCap, ma, maCap);
+  host.appendChild(box);
+
+  function setBar(b,val,color){ b.fill.style.width=(val/d*100)+'%'; b.fill.style.background=color; b.num.textContent=val+' 维'; }
+  function update(){
+    const dk=+sl.value; kv.textContent='d_k = '+dk;
+    const grn='rgba(34,192,139,.55)', vio='rgba(176,124,255,.75)';
+    setBar(b1,d,grn); setBar(b2,dk,vio); setBar(b3,dk,grn); b3.num.innerHTML='<b>'+dk+' 维</b>';
+    const pos=(6 + (dk/d)*(100-12))/300*100; // 近似把 0..d 映到 6..(300-6)px → %
+    const px=6 + (dk/d)*(288);
+    up.style.left=px+'px'; up.innerHTML='↓ 上界 min = '+dk;
+    dn.style.left=px+'px'; dn.innerHTML='↑ 下界 Sylvester = '+dk;
+    dot.style.left=px+'px';
+    axCap.innerHTML='上界(乘法压秩)与下界(Sylvester)都 = <b class="k">'+dk+'</b> → 夹出 <b>rank(M) = '+dk+'</b>。';
+    const mul=Math.min(dk,dk), add=Math.min(dk+dk,d);
+    setBar(maMul,mul,vio); setBar(maAdd,add,'rgba(242,163,60,.75)');
+    maCap.innerHTML='两个秩 <b>'+dk+'</b> 的矩阵:<b>相乘</b> ≤ min = <b class="k">'+mul+'</b>(压秩);<b>相加</b> ≤ '+(2*dk)+' = <b class="k">'+add+'</b>'+(2*dk>d?'（被 d=8 截断）':'')+'(升秩)。多头 = h 个相加 → h·d_k=d。';
+  }
+  sl.addEventListener('input',update); update();
+})();
+
+/* ---------------- 收尾：四种网络的权重知识对照 ---------------- */
+(function(){
+  const host=document.getElementById('knowledge-cmp');
+  if(!host) return;
+  function miniMat(spec,color){
+    const g=el('div'); g.style.cssText='display:inline-grid;gap:2px;grid-template-columns:repeat('+spec[0].length+',18px)';
+    spec.forEach(row=>row.forEach(c=>{
+      const dd=el('div'); dd.style.cssText='width:18px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--mono);color:#e7eaf0';
+      if(c===''||c==null){ dd.style.background='var(--panel-2)'; dd.style.opacity='.3'; }
+      else { dd.style.background=color; if(c!=='#') dd.textContent=c; }
+      g.appendChild(dd);
+    }));
+    return g;
+  }
+  function rnnChain(){
+    const g=el('div'); g.style.cssText='display:flex;align-items:center;gap:4px';
+    function box(t){ const b=el('div'); b.style.cssText='width:26px;height:26px;border-radius:6px;background:rgba(242,163,60,.35);display:flex;align-items:center;justify-content:center;color:#ffe1b0;font-size:10px;font-family:var(--mono)'; b.textContent=t; return b; }
+    function ar(){ const a=el('div'); a.style.cssText='font-size:9.5px;color:#9cc0ff;font-family:var(--mono)'; a.innerHTML='—Wₕₕ→'; return a; }
+    g.append(box('h₁'),ar(),box('h₂'),ar(),box('h₃')); return g;
+  }
+  const blue='rgba(79,140,255,.5)', vio='rgba(176,124,255,.5)';
+  const cards=[
+    {name:'MLP 全连接', c:'var(--mlp)', w:'稠密 W (out×in)', axis:'不复用(位置绑定)',
+     vis:()=>miniMat([['#','#','#','#'],['#','#','#','#'],['#','#','#','#']], blue),
+     know:'全局特征组合、决策边界——每行=一个超平面。什么都能学,但都得从零学。'},
+    {name:'CNN 卷积', c:'var(--cnn)', w:'共享小核 (C_out,C_in,k,k)', axis:'空间',
+     vis:()=>miniMat([['a','b','',''],['','a','b',''],['','','a','b']], blue),
+     know:'可复用的局部模式检测器(边/纹理→部件→物体)+ 跨通道组合。a、b 每行重复 = 权重共享。'},
+    {name:'RNN 循环', c:'var(--rnn)', w:'W_xh, W_hh', axis:'时间',
+     vis:rnnChain,
+     know:'时序转移动态与记忆(记/忘)。Wₕₕ = 学出来的状态转移,每步复用同一套。'},
+    {name:'Transformer', c:'var(--trf)', w:'W_Q,W_K,W_V,W_O + FFN', axis:'位置共享 + 内容寻址',
+     vis:()=>miniMat([['#','#','#'],['#','#','#'],['#','#','#']], vio),
+     know:'QK=token 间关系(谁看谁)· VO=搬运内容 · FFN=逐 token 事实。紫格=学出来的关系图。'},
+  ];
+  const grid=el('div','lcngrid');
+  cards.forEach(cd=>{
+    const card=el('div','card'); card.style.cssText='border-top:3px solid '+cd.c+';padding:14px';
+    const h=el('h4'); h.style.cssText='color:'+cd.c+';margin:0 0 4px;font-size:15px'; h.textContent=cd.name;
+    const w=el('div'); w.style.cssText='font-size:11px;color:var(--ink-dim);margin-bottom:8px;font-family:var(--mono)'; w.textContent='权重: '+cd.w;
+    const vw=el('div'); vw.style.cssText='display:flex;justify-content:center;margin:6px 0 10px;min-height:34px;align-items:center'; vw.appendChild(cd.vis());
+    const ax=el('div'); ax.style.marginBottom='8px'; ax.innerHTML='<span class="pill" style="font-size:11px">复用轴: '+cd.axis+'</span>';
+    const k=el('p'); k.style.cssText='font-size:12.5px;color:var(--ink-dim);margin:0;line-height:1.6'; k.textContent=cd.know;
+    card.append(h,w,vw,ax,k); grid.appendChild(card);
+  });
+  host.appendChild(grid);
+})();
+
+/* ---------------- LTC：液态时间常数(响应曲线) ---------------- */
+(function(){
+  const host=document.getElementById('ltc-demo'); if(!host) return;
+  const box=el('div'); box.style.cssText='border:1px solid var(--line);border-radius:10px;padding:14px;margin:8px 0;background:var(--panel-2)';
+  const ctrl=el('div'); ctrl.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:8px';
+  const lab=el('div','matlabel'); lab.innerHTML='拖动输入强度 I：';
+  const sl=document.createElement('input'); sl.type='range'; sl.min='-40'; sl.max='40'; sl.value='0'; sl.style.cssText='flex:0 0 200px;accent-color:#f2a33c';
+  const iv=el('span','pill'); ctrl.append(lab,sl,iv);
+  const cv=document.createElement('canvas'); cv.height=200; cv.style.cssText='width:100%;max-width:460px;display:block;margin:0 auto;background:#0c0e14;border-radius:8px;border:1px solid var(--line)';
+  const info=el('div','stepinfo');
+  box.append(ctrl,cv,info); host.appendChild(box);
+  const sig=x=>1/(1+Math.exp(-x));
+  function draw(){
+    const I=+sl.value/10; iv.textContent='I = '+I.toFixed(1);
+    const f=sig(I), tauLTC=1/(0.35+1.8*f), tauRNN=1.5;
+    const dpr=window.devicePixelRatio||1, w=cv.clientWidth||460, h=cv.height;
+    cv.width=w*dpr; cv.height=h*dpr; const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    const pad=28, T=5, X=t=>pad+(t/T)*(w-2*pad), Y=v=>h-pad-v*(h-2*pad);
+    ctx.strokeStyle='rgba(154,163,178,.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad,Y(0)); ctx.lineTo(w-pad,Y(0)); ctx.moveTo(pad,Y(0)); ctx.lineTo(pad,Y(1)); ctx.stroke();
+    function curve(tau,color,lw){ ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.beginPath();
+      for(let i=0;i<=120;i++){ const t=T*i/120, v=1-Math.exp(-t/tau); (i===0?ctx.moveTo:ctx.lineTo).call(ctx,X(t),Y(v)); } ctx.stroke(); }
+    curve(tauRNN,'rgba(154,163,178,.6)',2);
+    curve(tauLTC,'#f2a33c',2.6);
+    ctx.fillStyle='#9aa3b2'; ctx.font='11px monospace'; ctx.fillText('阶跃输入下的响应 x(t)',pad,16);
+    info.innerHTML='LTC 有效时间常数 τ_sys = <b class="k">'+tauLTC.toFixed(2)+'</b>(随输入变);普通 RNN 固定 τ = 1.5。<b>输入越强 → τ 越小 → '+(tauLTC<tauRNN?'响应更快':'响应更慢')+'</b>（琥珀 vs 灰）。';
+  }
+  sl.addEventListener('input',draw); draw(); window.addEventListener('resize',draw);
+})();
+
+/* ---------------- NCP：四层稀疏接线(仿线虫) ---------------- */
+(function(){
+  const host=document.getElementById('ncp-wiring'); if(!host) return;
+  const N={ S0:[70,58],S1:[70,116],S2:[70,174],S3:[70,232],
+            I0:[215,88],I1:[215,150],I2:[215,212],
+            C0:[360,88],C1:[360,150],C2:[360,212],
+            M0:[505,120],M1:[505,180] };
+  const col={S:'#22c08b',I:'#4f8cff',C:'#f2a33c',M:'#b07cff'};
+  const E=[['S0','I0'],['S1','I0'],['S1','I1'],['S2','I1'],['S2','I2'],['S3','I2'],
+           ['I0','C0'],['I0','C1'],['I1','C1'],['I1','C2'],['I2','C2'],
+           ['C0','M0'],['C1','M0'],['C1','M1'],['C2','M1']];
+  let svg='<svg viewBox="0 0 575 280" style="width:100%;max-width:575px;display:block;margin:8px auto;height:auto" font-family="-apple-system,sans-serif">';
+  [[70,'感觉'],[215,'中间'],[360,'指令·循环'],[505,'运动']].forEach(l=> svg+='<text x="'+l[0]+'" y="22" text-anchor="middle" font-size="11.5" fill="#9aa3b2">'+l[1]+'</text>');
+  E.forEach(e=>{ const a=N[e[0]],b=N[e[1]]; svg+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#3a4255" stroke-width="1.4"/>'; });
+  ['C0','C1','C2'].forEach(n=>{ const p=N[n]; svg+='<path d="M'+(p[0]+9)+','+(p[1]-7)+' C'+(p[0]+34)+','+(p[1]-20)+' '+(p[0]+34)+','+(p[1]+20)+' '+(p[0]+9)+','+(p[1]+7)+'" stroke="#f2a33c" stroke-width="1.6" fill="none" opacity=".75"/>'; });
+  for(const k in N){ const p=N[k]; svg+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="11" fill="'+col[k[0]]+'" opacity=".88"/>'; }
+  svg+='</svg>';
+  host.innerHTML='<div style="border:1px solid var(--line);border-radius:10px;background:var(--panel-2);padding:6px">'+svg+'<div style="text-align:center;font-size:12px;color:var(--ink-dim);padding:0 0 6px">绿=感觉 · 蓝=中间 · 琥珀=指令(自环=循环/记忆) · 紫=运动　·　连接稀疏(仿 C. elegans 连接组)</div></div>';
+})();
+
+/* ---------------- 宏观:发展图谱(并行家族泳道)---------------- */
+(function(){
+  const swim=document.getElementById('swim'), detail=document.getElementById('detail');
+  if(!swim) return;
+  function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+  const FAM=[{k:'found',n:'基础',c:getCSS('--found')},{k:'cnn',n:'CNN',c:getCSS('--cnn')},{k:'rnn',n:'RNN',c:getCSS('--rnn')},{k:'attn',n:'注意力',c:getCSS('--attn')},{k:'gen',n:'生成',c:getCSS('--gen')},{k:'gnn',n:'GNN',c:getCSS('--gnn')},{k:'train',n:'训练',c:getCSS('--train')},{k:'mm',n:'多模态',c:getCSS('--mm')}];
+  const COLS=['1943','1958','1980','1982','1986','1989·90','1997·98','2006','2009','2012','2014','2015','2017·18','2020','2021·22','2023','2024','2025'];
+  const ERAS=[{n:'萌芽',a:0,b:1},{n:'奠基',a:2,b:6},{n:'复兴',a:7,b:8},{n:'爆发',a:9,b:11},{n:'大模型',a:12,b:14},{n:'推理 · 多模态',a:15,b:17}];
+  const MS=[
+   {col:0,f:'found',y:'1943',t:'M–P 神经元',who:'McCulloch & Pitts',d:'用阈值逻辑把神经元数学化 —— 一切的起点(加权求和 + 阈值)。'},
+   {col:1,f:'found',y:'1958',t:'感知机',who:'Rosenblatt',d:'第一个能学习的神经网络;但只能解线性可分。1969 被 Minsky 批判 → 第一次寒冬。'},
+   {col:2,f:'cnn',y:'1980',t:'Neocognitron',who:'福岛邦彦',d:'层次化、局部感受野、平移不变 —— CNN 的雏形(尚无反向传播)。'},
+   {col:3,f:'rnn',y:'1982',t:'Hopfield 网',who:'Hopfield',d:'带反馈的循环网,做联想记忆 —— 循环(recurrent)思想的源头。'},
+   {col:4,f:'found',y:'1986',t:'★ 反向传播',who:'Rumelhart, Hinton, Williams',d:'让多层网络可训练 —— 深度学习的发动机:误差能逐层回传。'},
+   {col:5,f:'cnn',y:'1989',t:'LeCun CNN',who:'LeCun',d:'首个反向传播训练的 CNN(局部+共享),识别手写数字;同年万能逼近定理。'},
+   {col:5,f:'rnn',y:'1990',t:'Elman RNN',who:'Elman',d:'《Finding Structure in Time》—— 隐藏状态反馈给自己,处理变长序列、抓时间结构。'},
+   {col:6,f:'rnn',y:'1997',t:'★ LSTM',who:'Hochreiter & Schmidhuber',d:'门控记忆解决梯度消失 —— RNN 终于能学长程依赖。'},
+   {col:6,f:'cnn',y:'1998',t:'LeNet-5',who:'LeCun 等',d:'成熟 CNN,用于支票/邮编识别;连接表、池化定型。随后第二次寒冬。'},
+   {col:7,f:'found',y:'2006',t:'★ DBN',who:'Hinton, Osindero, Teh',d:'深度置信网络:RBM 逐层预训练让"深"网重新可训 —— "深度学习"由此正名、复兴。'},
+   {col:8,f:'found',y:'2009',t:'ImageNet / GPU',who:'李飞飞 等',d:'百万级标注数据集 + GPU 训练 —— 给深网提供了燃料与马力。'},
+   {col:9,f:'cnn',y:'2012',t:'★ AlexNet',who:'Krizhevsky, Sutskever, Hinton',d:'深 CNN + GPU + ReLU + Dropout 碾压 ImageNet —— 现代深度学习大爆发。'},
+   {col:10,f:'rnn',y:'2014',t:'GRU · Seq2Seq',who:'Cho / Sutskever',d:'GRU 简化门控;Seq2Seq 用编码-解码 RNN 做机器翻译。'},
+   {col:10,f:'attn',y:'2014',t:'Attention 种子',who:'Bahdanau 等',d:'为翻译加注意力,让解码器对齐源句 —— Transformer 的直接前身。'},
+   {col:10,f:'gen',y:'2014',t:'GAN · VAE',who:'Goodfellow / Kingma & Welling',d:'两大生成范式同年登场:GAN 用对抗(生成器 vs 判别器);VAE 用变分(编码 → 隐变量 → 解码,显式概率生成)。'},
+   {col:11,f:'cnn',y:'2015',t:'★ ResNet',who:'He 等',d:'恒等捷径让上百层可训;同期 BatchNorm 稳定训练。'},
+   {col:12,f:'attn',y:'2017',t:'★★ Transformer',who:'Vaswani 等',d:'《Attention is All You Need》纯自注意力、抛弃循环 —— 可并行、抓长依赖,统治 NLP 并蔓延到一切。'},
+   {col:12,f:'attn',y:'2018',t:'BERT · GPT',who:'Devlin / Radford',d:'"预训练 + 微调"范式确立;大模型时代的前夜。'},
+   {col:13,f:'cnn',y:'2020',t:'ViT',who:'Dosovitskiy 等',d:'Vision Transformer:把图切成 patch 喂进 Transformer,注意力进军视觉。'},
+   {col:13,f:'attn',y:'2020',t:'GPT-3',who:'Brown 等',d:'175B 参数,少样本能力涌现 —— 规模化(scaling)成为主旋律。'},
+   {col:13,f:'gen',y:'2020',t:'Diffusion',who:'Ho 等(DDPM)',d:'去噪扩散模型,生成质量超越 GAN —— 文生图的基石。'},
+   {col:14,f:'attn',y:'2022',t:'ChatGPT',who:'OpenAI',d:'指令微调 + RLHF 的对话模型 —— 生成式 AI 走向大众。'},
+   {col:14,f:'gen',y:'2022',t:'Stable Diffusion',who:'Stability 等',d:'开源潜空间扩散,文生图爆发式普及。'},
+   {col:15,f:'attn',y:'2023',t:'GPT-4 · LLaMA',who:'OpenAI / Meta',d:'GPT-4 多模态、能力大跃升;LLaMA 开源权重点燃开源大模型浪潮。'},
+   {col:12,f:'rnn',y:'2018',t:'Neural ODE',who:'Chen 等',d:'把"深度"变连续:ResNet 残差 = 欧拉法一步 → 让网络拟合导数场 dh/dt=f(h),用 ODE 求解器积分(伴随法 O(1) 显存)。LTC / Mamba / Flow-Matching 的"连续"暗线由此显形。'},
+   {col:15,f:'rnn',y:'2023',t:'Mamba / SSM',who:'Gu & Dao',d:'状态空间模型:线性时间处理超长序列 —— 高效"循环"复兴,挑战 Transformer 的 O(n²)。'},
+   {col:16,f:'attn',y:'2024',t:'GPT-4o · o1',who:'OpenAI',d:'4o 全模态实时;o1 用 RL 学"想一会儿再答"—— 推理时算力(test-time compute)成为新的 scaling 维度。'},
+   {col:16,f:'gen',y:'2024',t:'Sora',who:'OpenAI',d:'文生视频:把 Diffusion Transformer 规模化到视频 —— 世界模拟器的雏形。'},
+   {col:16,f:'found',y:'2024',t:'★ 诺奖 + AlphaFold3',who:'Hopfield/Hinton · Hassabis/Jumper',d:'神经网络拿下诺贝尔<b>物理</b>奖(Hopfield 网络 + Hinton 的<b>玻尔兹曼机</b>,因其用统计物理 —— 注意:<b>不是</b>因反向传播)、AlphaFold 拿下化学奖。'},
+   {col:17,f:'attn',y:'2025',t:'DeepSeek-R1',who:'DeepSeek',d:'开源推理模型:纯 RL 训练 + 极低成本,逼近顶尖闭源 —— 冲击竞争格局。'},
+   {col:8,f:'gnn',y:'2009',t:'原始 GNN',who:'Scarselli 等',d:'最早的"图神经网络模型":在图结构上迭代传播节点状态 —— GNN 的源头(2005/2009)。'},
+   {col:10,f:'gnn',y:'2014',t:'谱图 CNN',who:'Bruna 等',d:'用图拉普拉斯的谱把卷积推广到图 —— 第一个"图卷积"。'},
+   {col:12,f:'gnn',y:'2017',t:'GCN · GAT',who:'Kipf&Welling / Veličković',d:'GCN(2016)把图卷积做得简单可扩展、引爆 GNN;GAT(2018)给图加注意力;同期 MPNN 统一为"消息传递"框架。'},
+   {col:13,f:'gnn',y:'2020',t:'图 Transformer / 几何DL',who:'Bronstein 等',d:'图与注意力融合;"几何深度学习"把 CNN/GNN/Transformer 统一为对称性(等变性)视角;AlphaFold2 等大量用图推理。'},
+   {col:7,f:'gen',y:'2006',t:'RBM / 玻尔兹曼机',who:'Hinton 等',d:'能量基生成模型(玻尔兹曼机 1985 → RBM)。堆成 DBN 点燃复兴(记在基础线),本质是 GAN/VAE/Diffusion 的远祖(生成线)。'},
+   {col:12,f:'gen',y:'2017',t:'自回归生成',who:'van den Oord 等',d:'PixelCNN / WaveNet / VQ-VAE:逐元素"预测下一个"地生成图像/音频 —— 和 GPT 的文本生成同源。'},
+   {col:14,f:'mm',y:'2021',t:'CLIP · DALL-E',who:'Radford / Ramesh 等',d:'多模态对齐:CLIP 用对比学习把<b>文本与图像嵌到同一空间</b>(零样本识别);DALL-E 据此做文生图 —— 现代文图模型的起点。'},
+   {col:15,f:'mm',y:'2023',t:'GPT-4V / Flamingo',who:'OpenAI / DeepMind',d:'多模态大模型兴起:把图像接进 LLM,能"看图说话"、做视觉问答。'},
+   {col:16,f:'mm',y:'2024',t:'GPT-4o · Gemini',who:'OpenAI / Google',d:'原生<b>全模态</b>:文 / 图 / 音统一进出、实时交互 —— 多模态成为大模型的默认能力。'},
+   {col:15,f:'gen',y:'2023',t:'DiT · 流匹配',who:'Peebles&Xie / Lipman 等',d:'DiT 用 Transformer 替换扩散的 U-Net(Sora 的骨干);Flow Matching 用"流匹配"更简洁地训练连续生成(SD3 用它)。'},
+   {col:17,f:'gen',y:'2025',t:'MeanFlow',who:'2025',d:'学"平均速度场"做<b>一步生成</b> —— 在流匹配 / 一致性模型之上,把采样从几十步压到 1 步,极快。'},
+   {col:9,f:'train',y:'2012',t:'ReLU · Dropout',who:'Nair&Hinton / Srivastava',d:'ReLU(~2010)不饱和、解梯度消失;Dropout 抗过拟合;Xavier 初始化(2010)稳住信号方差 —— AlexNet 带火这套。'},
+   {col:10,f:'train',y:'2014',t:'Adam 优化器',who:'Kingma & Ba',d:'自适应学习率,训练又快又稳 —— 成为默认优化器。'},
+   {col:11,f:'train',y:'2015',t:'BatchNorm · He 初始化',who:'Ioffe&Szegedy / He',d:'BatchNorm 归一化稳定加速训练;He 初始化让 ReLU 深网信号不爆不灭。'},
+   {col:12,f:'train',y:'2016',t:'LayerNorm',who:'Ba 等',d:'逐样本归一化、不依赖 batch —— Transformer 的标配组件。'},
+   {col:13,f:'train',y:'2020',t:'RMSNorm · SwiGLU',who:'现代 LLM',d:'RMSNorm 归一化 + SwiGLU/GELU 激活:更省、更稳 —— LLaMA 等大模型标配。'},
+   {col:4,f:'train',y:'1986',t:'反向传播(根)',who:'Rumelhart 等',d:'整条训练线的<b>根</b>:有了它才能<b>一次反向就廉价算出所有梯度</b>,后面的初始化 / 归一化 / 优化器才有意义。(同时是基础线的发动机。)'},
+  ];
+  const gc=i=>i+2;
+  const corner=document.createElement('div'); corner.className='corner'; corner.textContent='家族 ╲ 年代'; swim.appendChild(corner);
+  ERAS.forEach(e=>{ const d=document.createElement('div'); d.className='era-b'; d.style.gridColumn=gc(e.a)+'/'+(gc(e.b)+1); d.textContent=e.n; swim.appendChild(d); });
+  COLS.forEach((y,i)=>{ const d=document.createElement('div'); d.className='yr-h'; d.style.gridColumn=gc(i); d.textContent=y; swim.appendChild(d); });
+  FAM.forEach((fm,r)=>{
+    const band=document.createElement('div'); band.className='row-band f-'+fm.k; band.style.gridRow=(r+3); band.style.background='color-mix(in srgb,'+fm.c+' 7%,transparent)'; swim.appendChild(band);
+    const lab=document.createElement('div'); lab.className='fam-l f-'+fm.k; lab.style.gridRow=(r+3); lab.style.color=fm.c; lab.textContent=fm.n; swim.appendChild(lab);
+  });
+  const cells={};
+  MS.forEach(m=>{ const key=m.col+'-'+m.f; (cells[key]||(cells[key]=[])).push(m); });
+  Object.keys(cells).forEach(key=>{
+    const arr=cells[key], m0=arr[0], r=FAM.findIndex(f=>f.k===m0.f);
+    const cell=document.createElement('div'); cell.className='tcell f-'+m0.f; cell.style.gridColumn=gc(m0.col); cell.style.gridRow=(r+3);
+    arr.forEach(m=>{
+      const c=FAM.find(f=>f.k===m.f).c;
+      const node=document.createElement('div'); node.className='ms f-'+m.f; node.style.borderLeftColor=c;
+      node.innerHTML='<span class="y">'+m.y+'</span>'+m.t;
+      node.onclick=()=>{ document.querySelectorAll('.ms.sel').forEach(x=>x.classList.remove('sel')); node.classList.add('sel');
+        detail.style.borderLeftColor=c;
+        detail.innerHTML='<span class="dy">'+m.y+'</span><h3>'+m.t.replace(/★+\s?/,'')+'</h3><div class="who">'+m.who+'</div><p>'+m.d+'</p>'; };
+      cell.appendChild(node);
+    });
+    swim.appendChild(cell);
+  });
+  detail.innerHTML='<span class="dy">点一个节点 ▸</span><p>查看它的提出者、年份与"解决了什么问题"。★ = 关键里程碑,★★ = 转折点。</p>';
+  let active='all';
+  document.querySelectorAll('.chip').forEach(ch=>{
+    ch.addEventListener('click',()=>{
+      document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); ch.classList.add('on'); active=ch.dataset.f;
+      document.querySelectorAll('.ms,.fam-l,.row-band').forEach(elm=>{
+        const isF=[...elm.classList].some(cl=>cl==='f-'+active);
+        elm.classList.toggle('tdim', active!=='all' && !isF);
+      });
+    });
+  });
+})();
+
+/* ---------------- 反向传播:前向/反向可视化 ---------------- */
+(function(){
+  const host=document.getElementById('bp-net'); if(!host) return;
+  const IN=[[60,72],[60,150]], HID=[[235,52],[235,111],[235,170]], OUT=[[405,111]];
+  let mode='fwd';
+  function E(){ const e=[]; IN.forEach(a=>HID.forEach(b=>e.push([a,b]))); HID.forEach(a=>OUT.forEach(b=>e.push([a,b]))); return e; }
+  function seg(a,b,rev){ let [x1,y1]=a,[x2,y2]=b; if(rev){[x1,y1,x2,y2]=[x2,y2,x1,y1];}
+    const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1,r=16;
+    return {sx:x1+dx/L*r, sy:y1+dy/L*r, ex:x2-dx/L*r, ey:y2-dy/L*r}; }
+  function node(p,c,lab){ return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="16" fill="'+c+'" opacity=".9"/><text x="'+p[0]+'" y="'+(p[1]+4)+'" text-anchor="middle" font-size="11" fill="#0f1117" font-family="monospace">'+lab+'</text>'; }
+  function draw(){
+    const fwd=mode==='fwd', col=fwd?'#22c08b':'#f2a33c';
+    let s='<svg viewBox="0 0 470 224" style="width:100%;max-width:480px;display:block;margin:8px auto;height:auto">';
+    s+='<defs><marker id="bpar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="'+col+'"/></marker></defs>';
+    E().forEach(([a,b])=>{ const p=seg(a,b,!fwd);
+      s+='<line x1="'+p.sx+'" y1="'+p.sy+'" x2="'+p.ex+'" y2="'+p.ey+'" stroke="'+col+'" stroke-width="1.6" opacity=".65" marker-end="url(#bpar)"'+(fwd?'':' stroke-dasharray="4,3"')+'/>'; });
+    IN.forEach((p,i)=>s+=node(p,'#22c08b','x'+(i+1)));
+    HID.forEach((p,i)=>s+=node(p,'#4f8cff','h'+(i+1)));
+    OUT.forEach(p=>s+=node(p,col,'ŷ'));
+    s+='<text x="60" y="206" text-anchor="middle" font-size="11" fill="#9aa3b2">输入</text>';
+    s+='<text x="235" y="206" text-anchor="middle" font-size="11" fill="#9aa3b2">隐藏层</text>';
+    s+='<text x="405" y="206" text-anchor="middle" font-size="11" fill="#9aa3b2">输出</text>';
+    if(!fwd) s+='<text x="436" y="100" text-anchor="middle" font-size="13" fill="#f2a33c" font-weight="700">δ</text>';
+    s+='</svg>';
+    host.querySelector('.bp-svg').innerHTML=s;
+    host.querySelector('.bp-cap').innerHTML = fwd
+      ? '<b style="color:#22c08b">前向</b>:输入逐层算到输出 → 得到预测 ŷ。<span class="muted">(感知机 / Delta 只能用输出层这一步的误差,够不到隐藏层)</span>'
+      : '<b style="color:#f2a33c">反向</b>:输出误差 δ 用<b>链式法则逐层回传</b>,每个隐藏层权重都拿到梯度 ∂L/∂w。<span class="muted">这一步,正是早期规则做不到、而反向传播解决的"信用分配"。</span>';
+  }
+  host.innerHTML='<div class="bp-svg"></div><div class="controls"><button class="btn accent" id="bp-toggle">切换 前向 ⇄ 反向</button></div><div class="bp-cap stepinfo"></div>';
+  draw();
+  document.getElementById('bp-toggle').onclick=()=>{ mode=(mode==='fwd')?'bwd':'fwd'; draw(); };
+})();
+
+/* ---------------- 反向传播之前的四种"优化"可视化 ---------------- */
+(function(){
+  const host=document.getElementById('opt-demos'); if(!host) return;
+  host.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">'
+    +'<canvas id="opt-cv" width="380" height="300" style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;max-width:100%;height:auto"></canvas>'
+    +'<div style="flex:1;min-width:230px">'
+    +'<div id="opt-btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>'
+    +'<div class="controls" style="margin:6px 0"><button class="btn accent" id="opt-step">步进 ▶</button><button class="btn" id="opt-auto">自动 ▶▶</button><button class="btn" id="opt-reset">重置</button></div>'
+    +'<div id="opt-cap" class="stepinfo"></div></div></div>';
+  const cv=document.getElementById('opt-cv'), ctx=cv.getContext('2d');
+  const W=380,H=300,PAD=34;
+  const px=x=>W/2+x*(W/2-PAD)/1.3, py=y=>H/2-y*(H/2-PAD)/1.3;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const C={line:css('--line'),pos:'#22c08b',neg:'#f2a33c',w:'#4f8cff',hi:css('--hi')};
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  let cls=[],cloud=[];
+  function genData(){
+    cls=[]; for(let i=0;i<7;i++)cls.push({x:rnd(-0.78,-0.25),y:rnd(0.2,0.85),t:1});
+    for(let i=0;i<7;i++)cls.push({x:rnd(0.25,0.78),y:rnd(-0.85,-0.2),t:-1});
+    cloud=[]; const ang=Math.PI/5;
+    for(let i=0;i<26;i++){const a=rnd(-1,1),b=rnd(-0.26,0.26);
+      cloud.push({x:a*Math.cos(ang)-b*Math.sin(ang),y:a*Math.sin(ang)+b*Math.cos(ang)});}
+  }
+  genData();
+  const METHODS=[
+    {k:'perc',n:'感知机',cap:'<b>感知机规则</b>:逐个看样本,<b>分错了才纠正</b>边界(离散跳变)。线性可分时一定收敛;但误差<b>进不了隐藏层</b>。'},
+    {k:'delta',n:'Delta · LMS',cap:'<b>Delta / LMS</b>:对所有样本做<b>梯度下降</b>最小化平方误差(单层的"反向传播特例"),边界<b>平滑</b>收敛。隐藏层的"目标"仍未知。'},
+    {k:'hebb',n:'Hebbian',cap:'<b>Hebbian</b>:无监督、<b>不看标签/误差</b>。"一起激活就增强",权重(蓝箭头)朝数据<b>主方向</b>生长。不最小化任何全局损失。'},
+    {k:'rand',n:'随机搜索',cap:'<b>随机搜索</b>:随机改权重,<b>误差降了才保留</b>。低维能凑效,维度一高<b>极其低效</b>(看"尝试次数")。'}
+  ];
+  let method='perc', w={x:0,y:0}, b=0, wh={x:0.06,y:-0.05}, step=0, tries=0, timer=null;
+  function errors(Wv,bv){let e=0; cls.forEach(p=>{if(Math.sign(p.x*Wv.x+p.y*Wv.y+bv)!==p.t)e++;}); return e;}
+  function stopAuto(){if(timer){clearInterval(timer);timer=null;document.getElementById('opt-auto').textContent='自动 ▶▶';}}
+  function reset(full){ if(full) genData(); w={x:rnd(-0.3,0.3),y:rnd(-0.3,0.3)}; b=rnd(-0.1,0.1); wh={x:0.06,y:-0.05}; step=0; tries=0; stopAuto(); draw(); }
+  function update(){
+    step++;
+    if(method==='perc'){
+      const mis=cls.find(p=>Math.sign(p.x*w.x+p.y*w.y+b)!==p.t);
+      if(mis){const e=0.15; w.x+=e*mis.t*mis.x; w.y+=e*mis.t*mis.y; b+=e*mis.t;}
+    }else if(method==='delta'){
+      const e=0.10; let gx=0,gy=0,gb=0;
+      cls.forEach(p=>{const err=p.t-(p.x*w.x+p.y*w.y+b); gx+=err*p.x; gy+=err*p.y; gb+=err;});
+      w.x+=e*gx/cls.length; w.y+=e*gy/cls.length; b+=e*gb/cls.length;
+    }else if(method==='hebb'){
+      const e=0.05; cloud.forEach(p=>{const y=p.x*wh.x+p.y*wh.y; wh.x+=e*y*(p.x-y*wh.x); wh.y+=e*y*(p.y-y*wh.y);});
+    }else if(method==='rand'){
+      let best=errors(w,b),tried=0;
+      while(tried<8){tried++; tries++; const nw={x:w.x+rnd(-0.25,0.25),y:w.y+rnd(-0.25,0.25)},nb=b+rnd(-0.15,0.15);
+        if(errors(nw,nb)<best){w=nw;b=nb;break;}}
+    }
+    draw();
+  }
+  function setInfo(extra){const m=METHODS.find(x=>x.k===method);
+    document.getElementById('opt-cap').innerHTML=m.cap+'<div class="muted" style="margin-top:6px">'+extra+'</div>';}
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=C.line; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(px(-1.3),py(0)); ctx.lineTo(px(1.3),py(0)); ctx.moveTo(px(0),py(-1.3)); ctx.lineTo(px(0),py(1.3)); ctx.stroke();
+    if(method==='hebb'){
+      ctx.globalAlpha=.7; ctx.fillStyle=C.pos;
+      cloud.forEach(p=>{ctx.beginPath(); ctx.arc(px(p.x),py(p.y),4,0,7); ctx.fill();});
+      ctx.globalAlpha=1;
+      const ex=wh.x,ey=wh.y;
+      ctx.strokeStyle=C.w; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(px(0),py(0)); ctx.lineTo(px(ex),py(ey)); ctx.stroke();
+      const ax=px(ex),ay=py(ey),an=Math.atan2(ay-py(0),ax-px(0));
+      ctx.fillStyle=C.w; ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ax-10*Math.cos(an-0.4),ay-10*Math.sin(an-0.4)); ctx.lineTo(ax-10*Math.cos(an+0.4),ay-10*Math.sin(an+0.4)); ctx.closePath(); ctx.fill();
+      setInfo('步数 '+step+'　|权重| = '+Math.hypot(wh.x,wh.y).toFixed(2)+'　朝数据主方向对齐(无标签)');
+    }else{
+      ctx.strokeStyle=C.w; ctx.lineWidth=2.5; let p0,p1;
+      if(Math.abs(w.y)>1e-4){p0=[-1.3,-(w.x*-1.3+b)/w.y]; p1=[1.3,-(w.x*1.3+b)/w.y];}
+      else {const X=-b/(w.x||1e-4); p0=[X,-1.3]; p1=[X,1.3];}
+      ctx.beginPath(); ctx.moveTo(px(p0[0]),py(p0[1])); ctx.lineTo(px(p1[0]),py(p1[1])); ctx.stroke();
+      cls.forEach(p=>{ctx.fillStyle=p.t>0?C.pos:C.neg; ctx.beginPath(); ctx.arc(px(p.x),py(p.y),5,0,7); ctx.fill();
+        if(Math.sign(p.x*w.x+p.y*w.y+b)!==p.t){ctx.strokeStyle=C.hi; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(px(p.x),py(p.y),8,0,7); ctx.stroke();}});
+      const er=errors(w,b);
+      setInfo('步数 '+step+(method==='rand'?'　尝试 '+tries:'')+'　分错 '+er+' / '+cls.length+(er===0?'　✓ 收敛':''));
+    }
+  }
+  const bw=document.getElementById('opt-btns');
+  METHODS.forEach(m=>{const btn=document.createElement('button'); btn.className='btn'+(m.k===method?' accent':''); btn.textContent=m.n; btn.dataset.k=m.k;
+    btn.onclick=()=>{method=m.k; document.querySelectorAll('#opt-btns .btn').forEach(x=>x.classList.toggle('accent',x.dataset.k===m.k)); reset(false);}; bw.appendChild(btn);});
+  document.getElementById('opt-step').onclick=update;
+  document.getElementById('opt-auto').onclick=()=>{ if(timer){stopAuto();} else {timer=setInterval(update,420); document.getElementById('opt-auto').textContent='暂停 ⏸';} };
+  document.getElementById('opt-reset').onclick=()=>reset(true);
+  reset(false);
+})();
+
+/* ---------------- ODE 是什么:普通方程 vs 微分方程(点选起点) ---------------- */
+(function(){
+  const host=document.getElementById('ode-intro-demo'); if(!host) return;
+  host.innerHTML='<canvas id="oi-cv" width="470" height="270" style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;max-width:100%;height:auto;display:block;cursor:crosshair"></canvas>'
+    +'<div class="controls"><button class="btn" id="oi-clear">清空曲线</button><span class="muted" style="font-size:12.5px">点画布任意位置 = 给一个初始速度 v₀</span></div>'
+    +'<div id="oi-cap" class="stepinfo"></div>';
+  const cv=document.getElementById('oi-cv'), ctx=cv.getContext('2d');
+  const W=470,H=270,PADL=40,PADR=16,PADT=14,PADB=26;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const field='rgba(130,150,185,.4)', ink=css('--ink-dim'), line=css('--line');
+  const cols=['#4f8cff','#22c08b','#f2a33c','#b07cff','#ff7eb6','#2dd4bf'];
+  const T=5, YMIN=0, YMAX=3, VT=2.4, f=v=>0.9*(VT-v);
+  const X=t=>PADL+(t/T)*(W-PADL-PADR), Y=y=>H-PADB-((y-YMIN)/(YMAX-YMIN))*(H-PADT-PADB);
+  const invT=xp=>(xp-PADL)/(W-PADL-PADR)*T, invY=yp=>YMIN+(H-PADB-yp)/(H-PADT-PADB)*(YMAX-YMIN);
+  const pxT=(W-PADL-PADR)/T, pxY=(H-PADT-PADB)/(YMAX-YMIN);
+  let curves=[];
+  function solveThrough(t0,y0){ const dt=0.012, fwd=[[t0,y0]]; let y=y0,t=t0;
+    while(t<T){ y+=f(y)*dt; t+=dt; fwd.push([t,y]); }
+    y=y0; t=t0; const back=[]; while(t>0){ y-=f(y)*dt; t-=dt; back.push([t,y]); }
+    return back.reverse().concat(fwd); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=line; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(PADL,PADT); ctx.lineTo(PADL,H-PADB); ctx.lineTo(W-PADR,H-PADB); ctx.stroke();
+    ctx.strokeStyle='rgba(150,160,180,.4)'; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(PADL,Y(VT)); ctx.lineTo(W-PADR,Y(VT)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=ink; ctx.font='10px monospace'; ctx.fillText('终速 v终='+VT,W-PADR-78,Y(VT)-4);
+    ctx.strokeStyle=field; ctx.lineWidth=1.4;
+    for(let tg=0.25;tg<=T;tg+=0.5){ for(let yg=0.2;yg<=2.85;yg+=0.32){
+      const s=f(yg); let vx=pxT,vy=-s*pxY; const L=Math.hypot(vx,vy)||1; vx=vx/L*11; vy=vy/L*11;
+      ctx.beginPath(); ctx.moveTo(X(tg)-vx,Y(yg)-vy); ctx.lineTo(X(tg)+vx,Y(yg)+vy); ctx.stroke(); } }
+    curves.forEach(c=>{ const pts=solveThrough(c.t0,c.y0);
+      ctx.strokeStyle=c.col; ctx.lineWidth=2.4; ctx.beginPath();
+      pts.forEach((p,i)=>{const x=X(p[0]),y=Y(p[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke();
+      ctx.fillStyle=c.col; ctx.beginPath(); ctx.arc(X(c.t0),Y(c.y0),4.5,0,7); ctx.fill(); });
+    ctx.fillStyle=ink; ctx.font='10px monospace'; ctx.fillText('t →',W-26,H-8); ctx.fillText('v',7,PADT+6);
+    document.getElementById('oi-cap').innerHTML = curves.length
+      ? '已画 <b>'+curves.length+'</b> 条速度曲线 v(t):<b>不同初速(圆点)→ 不同曲线,但都收敛到同一个终速</b>(重力与阻力抵消)。<span class="muted">普通方程只给一个数;微分方程给一整条 v(t)。</span>'
+      : '点画布任意位置选一个<b>初始速度</b>,看它顺着箭头长出一条 v(t) 解曲线。';
+  }
+  cv.onclick=e=>{ const r=cv.getBoundingClientRect(); const xp=(e.clientX-r.left)*W/r.width, yp=(e.clientY-r.top)*H/r.height;
+    curves.push({t0:Math.max(0,Math.min(T,invT(xp))), y0:Math.max(YMIN,Math.min(YMAX,invY(yp))), col:cols[curves.length%cols.length]}); draw(); };
+  document.getElementById('oi-clear').onclick=()=>{curves=[];draw();};
+  curves=[{t0:0,y0:2.9,col:cols[0]},{t0:0,y0:0.15,col:cols[1]}]; draw();
+})();
+
+/* ---------------- 欧拉法:看斜率 → 走一步 ---------------- */
+(function(){
+  const host=document.getElementById('euler-demo'); if(!host) return;
+  host.innerHTML='<canvas id="eu-cv" width="470" height="280" style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;max-width:100%;height:auto;display:block"></canvas>'
+    +'<div class="controls" style="align-items:center;gap:10px;flex-wrap:wrap"><button class="btn accent" id="eu-step">走一步 ▶</button><button class="btn" id="eu-auto">自动 ▶▶</button><button class="btn" id="eu-reset">重置</button>'
+    +'<label style="font-size:13px;color:var(--ink-dim)">步长 Δt = <b id="eu-dt" style="color:var(--mm)">1.0</b></label><input id="eu-slider" type="range" min="0.3" max="1.5" step="0.1" value="1.0" style="flex:1;min-width:120px"></div>'
+    +'<div id="eu-cap" class="stepinfo"></div>';
+  const cv=document.getElementById('eu-cv'), ctx=cv.getContext('2d');
+  const W=470,H=280,PADL=40,PADR=16,PADT=14,PADB=28;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const C={field:'rgba(130,150,185,.35)',truth:'#4f8cff',euler:css('--mm'),hi:css('--hi'),ink:css('--ink-dim')};
+  const T=6, y0=0.12, f=y=>1.2*y*(1-y), YMIN=-0.05, YMAX=1.15;
+  const X=t=>PADL+(t/T)*(W-PADL-PADR), Y=y=>H-PADB-((y-YMIN)/(YMAX-YMIN))*(H-PADT-PADB);
+  const pxT=(W-PADL-PADR)/T, pxY=(H-PADT-PADB)/(YMAX-YMIN);
+  const FINE=1000, truth=[]; (function(){let y=y0; for(let i=0;i<=FINE;i++){const t=T*i/FINE; truth.push([t,y]); y+=f(y)*(T/FINE);}})();
+  let dt=1.0, steps=[{t:0,y:y0}], timer=null;
+  function stepOnce(){ const last=steps[steps.length-1]; if(last.t>=T-1e-9) return false;
+    const s=f(last.y); steps.push({t:Math.min(last.t+dt,T), y:last.y+dt*s}); return true; }
+  function stopAuto(){ if(timer){clearInterval(timer);timer=null;document.getElementById('eu-auto').textContent='自动 ▶▶';} }
+  function reset(){ stopAuto(); steps=[{t:0,y:y0}]; draw(); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=C.field; ctx.lineWidth=1.4;
+    for(let tg=0.3;tg<=T;tg+=0.55){ for(let yg=0.05;yg<=1.1;yg+=0.11){
+      const s=f(yg); let vx=pxT,vy=-s*pxY; const L=Math.hypot(vx,vy)||1; vx=vx/L*11; vy=vy/L*11;
+      ctx.beginPath(); ctx.moveTo(X(tg)-vx,Y(yg)-vy); ctx.lineTo(X(tg)+vx,Y(yg)+vy); ctx.stroke(); } }
+    ctx.strokeStyle=C.truth; ctx.lineWidth=2.4; ctx.globalAlpha=.55; ctx.beginPath();
+    truth.forEach((p,i)=>{const x=X(p[0]),y=Y(p[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke(); ctx.globalAlpha=1;
+    ctx.strokeStyle=C.euler; ctx.lineWidth=2.2; ctx.beginPath();
+    steps.forEach((p,i)=>{const x=X(p.t),y=Y(p.y); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke();
+    ctx.fillStyle=C.euler; steps.forEach(p=>{ctx.beginPath(); ctx.arc(X(p.t),Y(p.y),3.5,0,7); ctx.fill();});
+    if(steps.length>=2){ const a=steps[steps.length-2], s=f(a.y); let vx=pxT,vy=-s*pxY; const L=Math.hypot(vx,vy)||1;
+      const ux=vx/L,uy=vy/L,len=Math.min(dt*pxT,48), ex=X(a.t)+ux*len, ey=Y(a.y)+uy*len;
+      ctx.strokeStyle=C.hi; ctx.lineWidth=2.6; ctx.beginPath(); ctx.moveTo(X(a.t),Y(a.y)); ctx.lineTo(ex,ey); ctx.stroke();
+      const an=Math.atan2(ey-Y(a.y),ex-X(a.t)); ctx.fillStyle=C.hi;
+      ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(ex-9*Math.cos(an-0.4),ey-9*Math.sin(an-0.4)); ctx.lineTo(ex-9*Math.cos(an+0.4),ey-9*Math.sin(an+0.4)); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle=C.ink; ctx.font='11px monospace'; ctx.fillText('y',6,PADT+8); ctx.fillText('t →',W-26,H-10);
+    const last=steps[steps.length-1], k=steps.length-1;
+    if(k===0) document.getElementById('eu-cap').innerHTML='起点 y(0)='+y0+'。<b>淡蓝细线 = 斜率场</b>(每点 dy/dt 的方向),<b style="color:'+C.truth+'">蓝 = 真解</b>。点"走一步":在当前点看斜率(黄箭头)、沿它迈 Δt。';
+    else { const a=steps[k-1], s=f(a.y);
+      document.getElementById('eu-cap').innerHTML='第 '+k+' 步:在 t='+a.t.toFixed(1)+', y='+a.y.toFixed(3)+' 处<b style="color:'+C.hi+'">斜率 f='+s.toFixed(3)+'</b> → y += Δt·f = '+(dt*s).toFixed(3)+' → 新 y='+last.y.toFixed(3)+'(t='+last.t.toFixed(1)+')。'+(last.t>=T-1e-9?'<span class="muted"> 走到终点 —— 步子越小越贴合蓝线。</span>':''); }
+  }
+  document.getElementById('eu-step').onclick=()=>{ if(stepOnce())draw(); };
+  document.getElementById('eu-auto').onclick=()=>{ if(timer){stopAuto();} else { document.getElementById('eu-auto').textContent='暂停 ⏸'; timer=setInterval(()=>{ if(!stepOnce())stopAuto(); draw(); },650); } };
+  document.getElementById('eu-reset').onclick=reset;
+  const sl=document.getElementById('eu-slider'); sl.oninput=()=>{ dt=+sl.value; document.getElementById('eu-dt').textContent=dt.toFixed(1); reset(); };
+  draw();
+})();
+
+/* ---------------- 连续视角:欧拉 ⇄ Neural ODE ---------------- */
+(function(){
+  const host=document.getElementById('ode-demo'); if(!host) return;
+  host.innerHTML='<canvas id="ode-cv" width="470" height="260" style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;max-width:100%;height:auto;display:block"></canvas>'
+    +'<div class="controls" style="align-items:center;gap:12px;flex-wrap:wrap"><label style="font-size:13px;color:var(--ink-dim)">欧拉步数 N(= ResNet 层数):<b id="ode-n" style="color:var(--mm)">6</b></label><input id="ode-slider" type="range" min="1" max="40" value="6" style="flex:1;min-width:160px"></div>'
+    +'<div id="ode-cap" class="stepinfo"></div>';
+  const cv=document.getElementById('ode-cv'), ctx=cv.getContext('2d');
+  const W=470,H=260,PADL=42,PADR=14,PADT=14,PADB=28;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const C={line:css('--line'),truth:'#4f8cff',euler:css('--mm'),ink:css('--ink-dim')};
+  const T=6, h0=0.2, f=(h,t)=>Math.cos(t*2.2)-0.35*h;
+  const FINE=1200, truth=[]; (function(){let h=h0; for(let i=0;i<=FINE;i++){const t=T*i/FINE; truth.push([t,h]); h+=f(h,t)*(T/FINE);}})();
+  let hmin=Math.min.apply(null,truth.map(p=>p[1])), hmax=Math.max.apply(null,truth.map(p=>p[1]));
+  const pad=(hmax-hmin)*0.15||1; hmin-=pad; hmax+=pad;
+  const X=t=>PADL+(t/T)*(W-PADL-PADR), Y=h=>H-PADB-((h-hmin)/(hmax-hmin))*(H-PADT-PADB);
+  function euler(N){const pts=[]; let h=h0; const dt=T/N; for(let i=0;i<=N;i++){const t=T*i/N; pts.push([t,h]); h+=f(h,t)*dt;} return pts;}
+  function draw(N){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(PADL,PADT); ctx.lineTo(PADL,H-PADB); ctx.lineTo(W-PADR,H-PADB); ctx.stroke();
+    ctx.fillStyle=C.ink; ctx.font='11px monospace'; ctx.fillText('h(t)',6,PADT+8); ctx.fillText('t →',W-28,H-10);
+    ctx.strokeStyle=C.truth; ctx.lineWidth=2.6; ctx.beginPath();
+    truth.forEach((p,i)=>{const x=X(p[0]),y=Y(p[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke();
+    const pts=euler(N);
+    ctx.strokeStyle=C.euler; ctx.lineWidth=2; ctx.beginPath();
+    pts.forEach((p,i)=>{const x=X(p[0]),y=Y(p[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke();
+    ctx.fillStyle=C.euler; pts.forEach(p=>{ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),3,0,7); ctx.fill();});
+    let err=0; pts.forEach(p=>{const ti=Math.round(p[0]/T*FINE); err=Math.max(err,Math.abs(p[1]-truth[ti][1]));});
+    document.getElementById('ode-n').textContent=N;
+    document.getElementById('ode-cap').innerHTML='<b style="color:'+C.euler+'">橙折线</b> = '+N+' 步欧拉 = '+N+' 层 ResNet(每个点一层);<b style="color:'+C.truth+'">蓝曲线</b> = 连续 ODE 真解。最大误差 ≈ '+err.toFixed(3)+'。<span class="muted">调大 N,折线逼近曲线 —— N→∞ 就是 Neural ODE。</span>';
+  }
+  const sl=document.getElementById('ode-slider'); sl.oninput=()=>draw(+sl.value); draw(6);
+})();
+
+/* ---------------- ODE 曲线 vs PDE 热扩散 ---------------- */
+(function(){
+  const host=document.getElementById('odepde-demo'); if(!host) return;
+  host.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:14px">'
+    +'<div style="flex:1;min-width:230px"><div class="matlabel" style="text-align:center"><b style="color:var(--found)">ODE</b> · y(t):一个数 → 一条曲线</div><canvas id="op-ode" width="300" height="200" style="width:100%;height:auto;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;display:block"></canvas></div>'
+    +'<div style="flex:1;min-width:230px"><div class="matlabel" style="text-align:center"><b style="color:var(--mm)">PDE</b> · u(x,t):一整片场 → 扩散抹平</div><canvas id="op-pde" width="300" height="200" style="width:100%;height:auto;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;display:block"></canvas></div>'
+    +'</div><div class="controls"><button class="btn accent" id="op-play">▶ 播放</button><button class="btn" id="op-reset">重置</button></div><div id="op-cap" class="stepinfo"></div>';
+  const oc=document.getElementById('op-ode').getContext('2d'), pc=document.getElementById('op-pde').getContext('2d');
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const blue=css('--found')||'#4f8cff', orange=css('--mm')||'#fb923c', line=css('--line'), ink=css('--ink-dim');
+  const W=300,H=200,P=22, T=6, f=y=>1.2*y*(1-y);
+  const fine=[]; (function(){let y=0.12; for(let i=0;i<=600;i++){fine.push(y); y+=f(y)*(T/600);} })();
+  const Xo=t=>P+(t/T)*(W-2*P), Yo=y=>H-P-(y/1.15)*(H-2*P);
+  const N=64; let u=new Array(N), u0=new Array(N);
+  const Xp=i=>P+(i/(N-1))*(W-2*P), Yp=v=>H-P-(v/1.15)*(H-2*P);
+  function initPDE(){ for(let i=0;i<N;i++){const x=i/(N-1); u[i]=(x>0.4&&x<0.6)?1:0.05; u0[i]=u[i];} }
+  function diffuse(){ const r=0.18, nu=u.slice(); for(let i=0;i<N;i++){const l=i>0?u[i-1]:u[1], rr=i<N-1?u[i+1]:u[N-2]; nu[i]=u[i]+r*(l-2*u[i]+rr);} u=nu; }
+  let frame=0, FMAX=240, timer=null;
+  function axis(c){ c.strokeStyle=line; c.lineWidth=1; c.beginPath(); c.moveTo(P,P); c.lineTo(P,H-P); c.lineTo(W-P,H-P); c.stroke(); }
+  function drawODE(){ oc.clearRect(0,0,W,H); axis(oc);
+    const n=Math.round(600*frame/FMAX); oc.strokeStyle=blue; oc.lineWidth=2.4; oc.beginPath();
+    for(let i=0;i<=n;i++){const x=Xo(T*i/600),y=Yo(fine[i]); i?oc.lineTo(x,y):oc.moveTo(x,y);} oc.stroke();
+    oc.fillStyle=blue; oc.beginPath(); oc.arc(Xo(T*n/600),Yo(fine[n]),4,0,7); oc.fill();
+    oc.fillStyle=ink; oc.font='10px monospace'; oc.fillText('t →',W-26,H-7); oc.fillText('y',7,P+5); }
+  function drawPDE(){ pc.clearRect(0,0,W,H); axis(pc);
+    pc.strokeStyle=ink; pc.globalAlpha=.5; pc.setLineDash([4,3]); pc.lineWidth=1.4; pc.beginPath();
+    for(let i=0;i<N;i++){const x=Xp(i),y=Yp(u0[i]); i?pc.lineTo(x,y):pc.moveTo(x,y);} pc.stroke(); pc.setLineDash([]); pc.globalAlpha=1;
+    pc.strokeStyle=orange; pc.lineWidth=2.4; pc.beginPath();
+    for(let i=0;i<N;i++){const x=Xp(i),y=Yp(u[i]); i?pc.lineTo(x,y):pc.moveTo(x,y);} pc.stroke();
+    pc.fillStyle=ink; pc.font='10px monospace'; pc.fillText('x →',W-26,H-7); pc.fillText('u',7,P+5); }
+  function draw(){ drawODE(); drawPDE();
+    document.getElementById('op-cap').innerHTML='时间推进 '+Math.round(100*frame/FMAX)+'%　<span class="muted">左:一个数 y 沿时间画一条曲线(ODE)。右:整根杆的温度 u(x) 随时间扩散、抹平(PDE,虚线=初始分布)。</span>'; }
+  function stop(){ if(timer){clearInterval(timer);timer=null;document.getElementById('op-play').textContent='▶ 播放';} }
+  function start(){ document.getElementById('op-play').textContent='⏸ 暂停'; timer=setInterval(()=>{ if(frame<FMAX){frame++; diffuse(); diffuse(); draw();} else stop(); },40); }
+  function reset(){ stop(); frame=0; initPDE(); draw(); }
+  document.getElementById('op-play').onclick=()=>{ if(timer)stop(); else { if(frame>=FMAX)reset(); start(); } };
+  document.getElementById('op-reset').onclick=reset;
+  initPDE(); draw();
+})();
+</script>
+<div style="text-align:center;padding:18px 0 30px;font-size:13px;opacity:.55"><a href="../index.html" style="color:inherit;text-decoration:none">&larr; 返回知识库门户</a></div>
+</body>
+</html>
