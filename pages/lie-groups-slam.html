@@ -1332,6 +1332,11 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
       ① 要表示运动 → 用李群; ② 要做加减/求导/优化 → 用 <b>log</b> 进李代数;
       ③ 要把增量变回合法状态 → 用 <b>exp</b> 回李群。SLAM 的每一帧,都在这三步之间循环。
     </div>
+    <div class="note" style="margin-top:14px;max-width:74ch">
+      <b>想看一个完整的工业级实例?</b> 这三步循环在自动驾驶里最典型的落地之一:
+      <a href="lidar-camera-extrinsic-calibration.html" style="color:#f0bf4c">《LiDAR 与相机的坐标对齐》</a>
+      —— 外参标定作为 SE(3) 流形上的最小二乘,从雅可比推导一路讲到 KITTI 投影链。
+    </div>
   </div>
 </section>
 

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>LiDAR 与相机的坐标对齐 · 知识库</title>
+<meta name="description" content="自动驾驶中 LiDAR-相机外参标定的完整图景：为什么必须用李群/李代数参数化、残差与雅可比的推导、三大标定流派与工程实战。" />
+
+<!-- 字体（沿用知识库统一字体：Spectral 衬线标题 + Inter 正文 + JetBrains Mono 等宽）-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* 柔和暗色知识页 · 设计令牌以 templates/THEME.md 为基准 */
+:root{
+  color-scheme: dark;
+
+  --bg:      #0e1320;
+  --bg-soft: #121829;
+  --panel:   #161d2e;
+  --panel-2: #1d2540;
+
+  --ink:    #e4ebf7;
+  --muted:  #9aa6bf;
+  --dim:    #6b768f;
+
+  --line:   #283248;
+  --line-2: #36425e;
+
+  --terra:  #f0a361;
+  --amber:  #f0bf4c;
+  --olive:  #9bce6b;
+  --teal:   #46d7cc;
+  --blue:   #6aa6ff;
+  --plum:   #b49bff;
+  --rust:   #ff8a8a;
+
+  --soft-terra: rgba(240,163,97,.14);
+  --soft-amber: rgba(240,191,76,.14);
+  --soft-olive: rgba(155,206,107,.13);
+  --soft-teal:  rgba(70,215,204,.13);
+  --soft-blue:  rgba(106,166,255,.14);
+
+  --shadow:    0 18px 46px rgba(0,0,0,.42);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,.30);
+  --radius: 16px;
+  --maxw: 820px;
+
+  --serif: "Spectral", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --sans:  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+           "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; min-height:100vh;
+  background:
+    radial-gradient(1200px 700px at 84% -12%, #16203a 0%, #111729 46%, var(--bg) 100%);
+  background-attachment:fixed;
+  color:var(--ink); font-family:var(--sans); line-height:1.72;
+  font-size:17.5px; -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(240,163,97,.30);}
+
+#progress{position:fixed; left:0; top:0; height:3px; width:0;
+  background:linear-gradient(90deg,var(--terra),var(--amber)); z-index:60; transition:width .12s;}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+.topnav{padding:26px 0 0;}
+.back{font-family:var(--mono); font-size:13px; color:var(--muted);
+  display:inline-flex; align-items:center; gap:7px; transition:color .15s;}
+.back:hover{color:var(--terra);}
+a{color:var(--terra); text-decoration:none;}
+a:hover{text-decoration:underline; text-underline-offset:3px;}
+
+header.hero{padding:30px 0 26px; border-bottom:1px solid var(--line); margin-bottom:38px;}
+.eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--terra); display:flex; align-items:center; gap:11px; margin-bottom:18px;}
+.eyebrow::before{content:""; width:30px; height:1px; background:linear-gradient(90deg,var(--terra),transparent);}
+h1{font-family:var(--serif); font-weight:700; font-size:clamp(30px,5vw,46px);
+  line-height:1.14; letter-spacing:-.01em; margin:0 0 16px; color:var(--ink);}
+h1 em{font-style:italic; color:var(--terra);}
+.lede{font-size:clamp(17px,2vw,21px); color:var(--muted); margin:0; line-height:1.6;}
+.lede b{color:var(--ink); font-weight:600;}
+.byline{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:22px;
+  font-family:var(--mono); font-size:12.5px; color:var(--dim);}
+.byline .pill{background:var(--panel); border:1px solid var(--line);
+  padding:3px 11px; border-radius:999px;}
+
+main{padding-bottom:30px;}
+section{margin:0 0 40px;}
+h2{font-family:var(--serif); font-weight:600; font-size:clamp(23px,3vw,30px);
+  line-height:1.25; margin:46px 0 16px; color:var(--ink);
+  padding-bottom:10px; border-bottom:1px solid var(--line);}
+h3{font-family:var(--serif); font-weight:600; font-size:21px; margin:30px 0 10px; color:var(--ink);}
+p{margin:0 0 17px;}
+ul,ol{margin:0 0 18px; padding-left:1.3em;}
+li{margin:0 0 8px;}
+li::marker{color:var(--terra);}
+hr{border:0; border-top:1px solid var(--line); margin:38px 0;}
+
+b,strong{color:var(--ink); font-weight:700;}
+.hi  {color:var(--terra); font-weight:600;}
+.hb  {color:var(--blue);  font-weight:600;}
+.hg  {color:var(--olive); font-weight:600;}
+.ha  {color:var(--amber); font-weight:600;}
+.ht  {color:var(--teal);  font-weight:600;}
+.mark{background:linear-gradient(180deg,transparent 62%, rgba(240,191,76,.30) 0); padding:0 2px;}
+
+code{font-family:var(--mono); font-size:.9em; color:#ffb98a;
+  background:rgba(240,163,97,.13); padding:2px 6px; border-radius:5px;}
+pre{margin:0 0 20px; padding:18px 20px; overflow:auto; border-radius:var(--radius);
+  background:#0a0f1b; color:#d6deef; border:1px solid #1c2438; box-shadow:var(--shadow-sm);}
+pre code{background:none; color:inherit; padding:0; font-size:13.5px; line-height:1.6;}
+
+.cite{font-family:var(--mono); font-size:.78em; color:var(--blue); vertical-align:super;}
+
+.callout{display:flex; gap:13px; padding:16px 18px; margin:0 0 22px;
+  border:1px solid var(--line); border-left-width:4px; border-radius:12px;
+  background:var(--panel); box-shadow:var(--shadow-sm);}
+.callout .ic{font-size:20px; line-height:1.5; flex:0 0 auto;}
+.callout .ct{flex:1;} .callout .ct p:last-child{margin:0;}
+.callout .ct .t{font-weight:700; color:var(--ink); display:block; margin-bottom:3px;}
+.callout.note{border-left-color:var(--blue);  background:var(--soft-blue);}
+.callout.tip {border-left-color:var(--olive); background:var(--soft-olive);}
+.callout.warn{border-left-color:var(--rust);  background:var(--soft-terra);}
+.callout.key {border-left-color:var(--amber); background:var(--soft-amber);}
+
+.mathbox{background:var(--panel); border:1px solid var(--line-2); border-radius:var(--radius);
+  padding:18px 22px; margin:0 0 22px; box-shadow:var(--shadow-sm); overflow-x:auto;}
+.mathbox .lbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dim); margin-bottom:8px;}
+.mathbox.center{text-align:center;}
+
+figure{margin:0 0 24px;}
+figure .frame{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px; box-shadow:var(--shadow-sm); overflow:hidden;}
+figure img, figure svg{display:block; max-width:100%; height:auto; margin:0 auto; border-radius:8px;}
+figcaption{margin-top:10px; font-size:14px; color:var(--muted); text-align:center;}
+figcaption b{color:var(--ink);}
+
+.tablewrap{overflow-x:auto; margin:0 0 24px; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);}
+table{width:100%; border-collapse:collapse; background:var(--panel); font-size:15.5px;}
+thead th{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--terra); text-align:left; padding:12px 16px; background:var(--panel-2);
+  border-bottom:1px solid var(--line-2);}
+td{padding:11px 16px; border-bottom:1px solid var(--line); color:var(--muted);}
+td b{color:var(--ink);}
+tbody tr:last-child td{border-bottom:0;}
+tbody tr:hover td{background:var(--panel-2);}
+
+blockquote{margin:0 0 22px; padding:6px 0 6px 20px; border-left:3px solid var(--amber);
+  color:var(--muted); font-family:var(--serif); font-style:italic; font-size:19px;}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin:0 0 24px;}
+.cards .c{display:block; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:16px 17px; box-shadow:var(--shadow-sm); transition:transform .16s, box-shadow .16s;}
+.cards a.c:hover{transform:translateY(-3px); box-shadow:var(--shadow); text-decoration:none;}
+.cards .c .k{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--terra);}
+.cards .c h4{font-family:var(--serif); font-size:17px; margin:6px 0 5px; color:var(--ink);}
+.cards .c p{font-size:13.5px; color:var(--muted); margin:0;}
+
+footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
+  font-size:13.5px; color:var(--dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+
+@media (max-width:560px){
+  body{font-size:16.5px;}
+  .wrap{padding:0 18px;}
+  h2{margin-top:34px;}
+}
+</style>
+
+<!-- MathJax：行内 \( … \)，独立 \[ … \] -->
+<script>
+  window.MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] }, svg:{ fontCache:'global' } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body>
+<div id="progress"></div>
+
+<div class="wrap">
+
+  <nav class="topnav"><a class="back" href="../index.html">← 返回知识库</a></nav>
+
+  <header class="hero">
+    <div class="eyebrow">机器人 / SLAM · Sensor Fusion</div>
+    <h1>LiDAR 与相机的坐标对齐：<em>SE(3)</em> 流形上的最小二乘</h1>
+    <p class="lede">所谓「对齐」，就是求外参 \( T_{CL} \)——把 LiDAR 系的点变到相机系的那个刚体变换。它只有 <b>6 个自由度</b>，却没有全局无奇异的向量参数化；现代做法一律是<b>在李代数切空间里求增量、用指数映射回流形上做更新</b>，把标定变成一个与 SLAM/BA 数学同构的流形优化问题。</p>
+    <div class="byline">
+      <span class="pill">2026-07-05</span>
+      <span class="pill">#外参标定</span>
+      <span class="pill">#SE(3)</span>
+      <span class="pill">#自动驾驶</span>
+      <span class="pill">约 20 分钟</span>
+    </div>
+  </header>
+
+  <main>
+
+    <section>
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">一句话总纲</span>
+        <p>外参标定 = 构造几何残差（重投影 / 点到面 / 边缘对齐）→ 对 se(3) 扰动求解析雅可比 → Gauss-Newton / LM 在 SE(3) 流形上迭代。李群提供参数化与求导的语言，标定方法的差别只在<b>残差从哪来</b>。</p></div>
+      </div>
+      <p>本页是<a href="lie-groups-slam.html">《流形与李群李代数》</a>末章「在切空间里优化、在流形上行走」的一个完整工业级实例；矩阵「当动词读」的视角来自<a href="linear-algebra-foundations.html">《线性代数基础》</a>。建议先读前者的指数映射与左右扰动两节。</p>
+    </section>
+
+    <section>
+      <h2>一、问题定义：一条坐标系链</h2>
+      <p>一束激光点从 LiDAR 走到像素，要过这条链：</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 760 216" role="img" aria-label="LiDAR 到像素的坐标系链">
+            <defs>
+              <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0 L9 4.5 L0 9 z" fill="#6b768f"/>
+              </marker>
+            </defs>
+            <!-- 四个坐标系盒子 -->
+            <rect x="18"  y="52" width="150" height="66" rx="12" fill="rgba(70,215,204,.13)" stroke="#46d7cc"/>
+            <rect x="216" y="52" width="150" height="66" rx="12" fill="rgba(155,206,107,.13)" stroke="#9bce6b"/>
+            <rect x="414" y="52" width="150" height="66" rx="12" fill="rgba(106,166,255,.14)" stroke="#6aa6ff"/>
+            <rect x="612" y="52" width="130" height="66" rx="12" fill="rgba(240,191,76,.14)" stroke="#f0bf4c"/>
+            <text x="93"  y="80"  text-anchor="middle" font-family="Inter" font-size="15" fill="#e4ebf7">LiDAR 系</text>
+            <text x="93"  y="102" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#46d7cc">p_L</text>
+            <text x="291" y="80"  text-anchor="middle" font-family="Inter" font-size="15" fill="#e4ebf7">车体系</text>
+            <text x="291" y="102" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#9bce6b">p_B</text>
+            <text x="489" y="80"  text-anchor="middle" font-family="Inter" font-size="15" fill="#e4ebf7">相机系</text>
+            <text x="489" y="102" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#6aa6ff">p_C</text>
+            <text x="677" y="80"  text-anchor="middle" font-family="Inter" font-size="15" fill="#e4ebf7">像素系</text>
+            <text x="677" y="102" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#f0bf4c">u</text>
+            <!-- 箭头与标签 -->
+            <path d="M168 85 H214" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <path d="M366 85 H412" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <path d="M564 85 H610" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <text x="191" y="46" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#9aa6bf">T_BL</text>
+            <text x="389" y="46" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#9aa6bf">T_CB</text>
+            <text x="587" y="46" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#9aa6bf">K·π</text>
+            <!-- 底部大括号：外参 -->
+            <path d="M30 138 v12 h520 v-12" stroke="#f0a361" stroke-width="1.6" fill="none"/>
+            <text x="290" y="176" text-anchor="middle" font-family="JetBrains Mono" font-size="13.5" fill="#f0a361">T_CL = T_CB · T_BL ∈ SE(3)</text>
+            <text x="290" y="198" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9aa6bf">外参 · 刚体变换 · 6 个自由度 —— 本页要标定的对象</text>
+          </svg>
+        </div>
+        <figcaption><b>图 1.</b> 坐标系链：外参 \(T_{CL}\) 把 LiDAR 系的点变到相机系，再由内参投影成像素。</figcaption>
+      </figure>
+
+      <p>外参 \(T_{CL}\) 的确切含义是 \(p_C = R_{CL}\,p_L + t_{CL}\)，齐次坐标写法：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">外参 · 刚体变换</div>
+        \[
+          \tilde p_C = T_{CL}\,\tilde p_L,\qquad
+          T_{CL} = \begin{bmatrix} R_{CL} & t_{CL} \\ \mathbf 0^\top & 1 \end{bmatrix}\in SE(3),\quad R_{CL}\in SO(3)
+        \]
+      </div>
+
+      <p>之后当 \(Z_C&gt;0\) 时投影到像素（\(K\) 为内参矩阵，含 \(f_x, f_y, c_x, c_y\)；畸变作用在归一化坐标上，下文按已去畸变处理）：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">针孔投影</div>
+        \[
+          u \;=\; \pi_K(p_C)
+          \;=\; \begin{bmatrix} f_x X_C/Z_C + c_x \\[2pt] f_y Y_C/Z_C + c_y \end{bmatrix}
+        \]
+      </div>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">方向约定</span>
+        <p>下标读法是「从右往左」：\(T_{CL}\) 把 <b>L</b> 系坐标变到 <b>C</b> 系。工程中常经车体系分解 \(T_{CL} = T_{CB}\,T_{BL}\)，各传感器分别对车体标定。拿到别人的标定文件，第一件事永远是确认方向约定。</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>二、为什么必须请出李群</h2>
+
+      <h3>12 个数，6 个自由度</h3>
+      <p>\(T\) 的非平凡元素 = \(R\) 的 9 个 + \(t\) 的 3 个，共 12 个。但 \(R^\top R = I\) 是一个对称矩阵方程，给出 <span class="hi">6 个独立标量约束</span>（3 列单位长 + 两两正交），\(12-6=6\) 个自由度；\(\det R = +1\) 不再降维，只负责从 \(O(3)\) 的两个连通分支里挑出「旋转」、排除「镜像反射」。</p>
+
+      <h3>三种「差一点」的参数化</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>参数化</th><th>问题出在哪</th></tr></thead>
+          <tbody>
+            <tr><td><b>直接优化 R 的 9 个元素</b></td>
+              <td>无约束迭代出的 \(\hat R\) 不再正交——它变成含缩放和切变的一般线性映射；事后用 SVD 投影回流形（\(R^* = U\,\mathrm{diag}(1,1,\det(UV^\top))\,V^\top\)）得到的点<b>不是原问题的极值点</b>，最优性被破坏。</td></tr>
+            <tr><td><b>欧拉角</b></td>
+              <td>俯仰 ±90° 时两根转轴共线（<b>万向锁</b>），参数到 SO(3) 的雅可比奇异；同一旋转对应多组角，不唯一。</td></tr>
+            <tr><td><b>四元数</b></td>
+              <td>须维持 \(\lVert q\rVert = 1\)，无约束更新后要反复归一化；且 \(q\) 与 \(-q\) 是同一旋转（\(S^3\to SO(3)\) 的 2:1 <b>双倍覆盖</b>）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>李代数：无约束、无奇异的六维增量</h3>
+      <p>SO(3)/SE(3) 是李群——既是群又是光滑流形；在单位元处贴一张切平面得到李代数 so(3)/se(3)，它是普通线性空间，<span class="hg">可加、可求导、无约束</span>。两边靠指数映射往返：</p>
+
+      <div class="mathbox">
+        <div class="lbl">so(3) → SO(3) · Rodrigues 公式（θ = ‖φ‖）</div>
+        \[
+          \mathrm{Exp}(\boldsymbol\phi) \;=\; I \;+\; \frac{\sin\theta}{\theta}\,\boldsymbol\phi^\wedge
+          \;+\; \frac{1-\cos\theta}{\theta^{2}}\,(\boldsymbol\phi^\wedge)^{2}
+        \]
+      </div>
+
+      <div class="mathbox">
+        <div class="lbl">se(3) → SE(3)（ξ = [ρ; φ]，平移在前）</div>
+        \[
+          \mathrm{Exp}(\boldsymbol\xi) = \begin{bmatrix} \mathrm{Exp}(\boldsymbol\phi) & J_l(\boldsymbol\phi)\,\boldsymbol\rho \\ \mathbf 0^\top & 1 \end{bmatrix},
+          \qquad
+          J_l = I + \frac{1-\cos\theta}{\theta^{2}}\,\boldsymbol\phi^\wedge + \frac{\theta-\sin\theta}{\theta^{3}}\,(\boldsymbol\phi^\wedge)^{2}
+        \]
+      </div>
+
+      <p>注意平移列是 \(J_l\boldsymbol\rho\) 而不是 \(\boldsymbol\rho\)——左雅可比 \(J_l\) 负责「边转边平移」的耦合。这里 \(\boldsymbol\xi^\wedge = \begin{bmatrix}\boldsymbol\phi^\wedge & \boldsymbol\rho\\ \mathbf 0^\top & 0\end{bmatrix}\) 是 \(\mathbb R^6\to\) se(3) 的 hat 映射；<span class="ht">整块矩阵并不反对称</span>，只有 so(3) 子块 \(\boldsymbol\phi^\wedge\) 是反对称阵。</p>
+
+      <h3>扰动模型：切空间求增量，流形上做更新</h3>
+      <p>灵魂在于：不去参数化 \(T\) 本身，而是在当前估计值上<span class="hi">左乘一个小扰动</span>：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">左乘扰动更新</div>
+        \[
+          T \;\leftarrow\; \mathrm{Exp}(\delta\boldsymbol\xi)\cdot T,\qquad \delta\boldsymbol\xi\in\mathbb R^{6}
+        \]
+      </div>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 760 268" role="img" aria-label="切空间求增量、流形上更新的示意">
+            <defs>
+              <marker id="arr2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0 L9 4.5 L0 9 z" fill="#46d7cc"/>
+              </marker>
+              <marker id="arr3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0 L9 4.5 L0 9 z" fill="#b49bff"/>
+              </marker>
+            </defs>
+            <!-- 流形：一块弯曲曲面 -->
+            <path d="M60 210 C 150 120, 300 96, 420 122 C 540 148, 640 130, 716 84
+                     L 716 236 C 620 252, 480 258, 350 250 C 220 242, 120 236, 60 210 Z"
+                  fill="rgba(240,163,97,.10)" stroke="#f0a361" stroke-width="1.6"/>
+            <text x="640" y="228" font-family="Spectral" font-style="italic" font-size="17" fill="#f0a361">SE(3) 流形</text>
+            <!-- 切平面（平行四边形） -->
+            <path d="M180 108 L 400 84 L 470 34 L 250 58 Z"
+                  fill="rgba(70,215,204,.12)" stroke="#46d7cc" stroke-width="1.4"/>
+            <text x="452" y="26" text-anchor="end" font-family="Spectral" font-style="italic" font-size="15.5" fill="#46d7cc">se(3) 切空间（平直，ℝ⁶）</text>
+            <!-- 当前估计点 -->
+            <circle cx="300" cy="112" r="5.5" fill="#e4ebf7"/>
+            <text x="288" y="136" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#e4ebf7">T̂ₖ</text>
+            <!-- 切空间中的增量箭头 -->
+            <path d="M300 112 L 398 74" stroke="#46d7cc" stroke-width="2.4" marker-end="url(#arr2)"/>
+            <text x="360" y="72" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#46d7cc">δξ（GN 解出）</text>
+            <!-- Exp 卷回流形 -->
+            <path d="M404 80 C 440 92, 470 104, 492 120" stroke="#b49bff" stroke-width="2.2" stroke-dasharray="6 5" fill="none" marker-end="url(#arr3)"/>
+            <text x="474" y="94" font-family="JetBrains Mono" font-size="13" fill="#b49bff">Exp</text>
+            <!-- 新点 -->
+            <circle cx="497" cy="124" r="5.5" fill="#f0bf4c"/>
+            <text x="530" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#f0bf4c">T̂ₖ₊₁ = Exp(δξ)·T̂ₖ</text>
+            <!-- 底注 -->
+            <text x="380" y="256" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9aa6bf">每次迭代：在平直的切空间解线性方程 → 用 Exp 把增量「卷」回弯曲的流形</text>
+          </svg>
+        </div>
+        <figcaption><b>图 2.</b> 「切空间求增量、流形上做更新」：增量无约束，更新后 \(R\) 严格留在 SO(3) 上，永不需要正交化。</figcaption>
+      </figure>
+
+      <p>BCH 公式的一阶近似 \(\mathrm{Log}\!\left(\mathrm{Exp}(\delta\boldsymbol\phi)\,\mathrm{Exp}(\boldsymbol\phi)\right) \approx \boldsymbol\phi + J_l(\boldsymbol\phi)^{-1}\delta\boldsymbol\phi\) 保证了「流形上的乘法小增量」可以合法翻译成「切空间里的加法小增量」——这是扰动求导成立的理论根基。</p>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">左扰动还是右扰动？先说清约定再抄公式</span>
+        <p>左扰动 \(\mathrm{Exp}(\delta\boldsymbol\xi)\cdot T\) 与右扰动 \(T\cdot\mathrm{Exp}(\delta\boldsymbol\xi)\) 给出<b>不同的雅可比</b>（根子在矩阵乘法「左乘=世界系叠加、右乘=机体系叠加」的左右之分）。本页统一用<b>左乘扰动、平移在前</b>（与《视觉SLAM十四讲》一致）；不同库的约定不同，混用公式是标定代码最常见的 bug 之一。</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>三、把标定写成流形上的最小二乘</h2>
+
+      <h3>残差从哪来：三类构造</h3>
+      <ul>
+        <li><span class="hb">重投影残差</span>（3D–2D 对应，如棋盘格角点）：\( \mathbf r = \pi_K(R\,p_L + t) - u_{\mathrm{obs}} \in \mathbb R^2 \)</li>
+        <li><span class="hg">点到面残差</span>（标定板平面约束）：相机侧解出板平面 \(n^\top X = d\)，LiDAR 打在板上的点应落其上：\( r = n^\top (R\,p_L + t) - d \in \mathbb R \)</li>
+        <li><span class="ht">边缘 / 强度对齐残差</span>（无目标法）：LiDAR 深度不连续点投影后到图像边缘的距离（查距离变换图），雅可比里多了图像梯度项。</li>
+      </ul>
+
+      <h3>核心推导：残差对 δξ 的雅可比</h3>
+      <p>记变换后的点 \( P' = [X', Y', Z']^\top = R\,p_L + t \)。对左乘扰动一阶展开 \(\mathrm{Exp}(\delta\boldsymbol\xi)\approx I + \delta\boldsymbol\xi^\wedge\)，得 \( \delta P' = \delta\boldsymbol\rho + \delta\boldsymbol\phi^\wedge P' = \delta\boldsymbol\rho - P'^\wedge \delta\boldsymbol\phi \)，即</p>
+
+      <div class="mathbox center">
+        <div class="lbl">点对位姿扰动的雅可比（3×6，平移在前；旋转在前则两块交换）</div>
+        \[
+          \frac{\partial P'}{\partial\,\delta\boldsymbol\xi} \;=\; \bigl[\; I_3 \;\big|\; -P'^{\wedge} \;\bigr]
+        \]
+      </div>
+
+      <p>投影部分对 \(P'\) 求导：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">投影雅可比（2×3）</div>
+        \[
+          \frac{\partial u}{\partial P'} =
+          \begin{bmatrix}
+            \dfrac{f_x}{Z'} & 0 & -\dfrac{f_x X'}{Z'^2} \\[8pt]
+            0 & \dfrac{f_y}{Z'} & -\dfrac{f_y Y'}{Z'^2}
+          \end{bmatrix}
+        \]
+      </div>
+
+      <p>链式法则相乘，得到重投影残差的完整 2×6 雅可比（\(\mathbf r = \) 预测 − 观测 约定；反向则整体取负）：</p>
+
+      <div class="mathbox">
+        <div class="lbl">重投影残差雅可比 · 2×6 · 左乘扰动 · 平移在前</div>
+        \[
+          J \;=\; \frac{\partial u}{\partial P'}\cdot\frac{\partial P'}{\partial\,\delta\boldsymbol\xi} \;=\;
+          \begin{bmatrix}
+            \dfrac{f_x}{Z'} & 0 & -\dfrac{f_x X'}{Z'^2} &
+            -\dfrac{f_x X'Y'}{Z'^2} & f_x\!\left(1+\dfrac{X'^2}{Z'^2}\right) & -\dfrac{f_x Y'}{Z'} \\[12pt]
+            0 & \dfrac{f_y}{Z'} & -\dfrac{f_y Y'}{Z'^2} &
+            -f_y\!\left(1+\dfrac{Y'^2}{Z'^2}\right) & \dfrac{f_y X'Y'}{Z'^2} & \dfrac{f_y X'}{Z'}
+          \end{bmatrix}
+        \]
+      </div>
+
+      <p>点到面残差同理，一行搞定：\( \dfrac{\partial r}{\partial\,\delta\boldsymbol\xi} = n^\top\bigl[\,I_3 \,\big|\, -P'^\wedge\,\bigr] = \bigl[\; n^\top \;\big|\; (P'\times n)^\top \;\bigr] \)（1×6）。</p>
+
+      <h3>Gauss-Newton / LM 与鲁棒核</h3>
+      <p>带信息矩阵加权与鲁棒核的目标函数，用<span class="ha">白化残差范数</span> \( s_i = \sqrt{\mathbf r_i^\top \Sigma_i^{-1}\mathbf r_i} \)——注意 \(\rho\) 吃的是<b>未平方</b>的范数，若把 Huber 直接套在平方马氏距离上，内点会变成四次惩罚，实现出来就是错的：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">目标函数 · Huber 核</div>
+        \[
+          \min_{T\in SE(3)}\; \sum_i \rho(s_i),\qquad
+          \rho(s) = \begin{cases} s^2/2, & s\le\delta \\ \delta\,(s-\delta/2), & s&gt;\delta \end{cases}
+        \]
+      </div>
+
+      <p>每次迭代解正规方程，然后回到流形上更新：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">GN（λ=0）/ LM 迭代</div>
+        \[
+          \bigl(J^\top\Sigma^{-1}J + \lambda I\bigr)\,\delta\boldsymbol\xi = -J^\top\Sigma^{-1}\mathbf r,
+          \qquad
+          T \leftarrow \mathrm{Exp}(\delta\boldsymbol\xi)\cdot T
+        \]
+      </div>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">和 BA/SLAM 完全同构</span>
+        <p>同样的投影链、同样的 \([\,I \,|\, -P'^\wedge]\) 型流形雅可比、同样的 GN/LM 与鲁棒核——只是变量从「每帧相机位姿」换成了「一个被所有观测共享的外参」。所以 <code>g2o</code> / <code>Ceres</code> / <code>GTSAM</code> 的 BA 基础设施可以直接复用。</p></div>
+      </div>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">可观性有讲究</span>
+        <p>若所有标定板法向共面，\(J^\top\Sigma^{-1}J\) 出现零空间：沿「垂直于法向张成平面」方向的<b>那一个平移分量</b>不可观。这就是标定时要求<b>至少 3 个法向线性无关的板位姿</b>的原因；条件数 / 最小特征值可以用来在线诊断退化。</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>四、实际怎么标：三大流派</h2>
+
+      <h3>① 基于标定物：产线基准，精度最高</h3>
+      <p>相机侧检测棋盘格角点，用 EPnP<span class="cite">[Lepetit+ IJCV'09]</span> 给闭式初值、再 LM 精化，得到板平面 \((n_C, d_C)\)；LiDAR 侧 RANSAC 拟合平面得 \((n_L, d_L)\)（带圆孔的板则提取孔心做 3D–3D 对应，如 velo2cam<span class="cite">[Beltrán+ T-ITS'22]</span>）。两侧平面满足约束 \( n_C = R\,n_L,\; d_C = d_L + n_C^\top t \)。求解走<span class="hi">两段式套路</span>：</p>
+      <ol>
+        <li><b>闭式初值</b>：旋转用 Kabsch/SVD 对齐法向——\( H = \sum_i n_{L,i}\,n_{C,i}^\top = U\Sigma V^\top \)，\( R = V\,\mathrm{diag}\bigl(1,1,\det(VU^\top)\bigr)\,U^\top \)（行列式修正项排除镜像解）；平移解线性方程组 \( n_{C,i}^\top t = d_{C,i} - d_{L,i} \)。</li>
+        <li><b>流形精化</b>：回到第三节的 GN/LM，在 SE(3) 上最小化点到面 + 重投影残差。</li>
+      </ol>
+      <p>开山之作是 Zhang &amp; Pless<span class="cite">[IROS'04]</span>（相机–2D 激光）；KITTI 用的单帧多棋盘格全自动方案来自 Geiger 等<span class="cite">[ICRA'12]</span>。工程工具：Autoware / TIER IV CalibrationTools、Apollo、MATLAB Lidar Camera Calibrator、OpenCalib（上海人工智能实验室 PJLab-ADG）。</p>
+
+      <h3>② 无目标（targetless）：运营中复标</h3>
+      <ul>
+        <li><b>互信息法</b><span class="cite">[Pandey+ AAAI'12]</span>：最大化 LiDAR 反射率投影与图像灰度之间的互信息，需多帧聚合压噪。</li>
+        <li><b>边缘对齐法</b><span class="cite">[Levinson &amp; Thrun RSS'13]</span>：把 LiDAR 深度不连续点投到「图像边缘的逆距离变换得分图」上做 6 自由度搜索，附带失准概率检测，可在线跟踪漂移。</li>
+        <li><b>深度学习法</b>：RegNet（2017）→ CalibNet（2018）→ LCCNet（2021）。对特定传感器配置与内参<b>过拟合</b>、跨平台泛化差，定位是<span class="ht">失准检测与在线微调初值</span>，不是产线级精度来源。</li>
+      </ul>
+
+      <h3>③ 运动式手眼标定 AX = XB：无需视场重叠</h3>
+      <p>相机跑 VO、LiDAR 跑 LOAM 类里程计，各得一串自运动 \(A_k = T_{C_k C_{k+1}}\)、\(B_k = T_{L_k L_{k+1}}\)，外参 \(X\) 满足刚体约束 \( A_k X = X B_k \)。</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 760 250" role="img" aria-label="手眼标定 AX=XB 示意">
+            <defs>
+              <marker id="arrB" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0 L9 4.5 L0 9 z" fill="#6aa6ff"/>
+              </marker>
+              <marker id="arrT" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0 L9 4.5 L0 9 z" fill="#46d7cc"/>
+              </marker>
+            </defs>
+            <!-- 相机轨迹（上，蓝） -->
+            <text x="52" y="58" font-family="Inter" font-size="14" fill="#6aa6ff">相机轨迹</text>
+            <rect x="130" y="42" width="26" height="26" rx="5" fill="rgba(106,166,255,.16)" stroke="#6aa6ff"/>
+            <rect x="360" y="30" width="26" height="26" rx="5" fill="rgba(106,166,255,.16)" stroke="#6aa6ff"/>
+            <rect x="590" y="46" width="26" height="26" rx="5" fill="rgba(106,166,255,.16)" stroke="#6aa6ff"/>
+            <text x="143" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#6aa6ff">C₀</text>
+            <text x="373" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#6aa6ff">C₁</text>
+            <text x="603" y="94" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#6aa6ff">C₂</text>
+            <path d="M158 52 C 230 38, 290 34, 358 42" stroke="#6aa6ff" stroke-width="2" fill="none" marker-end="url(#arrB)"/>
+            <path d="M388 44 C 460 40, 520 44, 588 56" stroke="#6aa6ff" stroke-width="2" fill="none" marker-end="url(#arrB)"/>
+            <text x="258" y="26" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#6aa6ff">A₁</text>
+            <text x="488" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#6aa6ff">A₂</text>
+            <!-- LiDAR 轨迹（下，青） -->
+            <text x="52" y="196" font-family="Inter" font-size="14" fill="#46d7cc">LiDAR 轨迹</text>
+            <rect x="130" y="178" width="26" height="26" rx="5" fill="rgba(70,215,204,.14)" stroke="#46d7cc"/>
+            <rect x="360" y="192" width="26" height="26" rx="5" fill="rgba(70,215,204,.14)" stroke="#46d7cc"/>
+            <rect x="590" y="176" width="26" height="26" rx="5" fill="rgba(70,215,204,.14)" stroke="#46d7cc"/>
+            <text x="143" y="226" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#46d7cc">L₀</text>
+            <text x="373" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#46d7cc">L₁</text>
+            <text x="603" y="224" text-anchor="middle" font-family="JetBrains Mono" font-size="12.5" fill="#46d7cc">L₂</text>
+            <path d="M158 190 C 230 200, 290 204, 358 204" stroke="#46d7cc" stroke-width="2" fill="none" marker-end="url(#arrT)"/>
+            <path d="M388 202 C 460 198, 520 192, 588 188" stroke="#46d7cc" stroke-width="2" fill="none" marker-end="url(#arrT)"/>
+            <text x="258" y="228" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#46d7cc">B₁</text>
+            <text x="488" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#46d7cc">B₂</text>
+            <!-- 竖直 X 链接 -->
+            <path d="M143 70 V176" stroke="#f0a361" stroke-width="1.8" stroke-dasharray="5 5"/>
+            <path d="M373 58 V190" stroke="#f0a361" stroke-width="1.8" stroke-dasharray="5 5"/>
+            <path d="M603 74 V174" stroke="#f0a361" stroke-width="1.8" stroke-dasharray="5 5"/>
+            <text x="160" y="130" font-family="JetBrains Mono" font-size="13.5" fill="#f0a361">X</text>
+            <text x="390" y="130" font-family="JetBrains Mono" font-size="13.5" fill="#f0a361">X</text>
+            <text x="620" y="130" font-family="JetBrains Mono" font-size="13.5" fill="#f0a361">X</text>
+            <!-- 中央方程 -->
+            <text x="488" y="136" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#e4ebf7">Aₖ · X = X · Bₖ</text>
+          </svg>
+        </div>
+        <figcaption><b>图 3.</b> 手眼标定：两串自运动被同一个外参 \(X\) 「缝」在一起——绕环路一圈必须回到原地。</figcaption>
+      </figure>
+
+      <p>旋转部分 \( R_A R_X = R_X R_B \) 的李代数读法非常优雅：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">旋转轴对齐观点</div>
+        \[
+          \mathrm{Log}(R_A)^\vee \;=\; R_X\,\mathrm{Log}(R_B)^\vee
+        \]
+      </div>
+
+      <p>——<span class="mark">外参把 LiDAR 的旋转轴映到相机的旋转轴，转角相等</span>。经典解法：Tsai-Lenz（1989）、四元数法（Chou &amp; Kamel 1991）、Park &amp; Martin（1994）的李代数闭式解 \( R_X = (M^\top M)^{-1/2} M^\top \)（\( M = \sum_i \beta_i\alpha_i^\top \)，\(\alpha=\mathrm{Log}(R_A)^\vee\)，\(\beta=\mathrm{Log}(R_B)^\vee\)）、Daniilidis（1999）对偶四元数同解 \(R\) 与 \(t\)。平移随后解线性方程 \( (R_{A,k}-I)\,t_X = R_X\,t_{B,k} - t_{A,k} \)。单目 VO 的尺度不可观，可把尺度 \(s\) 联合估计（CamOdoCal<span class="cite">[Heng+ IROS'13]</span>）或由 LiDAR 提供公制尺度。</p>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">汽车是手眼标定的「困难客户」</span>
+        <p>可观性要求<b>至少两次旋转轴不平行的旋转</b>（Tsai-Lenz 已证）。而汽车基本只绕 yaw 轴转（平面运动退化）：沿旋转轴的平移 \(t_z\) <b>严格不可观</b>——\((R_A - I)\) 的零空间恰是旋转轴。工程上靠地面拟合 + 已知安装高度、或找含坡道的路把它补出来。</p></div>
+      </div>
+
+      <h3>选型对照</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>方法</th><th>典型精度</th><th>场地</th><th>在线</th><th>定位</th></tr></thead>
+          <tbody>
+            <tr><td><b>标定物</b></td><td>旋转 &lt;0.1–0.3°、平移 &lt;1–3 cm</td><td>标定间 / 摆板</td><td>否</td><td>产线下线、售后基准</td></tr>
+            <tr><td><b>互信息 / 边缘对齐</b></td><td>~0.2–1°、2–5 cm</td><td>自然场景</td><td>半在线</td><td>运营中复标、漂移修正</td></tr>
+            <tr><td><b>深度学习</b></td><td>域内尚可、跨域不保</td><td>无要求</td><td>是</td><td>失准检测、给初值</td></tr>
+            <tr><td><b>手眼 AX=XB</b></td><td>旋转可用、t_z 不可观</td><td>需转向机动</td><td>可</td><td>视场无重叠时的粗标</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>五、数学之外：真正踩坑的工程细节</h2>
+
+      <h3>时间同步比外参更致命</h3>
+      <p>80 km/h ≈ 22.2 m/s，<span class="hi">10 ms 的时间戳错位就是 0.22 m 的等效空间错位</span>，厘米级的标定精度瞬间作废。做法：全车用 PTP（IEEE 1588）/ gPTP（802.1AS）统一时钟域到亚微秒；相机用硬件触发线（FSYNC）而非软件收包时间戳；机械式 LiDAR 做<b>相位锁定</b>——让扫描束扫过相机视场中心的时刻恰好对准曝光中心。</p>
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">授时接口的厂商差异</span>
+        <p>Velodyne 机械式雷达原生只支持 <code>PPS + $GPRMC</code> 授时，接 PTP 时钟域需要转换网关；原生支持 PTP/gPTP 的是 Ouster、Hesai、Livox、RoboSense 等。选型时这条经常被忽略。</p></div>
+      </div>
+
+      <h3>运动补偿：SE(3) 插值再次登场</h3>
+      <p>10 Hz 机械雷达一圈 100 ms，采集期间车在动，原始点云自带拖影。把时间戳 \(t_i\) 的点补偿到参考时刻 \(t_{\mathrm{ref}}\)：\( p_i' = T(t_{\mathrm{ref}})^{-1}\,T(t_i)\,p_i \)，相邻位姿之间的插值走李群测地线：</p>
+      <div class="mathbox center">
+        <div class="lbl">SE(3) 测地插值（s ∈ [0,1]）</div>
+        \[
+          T(s) \;=\; T_0\cdot\mathrm{Exp}\!\bigl(s\cdot\mathrm{Log}(T_0^{-1}T_1)\bigr)
+        \]
+      </div>
+      <p>——正是《流形与李群李代数》页里「插值走 exp/log 测地线」那一条的落地。滚动快门相机同理：每行曝光时刻不同，严格投影须按行时间戳取位姿。</p>
+
+      <h3>真实数据格式：KITTI 与 nuScenes</h3>
+      <div class="mathbox center">
+        <div class="lbl">KITTI 投影链（齐次点 x = (x,y,z,1)ᵀ）</div>
+        \[
+          \tilde u \;=\; P_2\cdot R_{0,\mathrm{rect}}\cdot T_{\mathrm{velo}\to\mathrm{cam}}\cdot x
+        \]
+      </div>
+      <p>其中 \(T_{\mathrm{velo}\to\mathrm{cam}}\)（LiDAR→cam0 刚体变换）与 \(R_{0,\mathrm{rect}}\)（cam0 整流旋转）<b>都要底部补一行 \([0\;0\;0\;1]\) 扩成 4×4</b> 维度才闭合，\(P_2\)（3×4）是整流后左彩色相机投影矩阵（其第 4 列含基线项 \(-f_x b\)）；最后除以第三分量得像素。<span class="hi">漏乘 \(R_{0,\mathrm{rect}}\) 是最经典的错误</span>，偏差可达数像素。nuScenes 则不给拼好的矩阵：外参存四元数（<code>[w,x,y,z]</code>）+ 平移，LiDAR 投相机要走五段链 <code>lidar → ego(t_lidar) → global → ego(t_cam) → cam → K</code>——经 global 一跳顺便完成了两传感器时间戳差的自车运动补偿。</p>
+
+      <h3>漂移、监测与目视验证</h3>
+      <p>温度、振动、碰撞维修都会让标定失效：旋转漂 0.1°，在 50 m 外就是 ≈ 8.7 cm 的横向错位。在线用边缘对齐得分、投影残差滑窗统计做一致性监测，超阈值告警、降级融合并触发重标定；产线用标定间（多标定板阵列 + 转台）分钟级完成全套件标定。日常验证：重投影误差直方图（看随距离的分布，别只看单一 RMS）、点云着色（把图像 RGB 投给点云，转着看边界有无「包边错位」）、深度伪彩投回图像看轮廓贴合。</p>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">像平面上的误差判别，方向别搞反</span>
+        <p>逐深度检查投影贴合时：<b>各深度一致的整体像素偏移 → 旋转误差</b>（旋转的像素偏移 ≈ \(f\cdot\delta\theta\)，与深度无关）；<b>近处偏、远处贴合 → 平移或时间戳误差</b>（偏移 ≈ \(f\cdot\delta t/Z\)，∝ 1/深度）。「误差随距离增大 = 旋转」只在 3D 度量空间成立，照搬到像平面正好判反。另外务必覆盖视场边缘：广角畸变参数的误差常伪装成外参误差。</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>延伸阅读</h2>
+      <div class="cards">
+        <a class="c" href="lie-groups-slam.html"><span class="k">前置 · 本库</span><h4>流形与李群李代数</h4><p>本页全部数学语言的来源：切空间、指数映射、左右扰动。</p></a>
+        <a class="c" href="linear-algebra-foundations.html"><span class="k">前置 · 本库</span><h4>线性代数基础</h4><p>「矩阵当动词读」——理解左乘/右乘之分的起点。</p></a>
+        <a class="c" href="robotics-autonomous-driving-stack.html"><span class="k">相关 · 本库</span><h4>机器人与自动驾驶技术栈全景</h4><p>标定在整个自动驾驶栈中的位置。</p></a>
+        <a class="c" href="https://arxiv.org/abs/1812.01537"><span class="k">论文</span><h4>A micro Lie theory (Solà+ 2018)</h4><p>状态估计中李群工具的标准速查文献。</p></a>
+        <a class="c" href="https://www.roboticsproceedings.org/rss09/p29.html"><span class="k">论文</span><h4>Levinson &amp; Thrun, RSS 2013</h4><p>在线无目标标定与失准检测的经典。</p></a>
+        <a class="c" href="https://github.com/PJLab-ADG/SensorsCalibration"><span class="k">工具</span><h4>OpenCalib / SensorsCalibration</h4><p>覆盖车载全传感器组合的开源标定工具箱。</p></a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>知识库 · 数学与机器学习可视化</span>
+    <a class="back" href="../index.html">← 返回门户</a>
+  </footer>
+
+</div>
+
+<script>
+  // 顶部阅读进度条
+  const bar = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  };
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+</body>
+</html>
