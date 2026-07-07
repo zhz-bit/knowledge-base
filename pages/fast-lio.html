@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>FAST-LIO：紧耦合激光惯性里程计 · 知识库</title>
+<meta name="description" content="从松耦合/紧耦合、前向/后向传播与运动补偿，到点到面残差、iEKF 与卡尔曼增益新公式、退化分析——用流形最小二乘视角贯通 FAST-LIO。" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+:root{
+  color-scheme: dark;
+
+  --bg:      #0e1320;
+  --bg-soft: #121829;
+  --panel:   #161d2e;
+  --panel-2: #1d2540;
+
+  --ink:    #e4ebf7;
+  --muted:  #9aa6bf;
+  --dim:    #6b768f;
+
+  --line:   #283248;
+  --line-2: #36425e;
+
+  --terra:  #f0a361;
+  --amber:  #f0bf4c;
+  --olive:  #9bce6b;
+  --teal:   #46d7cc;
+  --blue:   #6aa6ff;
+  --plum:   #b49bff;
+  --rust:   #ff8a8a;
+
+  --soft-terra: rgba(240,163,97,.14);
+  --soft-amber: rgba(240,191,76,.14);
+  --soft-olive: rgba(155,206,107,.13);
+  --soft-teal:  rgba(70,215,204,.13);
+  --soft-blue:  rgba(106,166,255,.14);
+
+  --shadow:    0 18px 46px rgba(0,0,0,.42);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,.30);
+  --radius: 16px;
+  --maxw: 820px;
+
+  --serif: "Spectral", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --sans:  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+           "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; min-height:100vh;
+  background:
+    radial-gradient(1200px 700px at 84% -12%, #16203a 0%, #111729 46%, var(--bg) 100%);
+  background-attachment:fixed;
+  color:var(--ink); font-family:var(--sans); line-height:1.72;
+  font-size:17.5px; -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(240,163,97,.30);}
+
+#progress{position:fixed; left:0; top:0; height:3px; width:0;
+  background:linear-gradient(90deg,var(--terra),var(--amber)); z-index:60; transition:width .12s;}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+.topnav{padding:26px 0 0;}
+.back{font-family:var(--mono); font-size:13px; color:var(--muted);
+  display:inline-flex; align-items:center; gap:7px; transition:color .15s;}
+.back:hover{color:var(--terra);}
+a{color:var(--terra); text-decoration:none;}
+a:hover{text-decoration:underline; text-underline-offset:3px;}
+
+header.hero{padding:30px 0 26px; border-bottom:1px solid var(--line); margin-bottom:38px;}
+.eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--terra); display:flex; align-items:center; gap:11px; margin-bottom:18px;}
+.eyebrow::before{content:""; width:30px; height:1px; background:linear-gradient(90deg,var(--terra),transparent);}
+h1{font-family:var(--serif); font-weight:700; font-size:clamp(30px,5vw,46px);
+  line-height:1.14; letter-spacing:-.01em; margin:0 0 16px; color:var(--ink);}
+h1 em{font-style:italic; color:var(--terra);}
+.lede{font-size:clamp(17px,2vw,21px); color:var(--muted); margin:0; line-height:1.6;}
+.lede b{color:var(--ink); font-weight:600;}
+.byline{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:22px;
+  font-family:var(--mono); font-size:12.5px; color:var(--dim);}
+.byline .pill{background:var(--panel); border:1px solid var(--line);
+  padding:3px 11px; border-radius:999px;}
+
+main{padding-bottom:30px;}
+section{margin:0 0 40px;}
+h2{font-family:var(--serif); font-weight:600; font-size:clamp(23px,3vw,30px);
+  line-height:1.25; margin:46px 0 16px; color:var(--ink);
+  padding-bottom:10px; border-bottom:1px solid var(--line);}
+h3{font-family:var(--serif); font-weight:600; font-size:21px; margin:30px 0 10px; color:var(--ink);}
+p{margin:0 0 17px;}
+ul,ol{margin:0 0 18px; padding-left:1.3em;}
+li{margin:0 0 8px;}
+li::marker{color:var(--terra);}
+hr{border:0; border-top:1px solid var(--line); margin:38px 0;}
+
+b,strong{color:var(--ink); font-weight:700;}
+.hi  {color:var(--terra); font-weight:600;}
+.hb  {color:var(--blue);  font-weight:600;}
+.hg  {color:var(--olive); font-weight:600;}
+.ha  {color:var(--amber); font-weight:600;}
+.ht  {color:var(--teal);  font-weight:600;}
+.mark{background:linear-gradient(180deg,transparent 62%, rgba(240,191,76,.30) 0); padding:0 2px;}
+
+code{font-family:var(--mono); font-size:.9em; color:#ffb98a;
+  background:rgba(240,163,97,.13); padding:2px 6px; border-radius:5px;}
+pre{margin:0 0 20px; padding:18px 20px; overflow:auto; border-radius:var(--radius);
+  background:#0a0f1b; color:#d6deef; border:1px solid #1c2438; box-shadow:var(--shadow-sm);}
+pre code{background:none; color:inherit; padding:0; font-size:13.5px; line-height:1.6;}
+
+.cite{font-family:var(--mono); font-size:.78em; color:var(--blue); vertical-align:super;}
+
+.callout{display:flex; gap:13px; padding:16px 18px; margin:0 0 22px;
+  border:1px solid var(--line); border-left-width:4px; border-radius:12px;
+  background:var(--panel); box-shadow:var(--shadow-sm);}
+.callout .ic{font-size:20px; line-height:1.5; flex:0 0 auto;}
+.callout .ct{flex:1;} .callout .ct p:last-child{margin:0;}
+.callout .ct .t{font-weight:700; color:var(--ink); display:block; margin-bottom:3px;}
+.callout.note{border-left-color:var(--blue);  background:var(--soft-blue);}
+.callout.tip {border-left-color:var(--olive); background:var(--soft-olive);}
+.callout.warn{border-left-color:var(--rust);  background:var(--soft-terra);}
+.callout.key {border-left-color:var(--amber); background:var(--soft-amber);}
+
+.mathbox{background:var(--panel); border:1px solid var(--line-2); border-radius:var(--radius);
+  padding:18px 22px; margin:0 0 22px; box-shadow:var(--shadow-sm);}
+.mathbox .lbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dim); margin-bottom:8px;}
+.mathbox.center{text-align:center;}
+
+figure{margin:0 0 24px;}
+figure .frame{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px; box-shadow:var(--shadow-sm); overflow:hidden;}
+figure img, figure svg{display:block; max-width:100%; height:auto; margin:0 auto; border-radius:8px;}
+figcaption{margin-top:10px; font-size:14px; color:var(--muted); text-align:center;}
+figcaption b{color:var(--ink);}
+
+.tablewrap{overflow-x:auto; margin:0 0 24px; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);}
+table{width:100%; border-collapse:collapse; background:var(--panel); font-size:15.5px;}
+thead th{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--terra); text-align:left; padding:12px 16px; background:var(--panel-2);
+  border-bottom:1px solid var(--line-2);}
+td{padding:11px 16px; border-bottom:1px solid var(--line); color:var(--muted);}
+td b{color:var(--ink);}
+tbody tr:last-child td{border-bottom:0;}
+tbody tr:hover td{background:var(--panel-2);}
+
+blockquote{margin:0 0 22px; padding:6px 0 6px 20px; border-left:3px solid var(--amber);
+  color:var(--muted); font-family:var(--serif); font-style:italic; font-size:19px;}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin:0 0 24px;}
+.cards .c{display:block; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:16px 17px; box-shadow:var(--shadow-sm); transition:transform .16s, box-shadow .16s;}
+.cards a.c:hover{transform:translateY(-3px); box-shadow:var(--shadow); text-decoration:none;}
+.cards .c .k{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--terra);}
+.cards .c h4{font-family:var(--serif); font-size:17px; margin:6px 0 5px; color:var(--ink);}
+.cards .c p{font-size:13.5px; color:var(--muted); margin:0;}
+
+/* ---------- 组件：交互演示 ---------- */
+.demo{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:14px; margin:18px 0 26px; box-shadow:var(--shadow-sm);}
+.demo canvas{display:block; width:100%; height:auto; background:#0a0f1b;
+  border:1px solid #1c2438; border-radius:10px;}
+.controls{display:flex; gap:8px 14px; flex-wrap:wrap; align-items:center; margin-top:11px;}
+.btn{font-family:var(--sans); font-size:13px; padding:6px 13px; border-radius:8px;
+  border:1px solid var(--line-2); background:var(--panel-2); color:var(--ink); cursor:pointer; transition:.15s;}
+.btn:hover{border-color:var(--terra);}
+.btn.on{background:var(--terra); color:#171207; border-color:var(--terra); font-weight:700;}
+.controls label{font-size:13px; color:var(--muted); display:inline-flex; align-items:center; gap:7px;}
+.controls input[type=range]{accent-color:var(--terra); min-width:110px;}
+.controls .val{font-family:var(--mono); color:var(--amber); font-size:12.5px;}
+.vcap{margin-top:10px; font-size:13.5px; color:var(--muted); line-height:1.6;}
+.vcap b{color:var(--ink);}
+
+/* 流水线箭头的数据流动画 */
+.flow{stroke-dasharray:7 7; animation:flowdash 1s linear infinite;}
+@keyframes flowdash{to{stroke-dashoffset:-14;}}
+@media (prefers-reduced-motion: reduce){ .flow{animation:none;} }
+
+footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
+  font-size:13.5px; color:var(--dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+
+@media (max-width:560px){
+  body{font-size:16.5px;}
+  .wrap{padding:0 18px;}
+  h2{margin-top:34px;}
+}
+</style>
+
+<script>
+  window.MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] }, svg:{ fontCache:'global' } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body>
+<div id="progress"></div>
+
+<div class="wrap">
+
+  <nav class="topnav"><a class="back" href="../index.html">← 返回知识库门户</a></nav>
+
+  <header class="hero">
+    <div class="eyebrow">机器人 / SLAM</div>
+    <h1>FAST-LIO：<em>紧耦合</em>激光惯性里程计</h1>
+    <p class="lede">利用高频 IMU 做<b>连续运动预测与去畸变</b>，把 LiDAR 特征点残差直接放进<b>紧耦合 iEKF</b> 迭代修正状态——本页用「流形上的最小二乘」这条已有主线，贯通前向/后向传播、点到面残差、卡尔曼增益新公式与退化分析，配 <b>5 个可动手的交互演示</b>。</p>
+    <div class="byline">
+      <span class="pill">2026-07-07</span>
+      <span class="pill">#FAST-LIO</span>
+      <span class="pill">#iEKF</span>
+      <span class="pill">#紧耦合</span>
+      <span class="pill">#去畸变</span>
+      <span class="pill">5 个交互可视化</span>
+      <span class="pill">约 30 分钟</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ═══════════ 0. 一句话定位 ═══════════ -->
+    <section>
+      <p>理解 FAST-LIO 最省力的入口，不是从论文公式顺序硬读，而是接上你已有的知识：它就是把<a href="lidar-camera-extrinsic-calibration.html">外参标定页</a>里见过的<span class="hi">流形上的最小二乘</span>，从「离线一次性求一个<b>静态量</b>」变成「在线递推地求一个<b>随时间变化的量</b>」。</p>
+      <ul>
+        <li>外参标定求的是<b>静止不动</b>的 \( T_{CL} \in SE(3) \)，攒够数据一次批量优化解完；</li>
+        <li>FAST-LIO 求的是<b>每时每刻都在变</b>的机器人状态（姿态、位置、速度、IMU 偏置、重力），不能慢慢解，得用滤波器每来一帧就修正一次。</li>
+      </ul>
+      <p>残差形式两者几乎一模一样——都是<span class="hb">点到面 / 点到线的距离</span>；变的只是未知量从「传感器之间的固定变换」换成了「机器人自己的运动状态」。</p>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">全页主线，一句话</span><p>FAST-LIO = 高频 IMU 做连续运动预测和去畸变 + LiDAR 原始几何特征点作观测，放进紧耦合 iEKF 中迭代修正状态，实时输出位姿并更新地图。</p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 1. 问题背景 ═══════════ -->
+    <section>
+      <h2>一、为什么需要 LiDAR + IMU 紧耦合</h2>
+      <h3>视觉方案为什么不够</h3>
+      <p>视觉（惯性）里程计轻量、便宜、有 RGB，但<b>没有直接深度测量</b>——必须靠三角化、尺度恢复或多视角重建才能得到三维结构；而无人机轨迹规划恰恰把环境三维几何当刚需。且视觉强依赖光照与纹理：强光、弱光、烟雾、反光、白墙等场景都会让特征质量崩掉——工业巡检、地下空间、矿山恰好全是这些场景。</p>
+
+      <h3>LiDAR 更合适，但也更难</h3>
+      <p>LiDAR <span class="hg">直接测距离</span>、输出三维点云、不依赖环境光照，天然适合建图与避障。固态 LiDAR 又把成本、重量、体积降到小型无人机可以携带的程度，但代价是：<span class="ha">视场角小、扫描非重复、点云方向性稀疏、一帧内部点的采样时刻差异明显</span>。</p>
+
+      <h3>FAST-LIO 要解的三类难题</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>难题</th><th>具体表现</th><th>FAST-LIO 的应对</th></tr></thead>
+          <tbody>
+            <tr><td><b>环境退化</b></td><td>走廊、白墙、狭窄空间、小视场下某些方向失去几何约束</td><td>紧耦合 iEKF：IMU 先验始终在估计器内部兜底</td></tr>
+            <tr><td><b>测量维度过大</b></td><td>一帧上千个特征点，传统增益公式要对巨大矩阵求逆</td><td>卡尔曼增益新公式：求逆规模从测量维度降到状态维度</td></tr>
+            <tr><td><b>运动畸变 + IMU 噪声</b></td><td>逐点扫描期间机体持续运动，点云被「拉歪」；桨叶振动放大 IMU 噪声</td><td>形式化后向传播去畸变；LiDAR 残差持续修正 IMU 漂移</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══════════ 2. 发展脉络 ═══════════ -->
+    <section>
+      <h2>二、发展脉络：从 ICP 到 FAST-LIO</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>方法</th><th>核心思想</th><th>局限</th></tr></thead>
+          <tbody>
+            <tr><td><b>ICP</b></td><td>找两帧点云最近点对应，迭代估计刚体变换</td><td>稀疏点云中点对难找，初值差易陷局部最优</td></tr>
+            <tr><td><b>GICP</b></td><td>点到点扩展为考虑局部平面结构的点到面</td><td>仍依赖几何结构和配准初值</td></tr>
+            <tr><td><b>LOAM</b></td><td>提取边缘/平面特征，点到线、点到面残差做里程计与建图</td><td>对无特征、小视场、快速运动和畸变敏感</td></tr>
+            <tr><td><b>LeGO-LOAM</b></td><td>地面分割降复杂度，适合地面车辆</td><td>无人机不一定有稳定地面</td></tr>
+            <tr><td><b>LOAM-Livox</b></td><td>面向 Livox 等非重复扫描固态雷达的 LOAM 变体</td><td>仍难彻底解决强退化与紧耦合融合效率</td></tr>
+            <tr><td><b>FAST-LIO</b></td><td>LiDAR 特征点与 IMU 在 iEKF 中紧耦合，新增益公式加速</td><td>本质是里程计，长期全局一致性仍需回环/后端</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>FAST-LIO 并不是否定 LOAM，而是<span class="hi">继承「用几何特征构建残差」的思想</span>，同时把 IMU 更深地放进估计器，解决快速运动、退化和计算量三个问题。</p>
+    </section>
+
+    <!-- ═══════════ 3. 松耦合 vs 紧耦合 ═══════════ -->
+    <section>
+      <h2>三、松耦合 vs 紧耦合：最关键的一组概念</h2>
+      <blockquote>先各自算结果、再融合结果，是松耦合；不先单独求 LiDAR 位姿，而是把原始特征点和 IMU 数据一起放进滤波器，是紧耦合。</blockquote>
+      <p>用优化的语言说最清楚：<span class="hb">松耦合是「先各自解两个小问题，再融合两个解」</span>；<span class="hi">紧耦合是「把两种传感器的原始残差写进同一个目标函数里一起解」</span>。松耦合里 LiDAR 要独立配准输出一个位姿「测量」，点级别的几何信息和不确定性结构在这一步就被压扁丢掉了。</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>维度</th><th>松耦合 LIO</th><th>FAST-LIO 紧耦合</th></tr></thead>
+          <tbody>
+            <tr><td><b>LiDAR 做什么</b></td><td>先独立配准，算出一帧 LiDAR 位姿</td><td>只提特征点，不先独立算完整位姿</td></tr>
+            <tr><td><b>IMU 做什么</b></td><td>给 LiDAR 配准当初值，或与 LiDAR 位姿做后融合</td><td>直接参与状态传播、去畸变和滤波更新</td></tr>
+            <tr><td><b>融合对象</b></td><td>融合「结果」：LiDAR 位姿 + IMU 积分</td><td>融合「原始测量」：点残差 + IMU 读数</td></tr>
+            <tr><td><b>退化场景</b></td><td>LiDAR 配准先崩，错误位姿再污染融合</td><td>约束弱体现在残差/协方差里，IMU 在估计器内兜底</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><code>松耦合：   IMU 积分 → 独立 LiDAR 配准（IMU 给初值）→ LiDAR 位姿 → 与 IMU 融合
+FAST-LIO： 上一帧状态 + IMU 前向传播 → 当前帧 iEKF 初值 → 点残差直接更新状态</code></pre>
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">「IMU 给初值」的两种含义</span><p>松耦合里，IMU 积分给<b>独立 ICP 模块</b>当初始位姿；FAST-LIO 里，前向传播给的是<b>当前帧 iEKF 迭代的初始线性化点</b>——系统里根本不存在「LiDAR 先单独算位姿再融合」这一步。</p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 4. 状态与流形 ═══════════ -->
+    <section>
+      <h2>四、状态定义：18 维误差状态活在切空间里</h2>
+      <p>FAST-LIO 的状态定义在复合流形上——这正是<a href="lie-groups-slam.html">李群李代数页</a>那套语言的直接应用：</p>
+      <div class="mathbox center">
+        <div class="lbl">状态 · SO(3) × R¹⁵</div>
+        \[ \mathbf{x} \;=\; \big(\, \mathbf{R},\; \mathbf{p},\; \mathbf{v},\; \mathbf{b}_g,\; \mathbf{b}_a,\; \mathbf{g} \,\big) \;\in\; SO(3)\times\mathbb{R}^{15} \]
+      </div>
+      <p>直观拆开：姿态 3 + 位置 3 + 速度 3 + 陀螺偏置 3 + 加计偏置 3 + 重力 3 = <span class="ha">18 维</span>。姿态虽用旋转矩阵表示，但误差只需 3 维小旋转向量——<span class="hi">误差状态 \( \delta\mathbf{x}\in\mathbb{R}^{18} \) 活在切空间里</span>。旋转不能直接加减，所以论文用流形加减算子：</p>
+      <div class="mathbox center">
+        <div class="lbl">流形上的「加法」 ⊞</div>
+        \[ \mathbf{x} \boxplus \delta\mathbf{x} \;=\; \big(\, \mathbf{R}\,\mathrm{Exp}(\delta\boldsymbol{\theta}),\;\; \mathbf{p}+\delta\mathbf{p},\;\; \cdots \big) \]
+      </div>
+      <p>iEKF 每次迭代干的事就是：在当前估计点的<span class="ht">切空间</span>里把残差线性化、解一个 18 维小增量 \( \delta\mathbf{x} \)，再用 \( \boxplus \)（本质是 \( \mathbf{R}\cdot\mathrm{Exp}(\delta\boldsymbol{\theta}) \)）把增量「卷回」流形，换个线性化点再来一次——和李群页里「指数映射把平直切空间卷到弯曲流形」是同一个故事。</p>
+    </section>
+
+    <!-- ═══════════ 5. 总体框架 ═══════════ -->
+    <section>
+      <h2>五、总体框架：数据从传感器到位姿输出</h2>
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 760 300" role="img" aria-label="FAST-LIO 系统流水线">
+            <defs>
+              <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#6b768f"/></marker>
+            </defs>
+            <!-- LiDAR 链 -->
+            <rect x="16" y="30" width="112" height="52" rx="10" fill="rgba(240,163,97,.16)" stroke="#f0a361"/>
+            <text x="72" y="52" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">LiDAR 点云</text>
+            <text x="72" y="70" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">100k–500kHz</text>
+            <rect x="160" y="30" width="112" height="52" rx="10" fill="rgba(240,191,76,.14)" stroke="#f0bf4c"/>
+            <text x="216" y="52" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">点云累积</text>
+            <text x="216" y="70" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">按时间窗成 scan</text>
+            <rect x="304" y="30" width="112" height="52" rx="10" fill="rgba(155,206,107,.14)" stroke="#9bce6b"/>
+            <text x="360" y="52" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">特征提取</text>
+            <text x="360" y="70" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">平面点 / 边缘点</text>
+            <!-- IMU 链 -->
+            <rect x="16" y="216" width="112" height="52" rx="10" fill="rgba(106,166,255,.16)" stroke="#6aa6ff"/>
+            <text x="72" y="238" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">IMU 测量</text>
+            <text x="72" y="256" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">100–250Hz</text>
+            <rect x="160" y="216" width="112" height="52" rx="10" fill="rgba(106,166,255,.16)" stroke="#6aa6ff"/>
+            <text x="216" y="238" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">前向传播</text>
+            <text x="216" y="256" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">ODE 积分到 t_k</text>
+            <!-- iEKF 核心 -->
+            <rect x="452" y="76" width="180" height="160" rx="14" fill="rgba(70,215,204,.10)" stroke="#46d7cc" stroke-width="1.5"/>
+            <text x="542" y="102" text-anchor="middle" font-family="Inter" font-size="14.5" font-weight="600" fill="#e4ebf7">状态估计 iEKF</text>
+            <text x="542" y="130" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">后向传播 · 去畸变</text>
+            <text x="542" y="152" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">残差计算（点到面/线）</text>
+            <text x="542" y="174" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">迭代更新 · 收敛判断</text>
+            <text x="542" y="204" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">10–50Hz</text>
+            <!-- 输出 -->
+            <rect x="664" y="90" width="82" height="52" rx="10" fill="rgba(240,163,97,.16)" stroke="#f0a361"/>
+            <text x="705" y="121" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">Odometry</text>
+            <rect x="664" y="176" width="82" height="52" rx="10" fill="rgba(180,155,255,.14)" stroke="#b49bff"/>
+            <text x="705" y="207" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">地图更新</text>
+            <!-- 子地图 -->
+            <rect x="452" y="18" width="180" height="36" rx="10" fill="rgba(180,155,255,.12)" stroke="#b49bff" stroke-dasharray="5 4"/>
+            <text x="542" y="41" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#c9bdf5">历史地图 → 取附近 Submap</text>
+            <!-- 箭头（.flow = 数据流动画）-->
+            <path class="flow" d="M128 56 H160" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <path class="flow" d="M272 56 H304" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <path class="flow" d="M416 56 C436 56 440 96 452 108" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+            <path class="flow" d="M128 242 H160" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <path class="flow" d="M272 242 C300 242 420 216 452 196" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+            <path class="flow" d="M542 54 V76" stroke="#8a7fc9" stroke-width="2" marker-end="url(#arr)"/>
+            <path class="flow" d="M632 116 H664" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <path class="flow" d="M632 202 H664" stroke="#6b768f" stroke-width="2" marker-end="url(#arr)"/>
+            <path d="M705 176 V142" stroke="#6b768f" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+          </svg>
+        </div>
+        <figcaption><b>图 1.</b> FAST-LIO 流水线：LiDAR 累积成 scan 后提特征；IMU 每来一次都做前向传播；scan 完成时在 iEKF 内做去畸变、残差与迭代更新，输出 odometry 并把去畸变特征点并入地图。</figcaption>
+      </figure>
+      <p>三种频率各司其职：<span class="hi">原始激光点 100k–500kHz</span>（只累积不估计）、<span class="hb">IMU 100–250Hz</span>（每次都前向传播）、<span class="ht">完整状态估计 10–50Hz</span>（每个 scan 结束触发一次）。输入的「历史地图」不是全局优化图，而是已建立的历史特征点集合，用来给当前帧特征点找局部匹配。</p>
+    </section>
+
+    <!-- ═══════════ 6. 前向/后向传播 ═══════════ -->
+    <section>
+      <h2>六、前向传播、后向传播、运动补偿</h2>
+
+      <h3>前向传播 = 积分一组 ODE</h3>
+      <p>IMU 运动学本质是一组常微分方程（接<a href="differential-equations.html">微分方程页</a>的数值积分直觉）：</p>
+      <div class="mathbox center">
+        <div class="lbl">IMU 运动学 ODE</div>
+        \[ \dot{\mathbf{R}} = \mathbf{R}\,[\boldsymbol{\omega}_m-\mathbf{b}_g]_\times, \qquad \dot{\mathbf{v}} = \mathbf{R}(\mathbf{a}_m-\mathbf{b}_a)+\mathbf{g}, \qquad \dot{\mathbf{p}} = \mathbf{v} \]
+      </div>
+      <p>前向传播没有任何神秘之处：从上一帧<b>更新后</b>的状态出发，用 IMU 读数作为 ODE 输入，数值积分到当前 scan 结束时刻 \( t_k \)——协方差也沿线性化系统一起传播。积分结果是 \( t_k \) 时刻状态的<span class="hi">先验分布（均值 + 协方差）</span>，iEKF 更新就是拿激光观测修正这个先验。</p>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">前向传播给谁当初值？</span><p>给<b>当前帧</b> iEKF 更新当初始先验——不是给下一帧，更不是给独立 LiDAR ICP。当前帧更新完的最优状态，才成为下一帧前向传播的起点。</p></div>
+      </div>
+
+      <div class="demo">
+        <canvas id="vz-pred"></canvas>
+        <div class="controls">
+          <button class="btn on" id="pd-lidar">LiDAR 更新：开</button>
+          <label>更新频率 <input type="range" id="pd-freq" min="0.2" max="4" step="0.1" value="1"><span class="val" id="pd-freq-v">1.0 Hz</span></label>
+          <button class="btn" id="pd-reset">重置</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 1 · 预测–修正循环。</b>绿色是真实轨迹，橙色是 IMU 前向传播的估计（带偏置与噪声），橙圈是协方差（不确定度）。两次激光更新之间，估计只靠积分——漂移与橙圈一起膨胀；每次 LiDAR 更新把估计拉回真值附近、协方差收缩。<b>动手试：</b>关掉「LiDAR 更新」看纯 IMU 积分能漂多远；调低更新频率看锯齿形的「漂移→拉回」。</div>
+      </div>
+
+      <h3>后向传播：为什么点要「往右推」</h3>
+      <p>LiDAR 一帧不是瞬间拍照，而是<b>逐点扫描</b>。一帧约 20ms，第一个点可能在 \( t_{k-1}+1\mathrm{ms} \) 采集、最后一个点在 \( t_k \) 采集，机体这 20ms 一直在动——每个点其实是在<span class="ha">不同的 LiDAR 坐标系</span>里测的，直接当同一时刻的点云用就产生运动畸变。这是<a href="lidar-camera-extrinsic-calibration.html">外参标定页</a>「时间同步」问题的加强版：那里是两个传感器之间对不齐，这里是<b>一帧内部</b>每个点都对不齐。</p>
+      <p>后向传播从 \( t_k \) 的预测状态出发，沿时间反向利用 IMU 模型，给每个点算出「它采样那一刻相对 scan-end 的位姿」，再把所有点统一投到 \( t_k \) 坐标系——所谓「往右推」，就是时间轴上把早采的点搬到右端点 \( t_k \)，不是点在空间里移动。</p>
+
+      <div class="demo">
+        <canvas id="vz-dsk"></canvas>
+        <div class="controls">
+          <button class="btn" id="dk-comp">运动补偿：关</button>
+          <label>速度 v <input type="range" id="dk-v" min="30" max="140" step="5" value="80"><span class="val" id="dk-v-v">80</span></label>
+          <label>角速度 ω <input type="range" id="dk-w" min="-0.7" max="0.7" step="0.05" value="0.35"><span class="val" id="dk-w-v">0.35</span></label>
+          <button class="btn" id="dk-re">重新扫描</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 2 · 运动畸变与去畸变。</b>无人机在走廊里边飞边转弯，一帧（约 2 秒，放慢演示）内激光束扫过一整圈。「补偿：关」= 把所有点当成在 scan-end 位姿采的（naive 拼接），直墙被拉弯、拉斜；打开「运动补偿」，后向传播给每个点找回它采样时刻的位姿，点云瞬间归位到真实墙面（灰线）。<b>动手试：</b>把速度和角速度调大，畸变会夸张到面目全非——这正是快速运动下不做去畸变的下场。</div>
+      </div>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 760 240" role="img" aria-label="前向传播与后向传播时间轴">
+            <defs>
+              <marker id="arrO" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#f0a361"/></marker>
+              <marker id="arrB" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#6aa6ff"/></marker>
+              <marker id="arrG" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#9bce6b"/></marker>
+            </defs>
+            <!-- 时间轴 -->
+            <line x1="60" y1="120" x2="700" y2="120" stroke="#36425e" stroke-width="2"/>
+            <line x1="90" y1="106" x2="90" y2="134" stroke="#9aa6bf" stroke-width="2"/>
+            <line x1="670" y1="106" x2="670" y2="134" stroke="#9aa6bf" stroke-width="2"/>
+            <text x="90" y="156" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#e4ebf7">t_{k-1}</text>
+            <text x="670" y="156" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#e4ebf7">t_k</text>
+            <text x="90" y="176" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">上一帧结束（已更新状态）</text>
+            <text x="670" y="176" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">当前帧结束（预测状态）</text>
+            <!-- 激光点采样时刻 -->
+            <g fill="#f0bf4c">
+              <circle cx="180" cy="120" r="4"/><circle cx="270" cy="120" r="4"/>
+              <circle cx="360" cy="120" r="4"/><circle cx="450" cy="120" r="4"/>
+              <circle cx="540" cy="120" r="4"/><circle cx="620" cy="120" r="4"/>
+            </g>
+            <text x="380" y="104" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#f0bf4c">● 各激光点的真实采样时刻（坐标系各不相同）</text>
+            <!-- 前向传播 -->
+            <path d="M100 62 H646" stroke="#f0a361" stroke-width="2.5" marker-end="url(#arrO)"/>
+            <text x="380" y="48" text-anchor="middle" font-family="Inter" font-size="13" fill="#f0a361">前向传播：上一帧状态 + IMU，ODE 积分到 t_k → 当前帧先验</text>
+            <!-- 后向传播 -->
+            <path d="M646 196 H120" stroke="#6aa6ff" stroke-width="2.5" marker-end="url(#arrB)"/>
+            <text x="380" y="224" text-anchor="middle" font-family="Inter" font-size="13" fill="#6aa6ff">后向传播：从 t_k 反推每个点采样时刻的相对位姿</text>
+            <!-- 运动补偿小箭头 -->
+            <g stroke="#9bce6b" stroke-width="1.5" fill="none">
+              <path d="M182 116 C 240 84 560 84 664 112" marker-end="url(#arrG)"/>
+            </g>
+            <text x="608" y="86" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#9bce6b">运动补偿：统一投到 t_k 坐标系</text>
+          </svg>
+        </div>
+        <figcaption><b>图 2.</b> 一帧扫描内的三件事：前向传播（橙）到 \(t_k\) 得先验；后向传播（蓝）反推各点采样时刻的相对位姿；运动补偿(绿）把所有点统一到 \(t_k\) 坐标系。</figcaption>
+      </figure>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">为什么统一到 scan-end 而不是 scan-start？</span><p>统一到哪个时刻理论上都行，关键是全帧一致。选 \(t_k\) 是因为前向传播积分的终点天然就是 \(t_k\)，状态更新也定义在 \(t_k\)——<b>前向传播的终点 = 当前帧更新的起点 = 去畸变的参考时刻</b>，三者都是 \(t_k\)，最顺。</p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 7. 残差与子地图 ═══════════ -->
+    <section>
+      <h2>七、特征、残差、子地图：激光观测如何进入滤波器</h2>
+      <h3>特征提取</h3>
+      <p>沿用 LOAM 的直觉：邻域几何<b>平滑</b>的点大概率在墙面、地面等<span class="hg">平面结构</span>上；邻域曲率<b>突变</b>的点大概率在墙角、柱棱等<span class="ha">边缘结构</span>上。不直接用所有点，一是算不动，二是大片平面上的点对沿面方向的运动本来就没约束——提特征是保几何信息、砍冗余数据。</p>
+
+      <h3>残差构建</h3>
+      <p>去畸变后的点 \( \mathbf{p}_j \) 用当前位姿估计投到地图系，在子地图里找邻居拟合局部平面（法向 \( \mathbf{u}_j \)、面上一点 \( \mathbf{q}_j \)），残差就是点到面距离：</p>
+      <div class="mathbox center">
+        <div class="lbl">点到面残差</div>
+        \[ z_j \;=\; \mathbf{u}_j^{\top}\big(\,\mathbf{T}\,\mathbf{p}_j-\mathbf{q}_j\,\big) \]
+      </div>
+      <p>这和<a href="lidar-camera-extrinsic-calibration.html">外参标定页</a>推过的点到面残差是同一形式——那里未知量是静态外参，这里是随时间变的机体状态。对旋转求雅可比时同样会冒出 \( -\mathbf{R}[\mathbf{p}]_\times \) 这种<span class="ht">反对称矩阵</span>模式（见<a href="lie-groups-slam.html">李群页</a>）。残差小说明当前位姿能把新点云对齐到历史地图；残差大说明先验位姿需要被修正。</p>
+
+      <h3>Submap：纯工程的加速</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>问题</th><th>不用 Submap</th><th>用 Submap</th></tr></thead>
+          <tbody>
+            <tr><td><b>最近邻搜索</b></td><td>每个点全局找，慢</td><td>只在局部地图找，快</td></tr>
+            <tr><td><b>匹配可靠性</b></td><td>可能匹到远处相似但无关的结构</td><td>只匹附近结构，更合理</td></tr>
+            <tr><td><b>地图管理</b></td><td>越建越大、越算越慢</td><td>局部参与估计，全局逐步维护</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><code>当前帧预测位姿 → 从历史地图取附近 Submap → 特征点与 Submap 构建残差
+→ iEKF 迭代更新位姿 → 去畸变特征点并入历史地图 → 下一帧继续</code></pre>
+    </section>
+
+    <!-- ═══════════ 8. iEKF 与增益新公式 ═══════════ -->
+    <section>
+      <h2>八、iEKF 与卡尔曼增益新公式：又快又稳的根源</h2>
+
+      <h3>iEKF ≡ 带先验的高斯–牛顿</h3>
+      <p>知识库目前没有专门的卡尔曼滤波页，但有个捷径：你已经熟悉流形上的最小二乘，而 <span class="mark">iEKF 的一帧更新，数学上就等价于对「IMU 先验 + 所有点残差」这个最小二乘问题跑高斯–牛顿</span>：</p>
+      <div class="mathbox center">
+        <div class="lbl">iEKF 更新 = 求解 MAP 问题</div>
+        \[ \min_{\mathbf{x}_k}\;\; \underbrace{\big\|\, \mathbf{x}_k \boxminus \hat{\mathbf{x}}_k \,\big\|^2_{\mathbf{P}^{-1}}}_{\text{IMU 前向传播先验}} \;+\; \sum_j \underbrace{\big\|\, z_j(\mathbf{x}_k) \,\big\|^2_{\mathbf{R}_j^{-1}}}_{\text{激光点到面残差}} \]
+      </div>
+      <p>对比外参标定页的批量最小二乘：形式全同，只是多了一项先验——先验协方差 \( \mathbf{P} \) 扮演正则化权重。普通 EKF 只线性化一次就更新；iEKF 在同一帧内<span class="hi">反复线性化 + 更新</span>，让线性化点逐渐逼近真实解，正对应高斯–牛顿的迭代。</p>
+
+      <div class="demo">
+        <canvas id="vz-gn"></canvas>
+        <div class="controls">
+          <button class="btn" id="gn-step">迭代一步 ▶</button>
+          <button class="btn" id="gn-auto">自动迭代 ▶▶</button>
+          <button class="btn" id="gn-reset">换个初值</button>
+          <span class="val" id="gn-info">iter 0 · RMS —</span>
+        </div>
+        <div class="vcap"><b>▶ 演示 3 · 残差驱动的迭代更新（iEKF 的一帧内部）。</b>蓝色是地图墙面，橙色点云带着一个错误的初始位姿（相当于 IMU 先验有误差），红色细线是每个点的<b>点到面残差</b>。每按一次「迭代一步」= 在当前估计处线性化 → 解一个小增量 → ⊞ 回流形 → 换线性化点（这里是 2D 的 3 维版，FAST-LIO 里是 18 维）。看 RMS 残差逐步收敛到贴墙。<b>动手试：</b>多按几次「换个初值」，感受不同初值下收敛快慢——初值越好（= 前向传播越准），迭代越少。</div>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>方法</th><th>处理非线性</th><th>优点</th><th>缺点</th><th>与 FAST-LIO</th></tr></thead>
+          <tbody>
+            <tr><td><b>EKF</b></td><td>一阶线性化一次</td><td>快、工程成熟</td><td>强非线性时误差大</td><td>基础思想</td></tr>
+            <tr><td><b>iEKF</b></td><td>同帧内迭代线性化</td><td>更准，仍够快</td><td>要推雅可比、判收敛</td><td><b>采用</b></td></tr>
+            <tr><td><b>UKF</b></td><td>sigma 点传播分布</td><td>非线性表达强</td><td>高维状态计算量大</td><td>未采用（实时性）</td></tr>
+            <tr><td><b>图优化</b></td><td>多状态整体优化</td><td>全局一致、支持回环</td><td>计算量大</td><td>可作后端补充</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>增益公式：一个矩阵恒等式省掉千维求逆</h3>
+      <p>滤波更新里测量维度 \( m \) = 一帧有效残差条数，可能上千。传统增益公式要对 \( m\times m \) 矩阵求逆；FAST-LIO 用矩阵求逆引理（接<a href="linear-algebra-foundations.html">线代基础页</a>）改写，只需对<span class="hi">状态维度 18×18</span> 求逆：</p>
+      <div class="mathbox center">
+        <div class="lbl">传统形式 · 对 m×m 求逆（m ≈ 上千）</div>
+        \[ \mathbf{K} \;=\; \mathbf{P}\mathbf{H}^{\top}\big(\mathbf{H}\mathbf{P}\mathbf{H}^{\top}+\mathbf{R}\big)^{-1} \]
+      </div>
+      <div class="mathbox center">
+        <div class="lbl">FAST-LIO 新形式 · 只对 18×18 求逆</div>
+        \[ \mathbf{K} \;=\; \big(\mathbf{H}^{\top}\mathbf{R}^{-1}\mathbf{H}+\mathbf{P}^{-1}\big)^{-1}\mathbf{H}^{\top}\mathbf{R}^{-1} \]
+      </div>
+      <p>各点噪声独立、\( \mathbf{R} \) 是（块）对角的，所以 \( \mathbf{H}^{\top}\mathbf{R}^{-1}\mathbf{H} \) 就是把每条残差的 18×18 外积便宜地累加起来。直觉类比：<span class="hb">传统做法像为了融合 1800 个点去解一个 1800 维大问题；新公式先把所有点的信息压缩进 18 维状态空间，再解状态更新</span>。注意 \( \mathbf{H}^{\top}\mathbf{R}^{-1}\mathbf{H}+\mathbf{P}^{-1} \) 正是上面 MAP 问题的高斯–牛顿 Hessian——<b>速度技巧和下一节的退化分析用的是同一个对象</b>，这不是巧合。</p>
+
+      <div class="demo">
+        <canvas id="vz-kg"></canvas>
+        <div class="controls">
+          <label>一帧特征点数 m <input type="range" id="kg-m" min="100" max="3000" step="50" value="1500"><span class="val" id="kg-m-v">1500</span></label>
+        </div>
+        <div class="vcap"><b>▶ 演示 4 · 增益公式的求逆规模。</b>左边按真实比例画出两个公式各自要求逆的矩阵：传统公式的 \(m\times m\) 随点数膨胀，新公式的 18×18 小到几乎看不见。右边是对应的计算量（对数轴）。<b>动手试：</b>把 m 拖到 3000，看差距拉到多少倍——这就是 FAST-LIO 能在机载电脑上实时跑的账。</div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 9. 退化与鲁棒性 ═══════════ -->
+    <section>
+      <h2>九、退化、噪声、振动：鲁棒性的来源</h2>
+      <p>退化不是「系统坏了」，而是<span class="ha">环境几何对某些自由度约束不足</span>。用<a href="linear-algebra-foundations.html">线代页</a>「秩与特征向量」的语言说最清楚：把所有点残差的信息累加成信息矩阵 \( \mathbf{H}^{\top}\mathbf{R}^{-1}\mathbf{H} \)（18×18），对它做特征分解——<span class="mark">特征值小的方向就是退化方向，对应特征向量指出哪个自由度没被环境约束住</span>。长走廊里，两侧墙面点到面残差对「沿走廊平移」的贡献全是零，信息矩阵在这个方向亏秩，正是「秩 = 像空间维数」的活例子。</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>场景</th><th>退化原因</th><th>表现</th></tr></thead>
+          <tbody>
+            <tr><td><b>长走廊</b></td><td>沿走廊方向缺几何变化</td><td>前后方向漂移或约束弱</td></tr>
+            <tr><td><b>白墙 / 大平面</b></td><td>点到面对面内平移不敏感</td><td>某些平移方向不稳定</td></tr>
+            <tr><td><b>狭窄 / 杂乱空间</b></td><td>可见结构局部、遮挡多</td><td>残差约束质量波动</td></tr>
+            <tr><td><b>小 FoV LiDAR</b></td><td>可观测范围小</td><td>可观测性整体下降</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>紧耦合抗退化的原理随之清晰：iEKF 求解的矩阵是 \( \mathbf{H}^{\top}\mathbf{R}^{-1}\mathbf{H}+\mathbf{P}^{-1} \)，<span class="hg">先验项 \( \mathbf{P}^{-1} \) 保证矩阵永远可逆</span>——退化方向上更新量自动趋近于零，状态就地保持 IMU 预测值；而松耦合会先让独立 ICP 在退化方向输出一个错得离谱的位姿，再拿去污染融合。振动问题同理：桨叶和电机给 IMU 带来高频噪声，单靠 IMU 积分误差快速累积、单靠 LiDAR 又受畸变和退化影响，FAST-LIO 让 IMU 提供<b>短时运动连续性</b>、让 LiDAR 几何残差<b>持续修正 IMU 漂移</b>，互为兜底。</p>
+
+      <div class="demo">
+        <canvas id="vz-dg"></canvas>
+        <div class="controls">
+          <label>机器人位置 <input type="range" id="dg-x" min="120" max="560" step="5" value="300"></label>
+          <button class="btn" id="dg-end">端墙：无</button>
+          <button class="btn" id="dg-prior">IMU 先验：关</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 5 · 退化 = 信息矩阵的小特征值方向。</b>机器人在长走廊里向四周发射激光，每条命中的射线按<b>墙面法向</b>给信息矩阵 \( \mathbf{H}^\top\mathbf{R}^{-1}\mathbf{H} \) 累加一份约束；橙色椭圆是由它反推的不确定度（轴长 \( \propto 1/\sqrt{\lambda} \)）。侧墙法向全部垂直于走廊，沿走廊方向 \( \lambda\approx 0 \)——椭圆被拉成一条线，红色箭头就是<b>退化方向</b>。<b>动手试：</b>①把机器人推向走廊尽头或打开「端墙」，端墙法向进来后椭圆立刻收拢；②打开「IMU 先验」（信息矩阵加 \( \mathbf{P}^{-1} \)），退化方向被兜住——这就是紧耦合抗退化的几何本质。</div>
+      </div>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">兜底有限度</span><p>紧耦合让系统比纯 LiDAR 或松耦合稳得多，但极端长期退化（几十米无特征长直隧道）仍会漂移——那是可观测性的物理极限，不是算法能凭空变出来的约束。</p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 10. 工程实践 ═══════════ -->
+    <section>
+      <h2>十、工程实践：模块、流程与调试</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>工程模块</th><th>输入 → 输出</th><th>常见坑</th></tr></thead>
+          <tbody>
+            <tr><td><b>缓存与同步</b></td><td>IMU/LiDAR 消息 → 按 scan 分组</td><td>时间戳不准直接毁掉去畸变</td></tr>
+            <tr><td><b>点云预处理</b></td><td>原始点云 → 特征/降采样点</td><td>点太多慢，点太少约束弱</td></tr>
+            <tr><td><b>IMU 初始化</b></td><td>静止数据 → 初始重力、偏置</td><td>初始化时运动过大毁掉重力估计</td></tr>
+            <tr><td><b>前向传播</b></td><td>上帧状态 + IMU 序列 → scan-end 先验</td><td>IMU 噪声参数不合理</td></tr>
+            <tr><td><b>运动补偿</b></td><td>先验 + 点时间戳 → 去畸变点云</td><td>点时间戳缺失/错误则补偿失败</td></tr>
+            <tr><td><b>残差构建</b></td><td>特征点 + 子地图 → 残差与雅可比</td><td>地图质量差会误导更新</td></tr>
+            <tr><td><b>iEKF 更新</b></td><td>先验 + 残差 → 更新状态</td><td>迭代次数、收敛阈值影响速度与稳定</td></tr>
+            <tr><td><b>地图更新</b></td><td>更新位姿 + 特征点 → 历史地图</td><td>过密则慢、过稀则弱</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>部署步骤</h3>
+      <ol>
+        <li>确认硬件：LiDAR 与 IMU <b>刚性连接</b>、外参已知或可标定（方法见<a href="lidar-camera-extrinsic-calibration.html">外参标定页</a>）、时间同步可靠。</li>
+        <li>确认数据：ROS topic、点云字段、<b>每个点是否带时间戳</b>、IMU 坐标系方向。</li>
+        <li>配参数：LiDAR 类型、外参、IMU 噪声、滤波参数、地图分辨率。</li>
+        <li>先跑公开数据集 / rosbag，看轨迹与地图是否发散、重影。</li>
+        <li>再上实机：先低速开阔特征丰富，再快速、狭窄、退化场景。</li>
+        <li>用于导航时，把 odometry 接入规划、控制与地图模块（全栈位置见<a href="robotics-autonomous-driving-stack.html">技术栈全景页</a>）。</li>
+      </ol>
+
+      <h3>调试速查</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>现象</th><th>可能原因</th><th>排查思路</th></tr></thead>
+          <tbody>
+            <tr><td><b>地图整体重影</b></td><td>时间同步错、外参错、去畸变失败</td><td>查点时间字段、LiDAR-IMU 外参、IMU 方向</td></tr>
+            <tr><td><b>轨迹缓慢漂移</b></td><td>环境退化、IMU 噪声参数不当、地图约束弱</td><td>换环境测试，调噪声参数，看特征数量</td></tr>
+            <tr><td><b>快速运动发散</b></td><td>畸变未补好、点/IMU 时间戳错</td><td>慢速对比测试，检查 deskew 结果</td></tr>
+            <tr><td><b>初始化失败</b></td><td>初始阶段运动过大或静止不足</td><td>静止初始化，查加速度模长与重力方向</td></tr>
+            <tr><td><b>越跑越慢</b></td><td>地图点过密、局部地图管理不当</td><td>调滤波分辨率与地图更新策略</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══════════ 11. 位置与关系 ═══════════ -->
+    <section>
+      <h2>十一、它在技术栈里的位置，以及与近亲的关系</h2>
+      <p>放进<a href="robotics-autonomous-driving-stack.html">机器人与自动驾驶技术栈</a>的图里：FAST-LIO 占的是<span class="hi">定位 / 里程计前端</span>这一格（Autoware 里 localization 模块的位置），输出 odometry 喂给规划与控制。它刻意不做回环和全局一致性——那是图优化后端的活。</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>对比项</th><th>FAST-LIO / iEKF 前端</th><th>图优化后端</th></tr></thead>
+          <tbody>
+            <tr><td><b>计算方式</b></td><td>递推估计当前状态</td><td>优化多个历史状态</td></tr>
+            <tr><td><b>优势</b></td><td>低延迟、实时</td><td>全局一致、支持回环</td></tr>
+            <tr><td><b>劣势</b></td><td>长期漂移需后端补偿</td><td>计算量大</td></tr>
+            <tr><td><b>典型角色</b></td><td>实时里程计前端</td><td>全局地图优化后端</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><b>vs LOAM：</b>继承几何残差思想，但不让 LiDAR 独立求位姿再融合，而是把残差直接放进 iEKF。</li>
+        <li><b>vs LIO-SAM：</b>LIO-SAM 走因子图平滑路线，适合关键帧 + 回环 + 全局一致；FAST-LIO 走高频轻量滤波路线，适合机载小算力实时估计。</li>
+        <li><b>适用场景：</b>无人机室内飞行、室内机器人、仓储 AGV、矿山隧道测绘、林业农业重建、低速自动驾驶前端、AR/VR 大空间定位——共同点是 GPS 不可用/不可靠 + 需要实时三维几何。</li>
+        <li><b>不适合单独承担：</b>大范围全局一致建图、回环修正、语义理解、动态目标、任务规划——实际系统把它当前端，后接回环检测、图优化、语义地图与规划控制。</li>
+      </ul>
+    </section>
+
+    <!-- ═══════════ 12. 复习清单 ═══════════ -->
+    <section>
+      <h2>十二、必须背下来的 10 句话</h2>
+      <ol>
+        <li>FAST-LIO 是一个<b>紧耦合</b> LiDAR-inertial odometry 系统。</li>
+        <li>LiDAR 提供<b>几何约束</b>，IMU 提供<b>高频运动连续性</b>。</li>
+        <li>前向传播 = 用 IMU 从上一帧更新状态<b>积分</b>到当前 scan-end。</li>
+        <li>前向传播结果是<b>当前帧 iEKF 的初始先验</b>，不是独立 ICP 的初值。</li>
+        <li>后向传播 = 为每个激光点求<b>相对 scan-end 的位姿</b>。</li>
+        <li>运动补偿 = 把一帧内不同时刻采集的点<b>统一到 \(t_k\) 坐标系</b>。</li>
+        <li>Submap = 当前帧附近的局部历史地图，为了快而可靠地建残差。</li>
+        <li>退化 = 某些方向几何约束不足（信息矩阵小特征值方向），不是传感器坏了。</li>
+        <li>FAST-LIO 快的核心是<b>增益新公式</b>：求逆规模从测量维度（上千）降到状态维度（18）。</li>
+        <li>它是实时<b>前端</b>；长期大范围全局一致性要接回环与图优化<b>后端</b>。</li>
+      </ol>
+
+      <div class="callout tip">
+        <div class="ic">🧭</div>
+        <div class="ct"><span class="t">建议复读路径（接已有知识页）</span><p>① <a href="lie-groups-slam.html">李群页</a>指数映射 + SO(3) → 本页第四、八节；② <a href="lidar-camera-extrinsic-calibration.html">标定页</a>流形最小二乘 + 残差雅可比 → 本页第七节；③ <a href="linear-algebra-foundations.html">线代页</a>秩/特征向量 → 本页第九节，自问「长走廊里信息矩阵哪个特征向量的特征值趋近零」；④ <a href="differential-equations.html">微分方程页</a>积分直觉 → 本页第六节。</p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 13. 术语表 ═══════════ -->
+    <section>
+      <h2>附：核心术语表</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>英文 / 符号</th><th>中文</th><th>一句话解释</th></tr></thead>
+          <tbody>
+            <tr><td><b>LIO</b></td><td>激光惯性里程计</td><td>融合 LiDAR 与 IMU 估计位姿</td></tr>
+            <tr><td><b>Scan</b></td><td>一帧扫描</td><td>一段时间窗内累积的激光点集合</td></tr>
+            <tr><td><b>Forward propagation</b></td><td>前向传播</td><td>IMU 从上一帧状态积分预测到当前 scan-end</td></tr>
+            <tr><td><b>Backward propagation</b></td><td>后向传播</td><td>从 scan-end 反推各点采样时刻的相对运动</td></tr>
+            <tr><td><b>Motion compensation</b></td><td>运动补偿 / 去畸变</td><td>把一帧内各点统一到同一时刻坐标系</td></tr>
+            <tr><td><b>Submap</b></td><td>子地图</td><td>历史地图中当前位置附近的局部点集</td></tr>
+            <tr><td><b>Residual</b></td><td>残差</td><td>特征点与地图几何结构之间的距离误差</td></tr>
+            <tr><td><b>iEKF</b></td><td>迭代扩展卡尔曼滤波</td><td>同一帧内多次线性化和更新的 EKF</td></tr>
+            <tr><td><b>Kalman gain</b></td><td>卡尔曼增益</td><td>控制先验与观测融合权重的矩阵</td></tr>
+            <tr><td><b>Degeneration</b></td><td>退化</td><td>几何约束不足导致某些状态方向难以估计</td></tr>
+            <tr><td><b>SO(3), ⊞/⊟</b></td><td>旋转群与流形加减</td><td>在非欧空间中严格表示与更新姿态</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══════════ 延伸阅读 ═══════════ -->
+    <section>
+      <h2>延伸阅读</h2>
+      <div class="cards">
+        <a class="c" href="lie-groups-slam.html"><span class="k">地基</span><h4>流形与李群李代数</h4><p>SO(3)/SE(3)、指数映射——本页 ⊞/⊟ 与 18 维误差状态的数学底座。</p></a>
+        <a class="c" href="lidar-camera-extrinsic-calibration.html"><span class="k">姊妹篇</span><h4>LiDAR 与相机的坐标对齐</h4><p>同款点到面残差与流形最小二乘，未知量是静态外参。</p></a>
+        <a class="c" href="linear-algebra-foundations.html"><span class="k">地基</span><h4>线性代数基础</h4><p>秩与特征向量——读懂退化分析和增益公式的钥匙。</p></a>
+        <a class="c" href="differential-equations.html"><span class="k">地基</span><h4>微分方程的故事</h4><p>前向传播 = IMU 运动学 ODE 的数值积分。</p></a>
+        <a class="c" href="robotics-autonomous-driving-stack.html"><span class="k">全景</span><h4>机器人与自动驾驶技术栈</h4><p>FAST-LIO 在整个系统栈中占「定位前端」哪一格。</p></a>
+        <a class="c" href="https://arxiv.org/abs/2010.08196" target="_blank" rel="noopener"><span class="k">论文</span><h4>FAST-LIO（RA-L 2021）</h4><p>Xu &amp; Zhang，HKU MARS Lab。arXiv:2010.08196；续作 FAST-LIO2: 2107.06829。</p></a>
+        <a class="c" href="https://github.com/hku-mars/FAST_LIO" target="_blank" rel="noopener"><span class="k">代码</span><h4>hku-mars/FAST_LIO</h4><p>官方开源实现（含 FAST-LIO2），ROS 包可直接部署。</p></a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>知识库 · 机器人 / SLAM</span>
+    <a class="back" href="../index.html">← 返回门户</a>
+  </footer>
+
+</div>
+
+<script>
+  const bar = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  };
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+
+<script>
+/* ═══════════ 交互演示（5 个）═══════════ */
+(function(){
+'use strict';
+const TERRA='#f0a361',AMBER='#f0bf4c',OLIVE='#9bce6b',TEAL='#46d7cc',BLUE='#6aa6ff',
+      RUST='#ff8a8a',INK='#e4ebf7',MUTED='#9aa6bf',DIM='#6b768f';
+const TAU=Math.PI*2;
+
+/* —— 公共工具 —— */
+function cv(id,w,h){
+  const c=document.getElementById(id); if(!c)return null;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  c.width=w*dpr; c.height=h*dpr; c.style.aspectRatio=w+' / '+h;
+  const g=c.getContext('2d'); g.scale(dpr,dpr);
+  return {c,g,w,h};
+}
+const visMap=new Map();
+const io=new IntersectionObserver(es=>es.forEach(e=>visMap.set(e.target,e.isIntersecting)),{rootMargin:'120px'});
+function anim(c,fn){ /* 只在画布可见时运行 */
+  io.observe(c); let pt=null;
+  function tick(t){
+    if(visMap.get(c)){ const dt=(pt==null)?0.016:Math.min(0.05,(t-pt)/1000); fn(dt); }
+    pt=t; requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function tx(g,s,x,y,col,size,align,bold){
+  g.fillStyle=col; g.font=(bold?'600 ':'')+(size||12)+'px Inter'; g.textAlign=align||'left'; g.fillText(s,x,y);
+}
+function line(g,x1,y1,x2,y2,col,wd){
+  g.strokeStyle=col; g.lineWidth=wd||1; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+}
+function dot(g,x,y,r,col){ g.fillStyle=col; g.beginPath(); g.arc(x,y,r,0,TAU); g.fill(); }
+function grid(g,w,h){
+  g.strokeStyle='rgba(40,50,72,.45)'; g.lineWidth=1;
+  for(let x=40;x<w;x+=40){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); }
+  for(let y=40;y<h;y+=40){ g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); }
+}
+function raySeg(ox,oy,dx,dy,x1,y1,x2,y2){ /* 射线与线段求交，返回 t 或 null */
+  const rx=x2-x1, ry=y2-y1;
+  const den=dx*ry-dy*rx; if(Math.abs(den)<1e-9)return null;
+  const wx=x1-ox, wy=y1-oy;
+  const t=(wx*ry-wy*rx)/den, s=(wx*dy-wy*dx)/den;
+  return (t>1e-6&&s>=0&&s<=1)?t:null;
+}
+function solve3(A,b){ /* 3×3 高斯消元 */
+  const M=[[...A[0],b[0]],[...A[1],b[1]],[...A[2],b[2]]];
+  for(let i=0;i<3;i++){
+    let p=i; for(let r=i+1;r<3;r++) if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;
+    const t=M[i]; M[i]=M[p]; M[p]=t;
+    if(Math.abs(M[i][i])<1e-12)return [0,0,0];
+    for(let r=i+1;r<3;r++){ const f=M[r][i]/M[i][i]; for(let k=i;k<4;k++)M[r][k]-=f*M[i][k]; }
+  }
+  const u=[0,0,0];
+  for(let i=2;i>=0;i--){ let s=M[i][3]; for(let j=i+1;j<3;j++)s-=M[i][j]*u[j]; u[i]=s/M[i][i]; }
+  return u;
+}
+
+/* ════ 演示 1：预测–修正循环 ════ */
+(function(){
+  const V=cv('vz-pred',760,340); if(!V)return; const {c,g,w,h}=V;
+  const cx=385,cy=178,Ax=255,Ay=100,W=0.55;
+  let t=0,est={x:cx,y:cy},sig=5,bias=0,sinceUp=0,flash=0;
+  let trailT=[],trailE=[];
+  let lidarOn=true,freq=1;
+  const bt=document.getElementById('pd-lidar');
+  const fr=document.getElementById('pd-freq'),fv=document.getElementById('pd-freq-v');
+  const truePos=tt=>({x:cx+Ax*Math.sin(W*tt), y:cy+Ay*Math.sin(2*W*tt+0.6)});
+  const trueVel=tt=>({x:Ax*W*Math.cos(W*tt), y:2*Ay*W*Math.cos(2*W*tt+0.6)});
+  function reset(){ t=0; est=truePos(0); sig=5; bias=0; sinceUp=0; trailT=[]; trailE=[]; }
+  reset();
+  bt.onclick=()=>{ lidarOn=!lidarOn; bt.classList.toggle('on',lidarOn); bt.textContent='LiDAR 更新：'+(lidarOn?'开':'关'); };
+  fr.oninput=()=>{ freq=+fr.value; fv.textContent=freq.toFixed(1)+' Hz'; };
+  document.getElementById('pd-reset').onclick=reset;
+  function poly(g,pts,col,wd){
+    if(pts.length<2)return;
+    g.strokeStyle=col; g.lineWidth=wd; g.beginPath(); g.moveTo(pts[0].x,pts[0].y);
+    for(const p of pts)g.lineTo(p.x,p.y); g.stroke();
+  }
+  anim(c,dt=>{
+    t+=dt; sinceUp+=dt; flash=Math.max(0,flash-dt);
+    const tp=truePos(t), v=trueVel(t);
+    bias+=(Math.random()-0.5)*0.03;                      // 偏置随机游走
+    const rot=0.10+bias, cs=Math.cos(rot), sn=Math.sin(rot);
+    est.x+=(v.x*cs-v.y*sn)*dt*1.03;                      // 带偏置/尺度误差的积分
+    est.y+=(v.x*sn+v.y*cs)*dt*1.03;
+    sig=Math.min(64,sig+9*dt);                           // 协方差随积分膨胀
+    if(lidarOn&&sinceUp>=1/freq){                        // LiDAR 更新：拉回 + 收缩
+      est.x=tp.x+(Math.random()-0.5)*5; est.y=tp.y+(Math.random()-0.5)*5;
+      sig=5; bias*=0.3; sinceUp=0; flash=0.35;
+    }
+    trailT.push({x:tp.x,y:tp.y}); trailE.push({x:est.x,y:est.y});
+    if(trailT.length>1100){ trailT.shift(); trailE.shift(); }
+    g.clearRect(0,0,w,h); grid(g,w,h);
+    poly(g,trailT,'rgba(155,206,107,.75)',1.6);
+    poly(g,trailE,'rgba(240,163,97,.85)',1.6);
+    g.fillStyle='rgba(240,163,97,.12)'; g.beginPath(); g.arc(est.x,est.y,sig,0,TAU); g.fill();
+    g.strokeStyle='rgba(240,163,97,.6)'; g.lineWidth=1.2; g.beginPath(); g.arc(est.x,est.y,sig,0,TAU); g.stroke();
+    if(flash>0){
+      g.strokeStyle='rgba(70,215,204,'+(flash*2.4)+')'; g.lineWidth=2.5;
+      g.beginPath(); g.arc(est.x,est.y,10+(0.35-flash)*90,0,TAU); g.stroke();
+    }
+    dot(g,tp.x,tp.y,5,OLIVE); dot(g,est.x,est.y,5,TERRA);
+    tx(g,'● 真实轨迹',16,24,OLIVE,12.5);
+    tx(g,'● IMU 前向传播估计（漂移中）',16,42,TERRA,12.5);
+    tx(g,'○ 协方差：两次更新之间持续膨胀',16,60,MUTED,12.5);
+    tx(g,lidarOn?('LiDAR 更新 '+freq.toFixed(1)+' Hz：漂了就拉回来'):'LiDAR 更新已关闭：纯 IMU 积分，一路漂走',
+       w-16,24,lidarOn?TEAL:RUST,12.5,'right');
+  });
+})();
+
+/* ════ 演示 2：运动畸变与去畸变 ════ */
+(function(){
+  const V=cv('vz-dsk',760,360); if(!V)return; const {c,g,w,h}=V;
+  const TOP=92,BOT=284,ENDX=648,X0=-60,START={x:150,y:168};
+  const Ts=2.0,HOLD=1.7,N=250,RMAX=900;
+  const SEGS=[[X0,TOP,ENDX,TOP],[X0,BOT,ENDX,BOT],[ENDX,TOP,ENDX,BOT]];
+  const vEl=document.getElementById('dk-v'),wEl=document.getElementById('dk-w');
+  let v=+vEl.value,om=+wEl.value,comp=false,m=0,sweep=0,done=0,samples=[];
+  const bt=document.getElementById('dk-comp');
+  bt.onclick=()=>{ comp=!comp; bt.classList.toggle('on',comp); bt.textContent='运动补偿：'+(comp?'开':'关'); };
+  vEl.oninput=()=>{ v=+vEl.value; document.getElementById('dk-v-v').textContent=v; restart(); };
+  wEl.oninput=()=>{ om=+wEl.value; document.getElementById('dk-w-v').textContent=om.toFixed(2); restart(); };
+  document.getElementById('dk-re').onclick=restart;
+  function restart(){ sweep=0; done=0; samples=[]; }
+  function pose(tau){ /* 匀速圆弧运动学 */
+    if(Math.abs(om)<1e-4)return {x:START.x+v*tau,y:START.y,psi:0};
+    const psi=om*tau,R=v/om;
+    return {x:START.x+R*Math.sin(psi), y:START.y+R*(1-Math.cos(psi)), psi};
+  }
+  function cast(ox,oy,dx,dy){
+    let best=null;
+    for(const s of SEGS){ const t=raySeg(ox,oy,dx,dy,s[0],s[1],s[2],s[3]); if(t!=null&&t<RMAX&&(best==null||t<best))best=t; }
+    return best;
+  }
+  anim(c,dt=>{
+    sweep+=dt;
+    if(sweep>Ts+HOLD){ restart(); sweep=0; }
+    const tau=Math.min(sweep,Ts);
+    const target=Math.min(N,Math.floor(N*tau/Ts)+1);
+    while(done<target){                                  // 按扫描进度补采样
+      const tk=(done/N)*Ts, p=pose(tk), thl=-Math.PI+TAU*(tk/Ts), a=p.psi+thl;
+      const r=cast(p.x,p.y,Math.cos(a),Math.sin(a));
+      if(r!=null)samples.push({thl,r,tk});
+      done++;
+    }
+    m+=((comp?1:0)-m)*Math.min(1,dt*4);                  // 补偿开关的平滑过渡
+    g.clearRect(0,0,w,h);
+    g.strokeStyle='#36425e'; g.lineWidth=3;              // 真实墙面
+    for(const s of SEGS){ g.beginPath(); g.moveTo(Math.max(-5,s[0]),s[1]); g.lineTo(s[2],s[3]); g.stroke(); }
+    tx(g,'真实墙面',ENDX-64,TOP-10,DIM,12);
+    g.strokeStyle='rgba(106,166,255,.4)'; g.lineWidth=1.4; g.setLineDash([4,5]); // 航迹
+    g.beginPath(); g.moveTo(START.x,START.y);
+    for(let s2=0;s2<=tau+1e-6;s2+=0.05){ const p=pose(Math.min(s2,tau)); g.lineTo(p.x,p.y); }
+    g.stroke(); g.setLineDash([]);
+    const pe=pose(Ts);
+    const col=(m>0.5)?OLIVE:AMBER;
+    for(const s of samples){                             // 点云：naive ↔ 去畸变 插值
+      const nx=pe.x+s.r*Math.cos(pe.psi+s.thl), ny=pe.y+s.r*Math.sin(pe.psi+s.thl);
+      const p=pose(s.tk);
+      const txp=p.x+s.r*Math.cos(p.psi+s.thl), typ=p.y+s.r*Math.sin(p.psi+s.thl);
+      dot(g,nx+(txp-nx)*m,ny+(typ-ny)*m,2.4,col);
+    }
+    const cur=pose(tau);
+    if(sweep<=Ts){                                       // 扫描中的光束
+      const a=cur.psi+(-Math.PI+TAU*(tau/Ts));
+      const r=cast(cur.x,cur.y,Math.cos(a),Math.sin(a))||300;
+      line(g,cur.x,cur.y,cur.x+r*Math.cos(a),cur.y+r*Math.sin(a),'rgba(70,215,204,.75)',1.6);
+    }
+    g.save(); g.translate(cur.x,cur.y); g.rotate(cur.psi); // 无人机
+    g.fillStyle=INK; g.beginPath(); g.moveTo(11,0); g.lineTo(-7,-6); g.lineTo(-7,6); g.closePath(); g.fill();
+    g.restore();
+    g.strokeStyle=TERRA; g.lineWidth=1.4;                // scan-end 参考位姿
+    g.beginPath(); g.moveTo(pe.x-7,pe.y); g.lineTo(pe.x+7,pe.y); g.moveTo(pe.x,pe.y-7); g.lineTo(pe.x,pe.y+7); g.stroke();
+    tx(g,'t_k 参考位姿',pe.x+11,pe.y+4,TERRA,11.5);
+    tx(g,'一帧 ≈ 2s（放慢演示）· 逐点扫描',16,24,MUTED,12.5);
+    tx(g,(m>0.5)?'补偿开：每个点用自己采样时刻的位姿归位':'补偿关：所有点硬套 scan-end 位姿 → 畸变',
+       16,44,(m>0.5)?OLIVE:AMBER,12.5);
+  });
+})();
+
+/* ════ 演示 3：残差驱动的高斯–牛顿 / iEKF 迭代 ════ */
+(function(){
+  const V=cv('vz-gn',760,340); if(!V)return; const {c,g,w,h}=V;
+  const SEGS=[
+    {x1:150,y1:272,x2:624,y2:272,n:{x:0,y:-1}},
+    {x1:564,y1:86, x2:564,y2:272,n:{x:-1,y:0}}
+  ];
+  const body=[];
+  for(let X=172;X<=540;X+=23)body.push({x:X+(Math.random()-0.5)*2.4,y:272+(Math.random()-0.5)*2.4});
+  for(let Y=104;Y<=252;Y+=18.5)body.push({x:564+(Math.random()-0.5)*2.4,y:Y+(Math.random()-0.5)*2.4});
+  const cpt=body.reduce((a,p)=>({x:a.x+p.x/body.length,y:a.y+p.y/body.length}),{x:0,y:0});
+  let pose,show,from,animT=1,iter=0,rms=0,auto=false,ghost=[],cool=0;
+  const info=document.getElementById('gn-info'),ab=document.getElementById('gn-auto');
+  function T(p,ps){
+    const cs=Math.cos(ps.th),sn=Math.sin(ps.th),qx=p.x-cpt.x,qy=p.y-cpt.y;
+    return {x:cpt.x+cs*qx-sn*qy+ps.tx, y:cpt.y+sn*qx+cs*qy+ps.ty};
+  }
+  function nearest(p){
+    let best=null;
+    for(const s of SEGS){
+      const d=s.n.x*(p.x-s.x1)+s.n.y*(p.y-s.y1);
+      if(best==null||Math.abs(d)<Math.abs(best.d))best={d,n:s.n};
+    }
+    return best;
+  }
+  function calcRMS(ps){ let s=0; for(const b of body){ s+=nearest(T(b,ps)).d**2; } return Math.sqrt(s/body.length); }
+  function upInfo(){ info.textContent='iter '+iter+' · RMS '+rms.toFixed(1)+' px'; }
+  function reset(){
+    pose={tx:(Math.random()<.5?-1:1)*(26+Math.random()*26), ty:-(22+Math.random()*30),
+          th:(Math.random()<.5?-1:1)*(0.16+Math.random()*0.16)};
+    show={...pose}; from={...pose}; animT=1; iter=0; rms=calcRMS(pose);
+    ghost=body.map(b=>T(b,pose)); auto=false; ab.classList.remove('on'); upInfo();
+  }
+  function step(){
+    if(animT<1)return;
+    const H=[[0,0,0],[0,0,0],[0,0,0]],bb=[0,0,0];
+    const cs=Math.cos(pose.th),sn=Math.sin(pose.th);
+    for(const s of body){
+      const p=T(s,pose),nr=nearest(p);
+      const qx=s.x-cpt.x,qy=s.y-cpt.y;
+      const dpx=-sn*qx-cs*qy, dpy=cs*qx-sn*qy;          // dp/dθ
+      const J=[nr.n.x, nr.n.y, nr.n.x*dpx+nr.n.y*dpy];
+      for(let i=0;i<3;i++){ bb[i]+=J[i]*nr.d; for(let j=0;j<3;j++)H[i][j]+=J[i]*J[j]; }
+    }
+    for(let i=0;i<3;i++)H[i][i]+=1e-6;
+    const u=solve3(H,bb);
+    const nrm=Math.hypot(u[0],u[1]), f=nrm>70?70/nrm:1;
+    from={...show};
+    pose={tx:pose.tx-u[0]*f, ty:pose.ty-u[1]*f, th:pose.th-u[2]*f};
+    animT=0; iter++; rms=calcRMS(pose); upInfo();
+  }
+  reset();
+  document.getElementById('gn-step').onclick=step;
+  ab.onclick=()=>{ auto=!auto; ab.classList.toggle('on',auto); if(auto)step(); };
+  document.getElementById('gn-reset').onclick=reset;
+  anim(c,dt=>{
+    animT=Math.min(1,animT+dt/0.35); cool+=dt;
+    if(auto&&animT>=1&&cool>0.5){ cool=0; if(rms>0.9&&iter<30)step(); else{ auto=false; ab.classList.remove('on'); } }
+    const e=animT*(2-animT);
+    show={tx:from.tx+(pose.tx-from.tx)*e, ty:from.ty+(pose.ty-from.ty)*e, th:from.th+(pose.th-from.th)*e};
+    g.clearRect(0,0,w,h);
+    g.strokeStyle=BLUE; g.lineWidth=3.5;                 // 地图墙面
+    for(const s of SEGS){ g.beginPath(); g.moveTo(s.x1,s.y1); g.lineTo(s.x2,s.y2); g.stroke(); }
+    tx(g,'地图（子地图局部平面）',150,296,BLUE,12.5);
+    g.fillStyle='rgba(107,118,143,.4)';                  // 初值幽灵
+    for(const p of ghost){ g.beginPath(); g.arc(p.x,p.y,2.2,0,TAU); g.fill(); }
+    for(const s of body){                                // 当前点 + 残差线
+      const p=T(s,show),nr=nearest(p);
+      line(g,p.x,p.y,p.x-nr.d*nr.n.x,p.y-nr.d*nr.n.y,'rgba(255,138,138,.7)',1);
+      dot(g,p.x,p.y,3.2,TERRA);
+    }
+    tx(g,'灰点 = 初始位姿（IMU 先验）· 橙点 = 当前估计 · 红线 = 点到面残差',16,24,MUTED,12.5);
+    tx(g,'iter '+iter+' · RMS '+rms.toFixed(1)+' px',w-16,24,AMBER,13,'right',true);
+  });
+})();
+
+/* ════ 演示 4：增益公式的求逆规模 ════ */
+(function(){
+  const V=cv('vz-kg',760,250); if(!V)return; const {c,g,w,h}=V;
+  const sl=document.getElementById('kg-m'),sv=document.getElementById('kg-m-v');
+  const fmt=v=>{ if(v>=1e8)return (v/1e8).toFixed(1)+' 亿'; if(v>=1e4)return Math.round(v/1e4)+' 万'; return Math.round(v)+''; };
+  function bar(y,len,col,label,val){
+    g.fillStyle=col; g.globalAlpha=0.22; g.fillRect(420,y,len,24); g.globalAlpha=1;
+    g.strokeStyle=col; g.strokeRect(420,y,len,24);
+    tx(g,label,420,y-7,col,12.5);
+    tx(g,val,426+len,y+16,INK,12.5);
+  }
+  function draw(){
+    const m=+sl.value; sv.textContent=m;
+    g.clearRect(0,0,w,h);
+    const base=196, st=12+(m/3000)*172, sn=Math.max(4,184*18/3000);
+    tx(g,'要求逆的矩阵（按边长真实比例）',40,28,MUTED,12.5);
+    g.strokeStyle=RUST; g.fillStyle='rgba(255,138,138,.10)';
+    g.fillRect(60,base-st,st,st); g.strokeRect(60,base-st,st,st);
+    tx(g,'传统 (H P Hᵀ + R)',60,base+22,RUST,12.5);
+    tx(g,m+' × '+m,60+st/2,base-st/2+4,RUST,13,'center',true);
+    g.strokeStyle=TERRA; g.fillStyle='rgba(240,163,97,.3)';
+    g.fillRect(305,base-sn,sn,sn); g.strokeRect(305,base-sn,sn,sn);
+    tx(g,'FAST-LIO (HᵀR⁻¹H + P⁻¹)',270,base+22,TERRA,12.5);
+    tx(g,'18 × 18 ↖',313+sn,base-sn-6,TERRA,12.5);
+    const ct=m*m*m, cn=m*324+5832;
+    const L=vv=>Math.max(6,Math.log10(vv)/10.6*280);
+    tx(g,'求逆计算量（对数轴）',420,28,MUTED,12.5);
+    bar(58,L(ct),RUST,'传统 ∝ m³','≈ '+fmt(ct));
+    bar(122,L(cn),TERRA,'新公式 ∝ m·18² + 18³','≈ '+fmt(cn));
+    tx(g,'差距 ≈ '+fmt(ct/cn)+' 倍',420,196,AMBER,17,'left',true);
+  }
+  sl.oninput=draw; draw();
+})();
+
+/* ════ 演示 5：退化 = 信息矩阵小特征值方向 ════ */
+(function(){
+  const V=cv('vz-dg',760,340); if(!V)return; const {c,g,w,h}=V;
+  const TOP=104,BOT=246,EX=616,R=205,NR=72,ry=(TOP+BOT)/2;
+  let rx=300,endOn=false,priorOn=false;
+  const sx=document.getElementById('dg-x'),eb=document.getElementById('dg-end'),pb=document.getElementById('dg-prior');
+  sx.oninput=()=>{ rx=+sx.value; draw(); };
+  eb.onclick=()=>{ endOn=!endOn; eb.classList.toggle('on',endOn); eb.textContent='端墙：'+(endOn?'有':'无'); draw(); };
+  pb.onclick=()=>{ priorOn=!priorOn; pb.classList.toggle('on',priorOn); pb.textContent='IMU 先验：'+(priorOn?'开':'关'); draw(); };
+  function draw(){
+    g.clearRect(0,0,w,h);
+    const xEnd=endOn?EX:1200;
+    const segs=[
+      {x1:-200,y1:TOP,x2:xEnd,y2:TOP,n:[0,1]},
+      {x1:-200,y1:BOT,x2:xEnd,y2:BOT,n:[0,1]}
+    ];
+    if(endOn)segs.push({x1:EX,y1:TOP,x2:EX,y2:BOT,n:[1,0]});
+    g.strokeStyle='#36425e'; g.lineWidth=3.5;
+    for(const s of segs){
+      g.beginPath(); g.moveTo(Math.max(-10,s.x1),s.y1); g.lineTo(Math.min(w+10,s.x2),s.y2); g.stroke();
+    }
+    let M00=0,M01=0,M11=0; const hits=[];
+    for(let i=0;i<NR;i++){
+      const a=TAU*i/NR, dx=Math.cos(a), dy=Math.sin(a);
+      let bt=null,bn=null;
+      for(const s of segs){
+        const t=raySeg(rx,ry,dx,dy,s.x1,s.y1,s.x2,s.y2);
+        if(t!=null&&(bt==null||t<bt)){ bt=t; bn=s.n; }
+      }
+      if(bt!=null&&bt<=R){
+        hits.push([rx+dx*bt,ry+dy*bt]);
+        M00+=bn[0]*bn[0]; M01+=bn[0]*bn[1]; M11+=bn[1]*bn[1];
+        line(g,rx,ry,rx+dx*bt,ry+dy*bt,'rgba(107,118,143,.22)',1);
+      }else{
+        line(g,rx,ry,rx+dx*R,ry+dy*R,'rgba(107,118,143,.09)',1);
+      }
+    }
+    const lamP=priorOn?4:0; M00+=lamP; M11+=lamP;       // P⁻¹ = κ·I
+    const tr=M00+M11, disc=Math.sqrt(Math.max(0,((M00-M11)/2)**2+M01*M01));
+    const l1=tr/2+disc, l2=tr/2-disc;                    // λ1 ≥ λ2
+    let vx,vy;
+    if(Math.abs(M01)>1e-9){ vx=l1-M11; vy=M01; }
+    else if(M00>=M11){ vx=1; vy=0; } else { vx=0; vy=1; }
+    const nv=Math.hypot(vx,vy)||1; vx/=nv; vy/=nv;
+    const K=95,EPS=0.025,CAP=430;
+    const a1=Math.min(CAP,K/Math.sqrt(l1+EPS));          // 大 λ = 强约束 = 短轴
+    const a2=Math.min(CAP,K/Math.sqrt(l2+EPS));
+    g.save(); g.translate(rx,ry); g.rotate(Math.atan2(vy,vx));
+    g.beginPath(); g.ellipse(0,0,a1,a2,0,0,TAU);
+    g.fillStyle='rgba(240,163,97,.13)'; g.fill();
+    g.strokeStyle=TERRA; g.lineWidth=2; g.stroke();
+    g.restore();
+    g.fillStyle=TEAL; for(const p of hits)dot(g,p[0],p[1],2.2,TEAL);
+    dot(g,rx,ry,6,INK);
+    if(l2<0.5){                                          // 退化方向箭头（λ2 的特征向量 = 垂直于 v1）
+      const wxd=-vy, wyd=vx;
+      g.strokeStyle=RUST; g.lineWidth=2.5;
+      g.beginPath(); g.moveTo(rx-wxd*170,ry-wyd*170); g.lineTo(rx+wxd*170,ry+wyd*170); g.stroke();
+      for(const sgn of [1,-1]){
+        const ex=rx+sgn*wxd*170, ey=ry+sgn*wyd*170;
+        g.fillStyle=RUST; g.beginPath();
+        g.moveTo(ex+sgn*wxd*10,ey+sgn*wyd*10);
+        g.lineTo(ex-sgn*wyd*6,ey+sgn*wxd*6); g.lineTo(ex+sgn*wyd*6,ey-sgn*wxd*6);
+        g.closePath(); g.fill();
+      }
+      tx(g,'退化方向：几何约束 ≈ 0',rx,BOT+40,RUST,13,'center',true);
+    }
+    tx(g,'不确定度椭圆 ∝ (HᵀR⁻¹H'+(priorOn?' + P⁻¹':'')+')^(−1/2)',16,26,MUTED,12.5);
+    tx(g,'λ₁ = '+l1.toFixed(1)+'   λ₂ = '+l2.toFixed(1)+(priorOn?'（含先验 +4）':''),16,46,AMBER,12.5);
+    tx(g,endOn?'端墙提供了沿走廊方向的法向约束':'两端开放：所有法向都垂直于走廊',w-16,26,endOn?OLIVE:MUTED,12.5,'right');
+  }
+  draw();
+})();
+
+})();
+</script>
+</body>
+</html>
