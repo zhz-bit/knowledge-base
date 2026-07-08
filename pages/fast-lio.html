@@ -210,14 +210,14 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
   <header class="hero">
     <div class="eyebrow">机器人 / SLAM</div>
     <h1>FAST-LIO：<em>紧耦合</em>激光惯性里程计</h1>
-    <p class="lede">利用高频 IMU 做<b>连续运动预测与去畸变</b>，把 LiDAR 特征点残差直接放进<b>紧耦合 iEKF</b> 迭代修正状态——本页用「流形上的最小二乘」这条已有主线，贯通前向/后向传播、点到面残差、卡尔曼增益新公式与退化分析，配 <b>5 个可动手的交互演示</b>。</p>
+    <p class="lede">利用高频 IMU 做<b>连续运动预测与去畸变</b>，把 LiDAR 特征点残差直接放进<b>紧耦合 iEKF</b> 迭代修正状态——本页用「流形上的最小二乘」这条已有主线，贯通前向/后向传播、点到面残差、卡尔曼增益新公式与退化分析，配 <b>6 个可动手的交互演示</b>。</p>
     <div class="byline">
       <span class="pill">2026-07-07</span>
       <span class="pill">#FAST-LIO</span>
       <span class="pill">#iEKF</span>
       <span class="pill">#紧耦合</span>
       <span class="pill">#去畸变</span>
-      <span class="pill">5 个交互可视化</span>
+      <span class="pill">6 个交互可视化</span>
       <span class="pill">约 30 分钟</span>
     </div>
   </header>
@@ -499,7 +499,7 @@ FAST-LIO： 上一帧状态 + IMU 前向传播 → 当前帧 iEKF 初值 → 点
       <h2>八、iEKF 与卡尔曼增益新公式：又快又稳的根源</h2>
 
       <h3>iEKF ≡ 带先验的高斯–牛顿</h3>
-      <p>知识库目前没有专门的卡尔曼滤波页，但有个捷径：你已经熟悉流形上的最小二乘，而 <span class="mark">iEKF 的一帧更新，数学上就等价于对「IMU 先验 + 所有点残差」这个最小二乘问题跑高斯–牛顿</span>：</p>
+      <p>如果对滤波本身还陌生，先读地基页<a href="kalman-filter-family.html">《卡尔曼滤波家族：从 KF 到 iEKF》</a>（从两把尺子一路讲到 ESKF）。这里只取一个捷径：你已经熟悉流形上的最小二乘，而 <span class="mark">iEKF 的一帧更新，数学上就等价于对「IMU 先验 + 所有点残差」这个最小二乘问题跑高斯–牛顿</span>：</p>
       <div class="mathbox center">
         <div class="lbl">iEKF 更新 = 求解 MAP 问题</div>
         \[ \min_{\mathbf{x}_k}\;\; \underbrace{\big\|\, \mathbf{x}_k \boxminus \hat{\mathbf{x}}_k \,\big\|^2_{\mathbf{P}^{-1}}}_{\text{IMU 前向传播先验}} \;+\; \sum_j \underbrace{\big\|\, z_j(\mathbf{x}_k) \,\big\|^2_{\mathbf{R}_j^{-1}}}_{\text{激光点到面残差}} \]
@@ -529,6 +529,20 @@ FAST-LIO： 上一帧状态 + IMU 前向传播 → 当前帧 iEKF 初值 → 点
         </table>
       </div>
 
+      <h3>把 iEKF 拆到一维：一步一步看它在干什么</h3>
+      <p>18 维不好画，但 iEKF 每一步的<b>逻辑</b>在一维上就能看全。设先验 \( \hat{x} \)（来自前向传播）、非线性测量 \( z=h(x)+v \)，iEKF 要最小化的就是上面那个 MAP 代价 \( J(x) \)。每一次「迭代」= 在当前点 \( x_i \) 处<span class="ht">给 \( h \) 画切线</span>（线性化），代价函数随之变成一条<span class="ht">二次曲线</span>（抛物线），解出它的最低点作为 \( x_{i+1} \)，再到新点重画切线。<span class="mark">EKF 就是只画一次切线就交卷；iEKF 一直画到切线不再变为止</span>。</p>
+
+      <div class="demo">
+        <canvas id="vz-iekf"></canvas>
+        <div class="controls">
+          <button class="btn" id="ik-step">线性化 + 更新一步 ▶</button>
+          <button class="btn" id="ik-auto">自动迭代 ▶▶</button>
+          <button class="btn" id="ik-new">换一组先验 / 测量</button>
+          <label>非线性强度 <input type="range" id="ik-nl" min="0" max="100" step="5" value="80"><span class="val" id="ik-nl-v">强</span></label>
+        </div>
+        <div class="vcap"><b>▶ 演示 4 · iEKF 步进机（EKF vs iEKF）。</b>左图是测量空间：蓝色曲线 \( h(x) \)、金色虚线是实际测量 \( z \)、绿色小山是先验分布；青色直线是当前线性化<b>切线</b>。右图是代价空间：灰色曲线是真实 MAP 代价 \( J(x) \)，青色虚线是切线对应的<b>二次近似</b>——每次更新就是跳到这条抛物线的最低点。<b>动手试：</b>①按一次「更新一步」，橙点跳到的位置就是 <span style="color:#ff8a8a">EKF 的最终答案</span>（红色标记）——因为切线画在了先验处，抛物线的谷底和真实谷底（MAP，绿线）差一截；②继续按，看切线随估计移动、抛物线逐步"扶正"、橙点收敛到 MAP；③收敛后左图出现橙色小山：<b>后验协方差收缩</b>（σ 22 → σ⁺）；④把「非线性强度」调弱再试——切线几乎就是曲线本身，EKF 一步 ≈ iEKF，这就是"非线性越强，迭代越值钱"。</div>
+      </div>
+
       <h3>增益公式：一个矩阵恒等式省掉千维求逆</h3>
       <p>滤波更新里测量维度 \( m \) = 一帧有效残差条数，可能上千。传统增益公式要对 \( m\times m \) 矩阵求逆；FAST-LIO 用矩阵求逆引理（接<a href="linear-algebra-foundations.html">线代基础页</a>）改写，只需对<span class="hi">状态维度 18×18</span> 求逆：</p>
       <div class="mathbox center">
@@ -546,7 +560,7 @@ FAST-LIO： 上一帧状态 + IMU 前向传播 → 当前帧 iEKF 初值 → 点
         <div class="controls">
           <label>一帧特征点数 m <input type="range" id="kg-m" min="100" max="3000" step="50" value="1500"><span class="val" id="kg-m-v">1500</span></label>
         </div>
-        <div class="vcap"><b>▶ 演示 4 · 增益公式的求逆规模。</b>左边按真实比例画出两个公式各自要求逆的矩阵：传统公式的 \(m\times m\) 随点数膨胀，新公式的 18×18 小到几乎看不见。右边是对应的计算量（对数轴）。<b>动手试：</b>把 m 拖到 3000，看差距拉到多少倍——这就是 FAST-LIO 能在机载电脑上实时跑的账。</div>
+        <div class="vcap"><b>▶ 演示 5 · 增益公式的求逆规模。</b>左边按真实比例画出两个公式各自要求逆的矩阵：传统公式的 \(m\times m\) 随点数膨胀，新公式的 18×18 小到几乎看不见。右边是对应的计算量（对数轴）。<b>动手试：</b>把 m 拖到 3000，看差距拉到多少倍——这就是 FAST-LIO 能在机载电脑上实时跑的账。</div>
       </div>
     </section>
 
@@ -574,7 +588,7 @@ FAST-LIO： 上一帧状态 + IMU 前向传播 → 当前帧 iEKF 初值 → 点
           <button class="btn" id="dg-end">端墙：无</button>
           <button class="btn" id="dg-prior">IMU 先验：关</button>
         </div>
-        <div class="vcap"><b>▶ 演示 5 · 退化 = 信息矩阵的小特征值方向。</b>机器人在长走廊里向四周发射激光，每条命中的射线按<b>墙面法向</b>给信息矩阵 \( \mathbf{H}^\top\mathbf{R}^{-1}\mathbf{H} \) 累加一份约束；橙色椭圆是由它反推的不确定度（轴长 \( \propto 1/\sqrt{\lambda} \)）。侧墙法向全部垂直于走廊，沿走廊方向 \( \lambda\approx 0 \)——椭圆被拉成一条线，红色箭头就是<b>退化方向</b>。<b>动手试：</b>①把机器人推向走廊尽头或打开「端墙」，端墙法向进来后椭圆立刻收拢；②打开「IMU 先验」（信息矩阵加 \( \mathbf{P}^{-1} \)），退化方向被兜住——这就是紧耦合抗退化的几何本质。</div>
+        <div class="vcap"><b>▶ 演示 6 · 退化 = 信息矩阵的小特征值方向。</b>机器人在长走廊里向四周发射激光，每条命中的射线按<b>墙面法向</b>给信息矩阵 \( \mathbf{H}^\top\mathbf{R}^{-1}\mathbf{H} \) 累加一份约束；橙色椭圆是由它反推的不确定度（轴长 \( \propto 1/\sqrt{\lambda} \)）。侧墙法向全部垂直于走廊，沿走廊方向 \( \lambda\approx 0 \)——椭圆被拉成一条线，红色箭头就是<b>退化方向</b>。<b>动手试：</b>①把机器人推向走廊尽头或打开「端墙」，端墙法向进来后椭圆立刻收拢；②打开「IMU 先验」（信息矩阵加 \( \mathbf{P}^{-1} \)），退化方向被兜住——这就是紧耦合抗退化的几何本质。</div>
       </div>
 
       <div class="callout warn">
@@ -668,7 +682,7 @@ FAST-LIO： 上一帧状态 + IMU 前向传播 → 当前帧 iEKF 初值 → 点
 
       <div class="callout tip">
         <div class="ic">🧭</div>
-        <div class="ct"><span class="t">建议复读路径（接已有知识页）</span><p>① <a href="lie-groups-slam.html">李群页</a>指数映射 + SO(3) → 本页第四、八节；② <a href="lidar-camera-extrinsic-calibration.html">标定页</a>流形最小二乘 + 残差雅可比 → 本页第七节；③ <a href="linear-algebra-foundations.html">线代页</a>秩/特征向量 → 本页第九节，自问「长走廊里信息矩阵哪个特征向量的特征值趋近零」；④ <a href="differential-equations.html">微分方程页</a>积分直觉 → 本页第六节。</p></div>
+        <div class="ct"><span class="t">建议复读路径（接已有知识页）</span><p>⓪ 对滤波陌生先读<a href="kalman-filter-family.html">卡尔曼滤波家族页</a>（KF→EKF→iEKF→UKF→ESKF）；① <a href="lie-groups-slam.html">李群页</a>指数映射 + SO(3) → 本页第四、八节；② <a href="lidar-camera-extrinsic-calibration.html">标定页</a>流形最小二乘 + 残差雅可比 → 本页第七节；③ <a href="linear-algebra-foundations.html">线代页</a>秩/特征向量 → 本页第九节，自问「长走廊里信息矩阵哪个特征向量的特征值趋近零」；④ <a href="differential-equations.html">微分方程页</a>积分直觉 → 本页第六节。</p></div>
       </div>
     </section>
 
@@ -699,6 +713,7 @@ FAST-LIO： 上一帧状态 + IMU 前向传播 → 当前帧 iEKF 初值 → 点
     <section>
       <h2>延伸阅读</h2>
       <div class="cards">
+        <a class="c" href="kalman-filter-family.html"><span class="k">地基</span><h4>卡尔曼滤波家族</h4><p>从两把尺子到 KF/EKF/iEKF/UKF/ESKF——本页估计器的零基础入口。</p></a>
         <a class="c" href="lie-groups-slam.html"><span class="k">地基</span><h4>流形与李群李代数</h4><p>SO(3)/SE(3)、指数映射——本页 ⊞/⊟ 与 18 维误差状态的数学底座。</p></a>
         <a class="c" href="lidar-camera-extrinsic-calibration.html"><span class="k">姊妹篇</span><h4>LiDAR 与相机的坐标对齐</h4><p>同款点到面残差与流形最小二乘，未知量是静态外参。</p></a>
         <a class="c" href="linear-algebra-foundations.html"><span class="k">地基</span><h4>线性代数基础</h4><p>秩与特征向量——读懂退化分析和增益公式的钥匙。</p></a>
@@ -986,7 +1001,134 @@ function solve3(A,b){ /* 3×3 高斯消元 */
   });
 })();
 
-/* ════ 演示 4：增益公式的求逆规模 ════ */
+/* ════ 演示 4：iEKF 步进机（1 维 EKF vs iEKF）════ */
+(function(){
+  const V=cv('vz-iekf',760,400); if(!V)return; const {c,g,w,h}=V;
+  const A=75, P=484, SIG0=22, R=49, SIGR=7;      // 先验 σ=22，测量 σ=7
+  const XMIN=-130,XMAX=130;
+  /* 面板几何 */
+  const L={x0:46,x1:368,y0:36,y1:316};           // 左：测量空间
+  const Rt={x0:412,x1:734,y0:36,y1:316};         // 右：代价空间
+  let s=90-0.46*80;                              // 非线性尺度（滑杆控制）
+  let x0,xt,nu,z,map,its,converged,sigPost,animT=1,auto=false,cool=0;
+  const hFn=x=>A*Math.atan(x/s), dh=x=>A/s/(1+(x/s)*(x/s));
+  const J=x=>(x-x0)**2/(2*P)+(z-hFn(x))**2/(2*R);
+  const lx=x=>L.x0+(x-XMIN)/(XMAX-XMIN)*(L.x1-L.x0);
+  const ly=m=>L.y1-(m+100)/200*(L.y1-L.y0);
+  const rx=x=>Rt.x0+(x-XMIN)/(XMAX-XMIN)*(Rt.x1-Rt.x0);
+  let Jmin=0,Jcap=1;
+  const ry=j=>{ const n=Math.min(1,Math.max(0,(j-Jmin)/Jcap)); return (Rt.y1-10)-n*(Rt.y1-Rt.y0-30); };
+  const nl=document.getElementById('ik-nl'),nlv=document.getElementById('ik-nl-v');
+  const ab=document.getElementById('ik-auto');
+  function rebuild(){                            // 场景重算（保持同一噪声样本）
+    z=hFn(xt)+nu;
+    map=XMIN; let best=1e18;
+    for(let x=XMIN;x<=XMAX;x+=0.05){ const j=J(x); if(j<best){best=j;map=x;} }
+    Jmin=best; Jcap=22;
+    its=[x0]; converged=false; sigPost=null; animT=1; auto=false; ab.classList.remove('on');
+  }
+  function newScen(){
+    x0=-65+Math.random()*50; xt=15+Math.random()*50; nu=(Math.random()*2-1)*SIGR;
+    rebuild();
+  }
+  function step(){
+    if(converged||animT<1)return;
+    const xi=its[its.length-1], H=dh(xi), K=P*H/(H*H*P+R);
+    const xn=x0+K*(z-hFn(xi)-H*(x0-xi));         // 标准 iEKF 迭代式
+    its.push(xn); animT=0;
+    if(Math.abs(xn-xi)<0.15||its.length>13){
+      converged=true;
+      const Hf=dh(xn), Kf=P*Hf/(Hf*Hf*P+R);
+      sigPost=Math.sqrt(Math.max(1e-6,(1-Kf*Hf)*P)); // 收敛后才更新协方差
+      auto=false; ab.classList.remove('on');
+    }
+  }
+  newScen();
+  document.getElementById('ik-step').onclick=step;
+  ab.onclick=()=>{ auto=!auto&&!converged; ab.classList.toggle('on',auto); if(auto)step(); };
+  document.getElementById('ik-new').onclick=newScen;
+  nl.oninput=()=>{ const v=+nl.value; s=90-0.46*v;
+    nlv.textContent=v>=67?'强':(v>=34?'中':'弱'); rebuild(); };
+  function hump(cx,sig,col,hMax){                // 在 x 轴上画一座高斯小山
+    g.beginPath(); g.moveTo(lx(XMIN),L.y1);
+    for(let x=XMIN;x<=XMAX;x+=2){ g.lineTo(lx(x),L.y1-hMax*Math.exp(-((x-cx)**2)/(2*sig*sig))); }
+    g.lineTo(lx(XMAX),L.y1); g.closePath();
+    g.fillStyle=col; g.globalAlpha=.25; g.fill(); g.globalAlpha=1;
+    g.strokeStyle=col; g.lineWidth=1.4; g.stroke();
+  }
+  anim(c,dt=>{
+    animT=Math.min(1,animT+dt/0.4); cool+=dt;
+    if(auto&&animT>=1&&cool>0.55){ cool=0; step(); }
+    const n=its.length, xPrev=its[Math.max(0,n-2)], xLast=its[n-1];
+    const e=animT*(2-animT), xd=xPrev+(xLast-xPrev)*e;   // 当前显示位置（平滑）
+    g.clearRect(0,0,w,h);
+    /* —— 左面板：测量空间 —— */
+    g.strokeStyle='rgba(40,50,72,.8)'; g.lineWidth=1;
+    g.strokeRect(L.x0,L.y0,L.x1-L.x0,L.y1-L.y0);
+    tx(g,'测量空间：h(x) 与切线（线性化）',L.x0,L.y0-10,MUTED,12.5);
+    g.save(); g.beginPath(); g.rect(L.x0,L.y0,L.x1-L.x0,L.y1-L.y0); g.clip();
+    g.strokeStyle=BLUE; g.lineWidth=2;                    // h(x)
+    g.beginPath();
+    for(let x=XMIN;x<=XMAX;x+=2){ const px=lx(x),py=ly(hFn(x)); x===XMIN?g.moveTo(px,py):g.lineTo(px,py); }
+    g.stroke();
+    g.setLineDash([5,5]); line(g,L.x0,ly(z),L.x1,ly(z),AMBER,1.6); g.setLineDash([]); // z
+    const Hd=dh(xd);                                      // 切线
+    g.setLineDash([2,3]);
+    line(g,lx(XMIN),ly(hFn(xd)+Hd*(XMIN-xd)),lx(XMAX),ly(hFn(xd)+Hd*(XMAX-xd)),TEAL,1.6);
+    g.setLineDash([]);
+    hump(x0,SIG0,OLIVE,52);                               // 先验
+    if(converged&&sigPost!=null)hump(xLast,sigPost,TERRA,52); // 后验
+    line(g,lx(xd),L.y0,lx(xd),L.y1,'rgba(228,235,247,.25)',1);
+    dot(g,lx(xd),ly(hFn(xd)),4.5,INK);                    // 线性化点
+    g.restore();
+    tx(g,'z 实际测量',L.x1-6,ly(z)-7,AMBER,11.5,'right');
+    tx(g,'先验 x̂ (σ=22)',lx(x0),L.y1+16,OLIVE,11.5,'center');
+    if(converged&&sigPost!=null)tx(g,'后验 (σ⁺='+sigPost.toFixed(1)+')',lx(xLast),L.y0+16,TERRA,11.5,'center');
+    /* —— 右面板：代价空间 —— */
+    g.strokeStyle='rgba(40,50,72,.8)'; g.lineWidth=1;
+    g.strokeRect(Rt.x0,Rt.y0,Rt.x1-Rt.x0,Rt.y1-Rt.y0);
+    tx(g,'代价空间：J(x) 与二次近似',Rt.x0,Rt.y0-10,MUTED,12.5);
+    g.save(); g.beginPath(); g.rect(Rt.x0,Rt.y0,Rt.x1-Rt.x0,Rt.y1-Rt.y0); g.clip();
+    g.strokeStyle='rgba(154,166,191,.9)'; g.lineWidth=2;  // 真实 J(x)
+    g.beginPath();
+    for(let x=XMIN;x<=XMAX;x+=1.5){ const px=rx(x),py=ry(J(x)); x===XMIN?g.moveTo(px,py):g.lineTo(px,py); }
+    g.stroke();
+    const hi=hFn(xd);                                     // 二次近似（切线代价）
+    g.setLineDash([5,4]); g.strokeStyle=TEAL; g.lineWidth=1.6; g.beginPath();
+    for(let x=XMIN;x<=XMAX;x+=1.5){
+      const jq=(x-x0)**2/(2*P)+(z-hi-Hd*(x-xd))**2/(2*R);
+      const px=rx(x),py=ry(jq); x===XMIN?g.moveTo(px,py):g.lineTo(px,py);
+    }
+    g.stroke(); g.setLineDash([]);
+    g.setLineDash([4,4]);                                 // MAP / 先验 竖线
+    line(g,rx(map),Rt.y0,rx(map),Rt.y1,'rgba(155,206,107,.8)',1.4);
+    line(g,rx(x0),Rt.y0,rx(x0),Rt.y1,'rgba(107,118,143,.6)',1.2);
+    if(n>1)line(g,rx(its[1]),Rt.y0,rx(its[1]),Rt.y1,'rgba(255,138,138,.75)',1.4); // EKF
+    g.setLineDash([]);
+    g.strokeStyle='rgba(240,163,97,.5)'; g.lineWidth=1;   // 迭代足迹
+    g.beginPath();
+    for(let k=0;k<n;k++){ const px=rx(its[k]),py=ry(J(its[k])); k===0?g.moveTo(px,py):g.lineTo(px,py); }
+    g.stroke();
+    for(let k=0;k<n;k++){
+      dot(g,rx(its[k]),ry(J(its[k])),3,k===n-1?TERRA:'rgba(240,163,97,.55)');
+      tx(g,''+k,rx(its[k])+6,ry(J(its[k]))-6,'rgba(240,163,97,.8)',10.5);
+    }
+    dot(g,rx(xd),ry(J(xd)),5,TERRA);                      // 当前迭代点
+    g.restore();
+    tx(g,'MAP',rx(map),Rt.y0+16,OLIVE,11.5,'center');
+    tx(g,'先验',rx(x0),Rt.y1+16,DIM,11.5,'center');
+    if(n>1)tx(g,'EKF 停在这',rx(its[1]),Rt.y0+32,RUST,11.5,'center');
+    /* —— 底部读数 —— */
+    const err=Math.abs(xLast-map);
+    tx(g,'iter '+(n-1)+' · x̂ = '+xLast.toFixed(1)+' · MAP = '+map.toFixed(1)+' · 偏差 '+err.toFixed(1),
+       46,h-16,AMBER,13,'left',true);
+    tx(g,converged?('已收敛 ✓ 协方差收缩 σ: 22 → '+sigPost.toFixed(1))
+                  :(n===1?'还没更新：先验 = 前向传播的结果':(n===2?'这就是 EKF 的最终答案；iEKF 继续 →':'重线性化中…')),
+       w-26,h-16,converged?OLIVE:MUTED,13,'right');
+  });
+})();
+
+/* ════ 演示 5：增益公式的求逆规模 ════ */
 (function(){
   const V=cv('vz-kg',760,250); if(!V)return; const {c,g,w,h}=V;
   const sl=document.getElementById('kg-m'),sv=document.getElementById('kg-m-v');
@@ -1020,7 +1162,7 @@ function solve3(A,b){ /* 3×3 高斯消元 */
   sl.oninput=draw; draw();
 })();
 
-/* ════ 演示 5：退化 = 信息矩阵小特征值方向 ════ */
+/* ════ 演示 6：退化 = 信息矩阵小特征值方向 ════ */
 (function(){
   const V=cv('vz-dg',760,340); if(!V)return; const {c,g,w,h}=V;
   const TOP=104,BOT=246,EX=616,R=205,NR=72,ry=(TOP+BOT)/2;

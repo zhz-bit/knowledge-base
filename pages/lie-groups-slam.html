@@ -533,6 +533,43 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
         </div>
       </div>
     </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:46px">
+      <div class="gd-head">读懂流形 · 四个关键疑问</div>
+      <p class="gd-intro"><b>疑问 3 · 流形是什么?</b> —— 一个<b>局部看起来像平直欧氏空间 ℝⁿ、整体却可以弯曲</b>的空间:
+      每一点附近都能光滑地「摊平」成 ℝⁿ 的一小块(叫坐标卡)。<b>地球表面</b>是 2 维流形(整体是弯球面,脚下一小片却是平的);
+      我们上面画的<b>圆</b>就是 1 维流形(整体是闭环,放大一小段弧却像直线)。口诀:<b>局部平、整体弯</b>;维度 = 那块平坦补丁的维度。</p>
+      <div class="basis-map">
+        <div class="bm"><span class="bm-h" style="color:var(--gold)">疑问 2 · 二维旋转就是这个流形</span>
+          SO(2)(全体二维旋转)<b>确实是流形——就是上面这个圆</b>(1 维,因为只有一个参数 θ)。
+          但流形是<b>整个圆</b>,不是「在单位元上」;单位元 R(0) 只是圆上一个特殊点。李代数 so(2) 才是圆在<b>单位元那点的切线</b>(平直的直线)。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--cyan)">疑问 1 · 为什么不能直接加减</span>
+          两个旋转<b>逐元素相加 R₁+R₂,结果一般不再是旋转</b>(列不再单位长、det≠1)——它<b>掉出了圆 / 流形</b>,成了非法姿态。
+          流形<b>没有原点、没有零、没有线性结构</b>,对加法不封闭;能留在它上面的只有<b>群乘法</b>与<b>沿测地线移动</b>。这正是李代数存在的理由(下图亲手一试)。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--violet)">疑问 4 · exp / log 为什么能往返</span>
+          切向量 = 运动的「速度 × 时间」。<b>exp</b> 从单位元出发、以它为恒定速度沿<b>测地线</b>走 1 单位时间,落到流形上(切线长度 ω → 圆弧 ω = 旋转 ω);
+          <b>log</b> 反过来求「到这点需要多大速度」。单位元附近,流形与切空间是<b>局部微分同胚</b>(光滑可逆、一一对应),所以能自由往返。</div>
+      </div>
+      <p class="gd-foot" style="margin-top:18px">串起来就是全页的总纲:<b>流形是弯的(不能加减)→ 到单位元的切空间(平的,能加减求导)→ 算完用 exp 推回流形</b>。
+      这正是第四章「李代数」、第五章「指数映射」、第八章「SLAM 在切空间优化」的共同骨架。</p>
+    </div>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--gold)">◯</span> <b>疑问 1 实证</b> · 两个旋转「相加」会掉出流形</div>
+        <div class="legend"><span><i style="background:var(--gold)"></i>R₁</span><span><i style="background:var(--cyan)"></i>R₂</span><span><i style="background:var(--violet)"></i>R₁+R₂</span><span><i style="background:var(--green)"></i>群乘法</span></div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_mfd"></canvas></div>
+        <div class="controls">
+          <div class="ctl"><label>旋转 R₁ 的角 θ₁<span class="v" id="mfd_t1">0.50</span></label><input type="range" id="s_mfd1" min="-314" max="314" value="50"></div>
+          <div class="ctl"><label>旋转 R₂ 的角 θ₂<span class="v cy" id="mfd_t2">1.20</span></label><input type="range" id="s_mfd2" class="cy" min="-314" max="314" value="120"></div>
+          <div class="readout" id="mfd_out"></div>
+          <div class="note cy"><b>紫色</b> = 把 R₁、R₂ 当向量直接相加,箭头尖<b>一般落在圆外 / 圆内、不在圆上</b> → 不是合法旋转(|R₁+R₂|≠1)。
+          <b>绿色</b> = 正确做法「群乘法」= 角度相加 θ₁+θ₂,结果<b>始终在圆上</b>。这就是「流形不能直接加减」。</div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -954,6 +991,49 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
         </div>
       </div>
     </div>
+
+    <p class="lede reveal" style="margin-top:40px"><b>再换个角度 ——</b> 为什么说切向量是「速度 × 时间」?
+    exp 的意思就是:<b>把切向量当成恒定速度,从单位元出发匀速走 1 个单位时间</b>,落到流形上。
+    走过的弧长 = 速度 × 时间;当时间 = 1,弧长就正好等于切向量的长度。下面让它动起来:</p>
+
+    <div class="demo reveal">
+      <div class="demo-head">
+        <div class="lbl"><span style="color:var(--cyan)">→</span> <b>切向量 = 速度 × 时间</b> · 匀速走 1 个单位时间</div>
+        <div class="legend"><span><i style="background:var(--cyan)"></i>速度(切向量)</span><span><i style="background:var(--gold)"></i>走过的弧长</span></div>
+      </div>
+      <div class="demo-body">
+        <div class="canvas-wrap"><canvas id="cv_vel"></canvas></div>
+        <div class="controls">
+          <div class="ctl"><label>速度 ω(切向量大小)<span class="v cy" id="vel_w">1.20</span></label><input type="range" id="s_vel" class="cy" min="-170" max="170" value="120"></div>
+          <div class="btnrow"><button class="btn cy" id="vel_play">⏸ 暂停</button></div>
+          <div class="readout" id="vel_out"></div>
+          <div class="note cy">青色箭头 = 速度(切向量),运动中<b>长度不变</b> = 匀速;金色弧 = 走过的距离 = <b>速度 × 时间</b>。
+          时间从 0 走到 1,弧长从 0 长到 ω;<b>t=1 时,走过的弧长正好 = 切向量的长度</b> = exp(X)。这就是「切向量 = 速度 × 单位时间」。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:46px">
+      <div class="gd-head">为什么偏偏是 exp / log?从公式看它的必然性</div>
+      <p class="gd-intro">exp / log <b>不是随便选的记号</b>,而是被两条性质<b>同时逼成唯一答案</b>:① 匀速运动的微分方程,② 「把加法变成乘法」。</p>
+      <div class="basis-map">
+        <div class="bm"><span class="bm-h" style="color:var(--gold)">① 从 ODE:匀速运动的解只能是 exp</span>
+          「以恒定速度 X 沿群运动」写成方程就是 <b style="color:var(--cyan-soft)">dR/dt = R·X, R(0)=I</b>——变化率正比于当前位置。
+          这与标量 <b>dy/dt = a·y ⟹ y = e<sup>at</sup></b> 同理,矩阵解就是 <b style="color:var(--gold-soft)">R(t) = exp(tX) = I + tX + t²X²/2! + …</b>。
+          exp 的定义性质正是「<b>导数等于自身</b>」,所以只要出现「变化率 ∝ 自身」,答案必然是指数;走 1 单位时间 → exp(X)。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--cyan)">② 从极限:群把小步「相乘」,极限就是 exp</span>
+          <b style="color:var(--cyan-soft)">exp(X) = lim<sub>n→∞</sub> (I + X/n)<sup>n</sup></b>(即 e<sup>x</sup>=lim(1+x/n)<sup>n</sup> 的矩阵版):把有限运动切成 n 个无穷小步 I+X/n 再复合。
+          <b>向量空间把小步相加</b>(线性),<b>李群把小步相乘</b>(指数)。于是 exp 满足 <b style="color:var(--gold-soft)">exp((s+t)X) = exp(sX)·exp(tX)</b>——把<b>加法变乘法</b>,这正是指数函数的看家性质,换别的映射都做不到。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--violet)">③ 从 SO(2):它字面上就是欧拉公式</span>
+          生成元 <b>G = [[0,−1],[1,0]]</b> 满足 <b style="color:var(--gold-soft)">G² = −I</b>(G 的行为跟虚数 i 一模一样!)。代进幂级数、按奇偶项重排:
+          <b style="color:var(--gold-soft)">exp(θG) = cos θ·I + sin θ·G = R(θ)</b>——这就是 <b>e<sup>iθ</sup> = cos θ + i·sin θ</b> 的矩阵版。「矩阵指数给出旋转」不是巧合,就是欧拉公式。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--gold-soft)">④ log 就是 exp 的逆</span>
+          <b style="color:var(--cyan-soft)">log(R) = (R−I) − (R−I)²/2 + (R−I)³/3 − …</b>(ln(1+u) 的矩阵版),回答「多大速度走 1 单位时间能到 R」。
+          因为 exp 在单位元处导数 = 恒等(<b>d/dt exp(tX)|₀ = X</b>),它是<b>局部微分同胚</b>,故在单位元附近可逆。</div>
+      </div>
+      <p class="gd-foot" style="margin-top:18px">一句话:<b>exp 被「匀速运动的 ODE」和「把加法变乘法」两条同时逼成唯一答案,log 是它的逆</b>。
+      这也正是第四章那句「代数里可加、群里可乘」的由来——exp / log 就是连接这两个世界的那座既定的桥。</p>
+    </div>
   </div>
 </section>
 
@@ -1278,6 +1358,25 @@ button.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid v
         <p>对 <b>R·exp(δφ<sup>∧</sup>)</b> 关于 δφ 求导,得到解析雅可比——非线性最小二乘(g2o、GTSAM、Ceres)的基石。</p></div>
       <div class="card vi reveal"><div class="ic">⟿ 插值与预积分</div><h4>平滑且物理一致</h4>
         <p>轨迹插值走 exp/log 的测地线;IMU 预积分在 SO(3) 上累积,把高频测量压成一条边。</p></div>
+    </div>
+
+    <div class="panel reveal" style="padding:28px clamp(20px,3.4vw,36px);margin-top:34px">
+      <div class="gd-head">位姿的「第四列」· 平移 t 在李群里对应什么</div>
+      <p class="gd-intro">位姿矩阵 <b>T = [[R, t],[0, 1]]</b> 的<b>第四列就是平移 t</b>——在投影 <b>p′ = R·p + t</b> 里,t 是那个不管 p 是谁都要加上的「偏置」。
+      它的李群对应,取决于你怎么建模位姿,有两种(SLAM 里都常见):</p>
+      <div class="basis-map">
+        <div class="bm"><span class="bm-h" style="color:var(--gold)">解耦 SO(3) × ℝ³(如 FAST-LIO)</span>
+          把位姿拆成「旋转 R ∈ SO(3)」+「平移 t ∈ ℝ³」两块<b>独立</b>分量。这时 t 活在<b>平直的 ℝ³</b>(平凡李群),
+          <b>直接加 t ← t + δt</b>,exp / log 退化成恒等——和 IMU bias 同类。这正是它「像 bias」的原因。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--cyan)">完整 SE(3)(平移旋转耦合)</span>
+          把 T 当整体 SE(3) 元素时,平移与旋转<b>耦合</b>(半直积 ℝ³ ⋊ SO(3))。李代数是旋量 ξ=(ρ, φ),指数映射给出
+          <b>t = J(φ)·ρ</b>,J 是 SO(3) 的<b>左雅可比</b>。<b>切空间的平移分量 ρ ≠ 第四列 t</b>,差一个 J;只有 φ=0 时 J=I、t=ρ。</div>
+        <div class="bm"><span class="bm-h" style="color:var(--violet)">为什么差一个 J?</span>
+          沿旋量运动时旋转与平移<b>同时发生</b>,轨迹是<b>螺旋线</b>(第七章 SE(2) 那个演示)。所以「净位移」t 要经 J 修正,
+          不是简单地把线速度积分;反过来 log 里 <b>ρ = J⁻¹·t</b>。</div>
+      </div>
+      <p class="gd-foot" style="margin-top:18px">所以第四列 t 的「李群对应」:<b>解耦时 = 平凡李群 ℝ³(可直接加,像 bias);完整 SE(3) 时 = 群元素的平移部分,与切空间的 ρ 差一个左雅可比 J</b>。
+      整个 SLAM / LIO 状态是「弯的 SO(3) + 平的 ℝ³」的<b>乘积流形</b>,由 <b>⊞ 算子</b>统一:旋转分量做 R·exp(δφ<sup>∧</sup>),平移 / bias 等 ℝ³ 分量做直接相加。</p>
     </div>
   </div>
 </section>
@@ -2161,6 +2260,115 @@ const C = {ink:'#0b0f1a',gold:'#f0bf4c',goldS:'#f6d486',cyan:'#46d7cc',cyanS:'#7
     document.getElementById('ab_col').textContent='右图正在构造:C 第 '+(col+1)+' 列 ↔';refresh();});
   onResize(cv,size);
   size();refresh();
+})();
+
+/* ============================================================
+   流形不能直接加减 — R₁+R₂ 掉出圆
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_mfd'); if(!cv)return;
+  let ctx,w,h,R=90,t1=0.5,t2=1.2;
+  const s1=document.getElementById('s_mfd1'), s2=document.getElementById('s_mfd2');
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;R=Math.min(w,h)*0.30;draw();}
+  function P(x,y){return [w/2+x*R, h/2-y*R];}
+  function vec(ax,ay,bx,by,col,lw){ctx.strokeStyle=col;ctx.lineWidth=lw||2.4;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+    const a=Math.atan2(by-ay,bx-ax);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(bx,by);
+    ctx.lineTo(bx-Math.cos(a-0.4)*9,by-Math.sin(a-0.4)*9);ctx.lineTo(bx-Math.cos(a+0.4)*9,by-Math.sin(a+0.4)*9);ctx.closePath();ctx.fill();}
+  function draw(){
+    if(!ctx)return;ctx.clearRect(0,0,w,h);
+    const O=P(0,0);
+    ctx.strokeStyle='rgba(36,49,73,.85)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(P(-1.7,0)[0],O[1]);ctx.lineTo(P(1.7,0)[0],O[1]);ctx.moveTo(O[0],P(0,-1.7)[1]);ctx.lineTo(O[0],P(0,1.7)[1]);ctx.stroke();
+    ctx.strokeStyle='rgba(240,191,76,.8)';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(O[0],O[1],R,0,TAU);ctx.stroke();
+    const p1=[Math.cos(t1),Math.sin(t1)], p2=[Math.cos(t2),Math.sin(t2)], sum=[p1[0]+p2[0],p1[1]+p2[1]];
+    const P1=P(p1[0],p1[1]), P2=P(p2[0],p2[1]), PS=P(sum[0],sum[1]);
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(157,140,255,.35)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(P1[0],P1[1]);ctx.lineTo(PS[0],PS[1]);ctx.moveTo(P2[0],P2[1]);ctx.lineTo(PS[0],PS[1]);ctx.stroke();ctx.setLineDash([]);
+    vec(O[0],O[1],P1[0],P1[1],C.gold,2.6);
+    vec(O[0],O[1],P2[0],P2[1],C.cyan,2.6);
+    vec(O[0],O[1],PS[0],PS[1],C.violet,3);
+    ctx.fillStyle=C.violet;ctx.font='600 11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('R₁+R₂ ✗ 掉出流形',PS[0],PS[1]+(sum[1]>=0?-11:17));
+    const gp=P(Math.cos(t1+t2),Math.sin(t1+t2));
+    ctx.fillStyle=C.green;ctx.beginPath();ctx.arc(gp[0],gp[1],5,0,TAU);ctx.fill();ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=C.green;ctx.font='600 10px JetBrains Mono';
+    ctx.fillText('θ₁+θ₂ ✓',gp[0],gp[1]+(Math.sin(t1+t2)>=0?-9:17));
+  }
+  function out(){
+    const mag=Math.sqrt(2+2*Math.cos(t1-t2)), on=Math.abs(mag-1)<0.03;
+    document.getElementById('mfd_out').innerHTML=
+      `|R₁+R₂| = <b style="color:${on?'#5be08a':'#ff6b6b'}">${mag.toFixed(2)}</b>${on?'（恰好=1的特例）':' ≠ 1 → <b>不是旋转</b>,掉出流形'}<br>`+
+      `群乘法 R(θ₁)·R(θ₂) = R(${(t1+t2).toFixed(2)})，|·|=1，<b style="color:#5be08a">仍在圆上</b><br>`+
+      `弯曲流形对「加法」不封闭,只对「群乘法」封闭。`;
+  }
+  function upd(){t1=+s1.value/100;t2=+s2.value/100;
+    document.getElementById('mfd_t1').textContent=t1.toFixed(2);document.getElementById('mfd_t2').textContent=t2.toFixed(2);
+    draw();out();}
+  s1.addEventListener('input',upd);s2.addEventListener('input',upd);
+  onResize(cv,size);
+  size();upd();
+})();
+
+/* ============================================================
+   切向量 = 速度 × 时间 — 匀速走 1 单位时间
+============================================================ */
+(function(){
+  const cv=document.getElementById('cv_vel'); if(!cv)return;
+  let ctx,w,h,R=90,om=1.2,raw=0,playing=true,raf;
+  const s=document.getElementById('s_vel');
+  function size(){const o=setupCanvas(cv);ctx=o.ctx;w=o.w;h=o.h;R=Math.min(w,h)*0.26;draw();}
+  function arrow(ax,ay,bx,by,col,lw,lab){ctx.strokeStyle=col;ctx.lineWidth=lw||2.4;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+    const a=Math.atan2(by-ay,bx-ax);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(bx,by);
+    ctx.lineTo(bx-Math.cos(a-0.4)*10,by-Math.sin(a-0.4)*10);ctx.lineTo(bx-Math.cos(a+0.4)*10,by-Math.sin(a+0.4)*10);ctx.closePath();ctx.fill();
+    if(lab){ctx.fillStyle=col;ctx.font='600 11px JetBrains Mono';ctx.textAlign='left';ctx.fillText(lab,bx+7,by+3);}}
+  function draw(){
+    if(!ctx)return;ctx.clearRect(0,0,w,h);
+    const cx=w*0.40, cy=h*0.5, t=Math.min(1,raw);
+    ctx.strokeStyle='rgba(240,191,76,.8)';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.stroke();
+    const ex=cx+R, ey=cy;
+    // 单位元处切线
+    ctx.strokeStyle='rgba(70,215,204,.3)';ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(ex,cy-R*1.9);ctx.lineTo(ex,cy+R*0.7);ctx.stroke();
+    ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(ex,ey,4,0,TAU);ctx.fill();
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='left';ctx.fillText('e',ex+8,ey+15);
+    // 切向量 X（= 速度）
+    arrow(ex,ey,ex,cy-om*R,C.cyan,3,'X = 速度');
+    // 匀速运动的点
+    const a=om*t, px=cx+Math.cos(a)*R, py=cy-Math.sin(a)*R;
+    ctx.strokeStyle=C.gold;ctx.lineWidth=5;ctx.beginPath();ctx.arc(cx,cy,R,0,-a,a>0);ctx.stroke();
+    ctx.strokeStyle='rgba(246,212,134,.4)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,py);ctx.stroke();
+    // 切线标记（平直距离 = 弧长）
+    const my=cy-om*t*R;
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(126,240,231,.4)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(ex,my);ctx.lineTo(px,py);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=C.cyanS;ctx.beginPath();ctx.arc(ex,my,3.5,0,TAU);ctx.fill();
+    // 点处速度箭头（恒定长度 = 匀速）
+    const vl=Math.min(Math.abs(om),1.4)*R*0.5, dir=om>=0?1:-1;
+    arrow(px,py,px-Math.sin(a)*vl*dir,py-Math.cos(a)*vl*dir,C.cyanS,2.6,'ω');
+    ctx.fillStyle=C.gold;ctx.beginPath();ctx.arc(px,py,5,0,TAU);ctx.fill();ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+    // 时间条
+    const bx=w*0.14, by=h-22, bw=w*0.72;
+    ctx.lineCap='round';ctx.strokeStyle='rgba(70,215,204,.25)';ctx.lineWidth=6;
+    ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+bw,by);ctx.stroke();
+    ctx.strokeStyle=C.cyan;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+bw*t,by);ctx.stroke();ctx.lineCap='butt';
+    ctx.fillStyle=C.muted;ctx.font='11px JetBrains Mono';ctx.textAlign='left';ctx.fillText('时间 t = '+t.toFixed(2),bx,by-9);
+    ctx.textAlign='right';ctx.fillStyle=t>=1?C.green:C.muted;ctx.fillText(t>=1?'t=1 → 到达 exp(X)':'匀速前进中…',bx+bw,by-9);
+  }
+  function out(){
+    const t=Math.min(1,raw), sdist=om*t;
+    document.getElementById('vel_out').innerHTML=
+      `速度 ω = <b style="color:#7ff0e7">${om.toFixed(2)}</b>（恒定：箭头长度全程不变）<br>`+
+      `走过弧长 s = 速度 × 时间 = <b>${om.toFixed(2)} × ${t.toFixed(2)}</b> = <b style="color:#f6d486">${sdist.toFixed(2)}</b><br>`+
+      `t=1 时 s = ω = <b style="color:#f6d486">${om.toFixed(2)}</b> = 切向量 X 的长度 → exp(X) = R(${om.toFixed(2)})`;
+  }
+  function loop(){if(!playing)return;raw+=0.006;if(raw>1.32)raw=0;draw();out();raf=requestAnimationFrame(loop);}
+  s.addEventListener('input',()=>{om=+s.value/100;document.getElementById('vel_w').textContent=om.toFixed(2);if(!playing){draw();out();}});
+  document.getElementById('vel_play').addEventListener('click',()=>{playing=!playing;
+    document.getElementById('vel_play').textContent=playing?'⏸ 暂停':'▶ 播放';if(playing)loop();});
+  onResize(cv,size);
+  size();out();loop();
 })();
 
 /* ============================================================

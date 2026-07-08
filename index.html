@@ -222,9 +222,15 @@ const CATEGORIES = {
 
 const PAGES = [
   {
+    file:"pages/kalman-filter-family.html",
+    title:"卡尔曼滤波家族：从 KF 到 iEKF",
+    sub:"按「场景→翻车→解法→新边界」的问题驱动脉络走完八轮进化：登月逼出 KF、弯曲观测逼出 EKF、差先验逼出 iEKF、黑盒逼出 UKF、旋转逼出 ESKF、多峰逼出粒子滤波、回环逼出图优化，最后在 FAST-LIO 合体。9 个交互演示（火箭发射、维纳滤波、粒子走廊、回环对比…）+ 家族年表。",
+    cat:"机器人 / SLAM", tags:["卡尔曼滤波","KF","EKF","iEKF","UKF","状态估计"], icon:"🛰️", date:"2026-07-08"
+  },
+  {
     file:"pages/fast-lio.html",
     title:"FAST-LIO：紧耦合激光惯性里程计",
-    sub:"用「流形上的最小二乘」贯通 FAST-LIO：松耦合 vs 紧耦合、前向/后向传播与去畸变、iEKF 与增益新公式、退化的特征值解释。5 个交互演示：预测-修正、点云去畸变、GN 迭代收敛、求逆规模、退化椭圆。",
+    sub:"用「流形上的最小二乘」贯通 FAST-LIO：松耦合 vs 紧耦合、前向/后向传播与去畸变、iEKF 与增益新公式、退化的特征值解释。6 个交互演示：预测-修正、点云去畸变、GN 迭代、iEKF 步进机（EKF vs iEKF）、求逆规模、退化椭圆。",
     cat:"机器人 / SLAM", tags:["FAST-LIO","LIO","iEKF","紧耦合","去畸变","卡尔曼滤波"], icon:"🚁", date:"2026-07-07"
   },
   {

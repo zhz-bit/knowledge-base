@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>卡尔曼滤波家族：从 KF 到 iEKF · 知识库</title>
+<meta name="description" content="从两把尺子的加权融合，到 KF 预测–更新循环、EKF 切线、iEKF 迭代、UKF sigma 点与 ESKF 误差状态——4 个交互演示走完卡尔曼滤波家族。" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+:root{
+  color-scheme: dark;
+
+  --bg:      #0e1320;
+  --bg-soft: #121829;
+  --panel:   #161d2e;
+  --panel-2: #1d2540;
+
+  --ink:    #e4ebf7;
+  --muted:  #9aa6bf;
+  --dim:    #6b768f;
+
+  --line:   #283248;
+  --line-2: #36425e;
+
+  --terra:  #f0a361;
+  --amber:  #f0bf4c;
+  --olive:  #9bce6b;
+  --teal:   #46d7cc;
+  --blue:   #6aa6ff;
+  --plum:   #b49bff;
+  --rust:   #ff8a8a;
+
+  --soft-terra: rgba(240,163,97,.14);
+  --soft-amber: rgba(240,191,76,.14);
+  --soft-olive: rgba(155,206,107,.13);
+  --soft-teal:  rgba(70,215,204,.13);
+  --soft-blue:  rgba(106,166,255,.14);
+
+  --shadow:    0 18px 46px rgba(0,0,0,.42);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,.30);
+  --radius: 16px;
+  --maxw: 820px;
+
+  --serif: "Spectral", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --sans:  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+           "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; min-height:100vh;
+  background:
+    radial-gradient(1200px 700px at 84% -12%, #16203a 0%, #111729 46%, var(--bg) 100%);
+  background-attachment:fixed;
+  color:var(--ink); font-family:var(--sans); line-height:1.72;
+  font-size:17.5px; -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(240,163,97,.30);}
+
+#progress{position:fixed; left:0; top:0; height:3px; width:0;
+  background:linear-gradient(90deg,var(--terra),var(--amber)); z-index:60; transition:width .12s;}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+.topnav{padding:26px 0 0;}
+.back{font-family:var(--mono); font-size:13px; color:var(--muted);
+  display:inline-flex; align-items:center; gap:7px; transition:color .15s;}
+.back:hover{color:var(--terra);}
+a{color:var(--terra); text-decoration:none;}
+a:hover{text-decoration:underline; text-underline-offset:3px;}
+
+header.hero{padding:30px 0 26px; border-bottom:1px solid var(--line); margin-bottom:38px;}
+.eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--terra); display:flex; align-items:center; gap:11px; margin-bottom:18px;}
+.eyebrow::before{content:""; width:30px; height:1px; background:linear-gradient(90deg,var(--terra),transparent);}
+h1{font-family:var(--serif); font-weight:700; font-size:clamp(30px,5vw,46px);
+  line-height:1.14; letter-spacing:-.01em; margin:0 0 16px; color:var(--ink);}
+h1 em{font-style:italic; color:var(--terra);}
+.lede{font-size:clamp(17px,2vw,21px); color:var(--muted); margin:0; line-height:1.6;}
+.lede b{color:var(--ink); font-weight:600;}
+.byline{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:22px;
+  font-family:var(--mono); font-size:12.5px; color:var(--dim);}
+.byline .pill{background:var(--panel); border:1px solid var(--line);
+  padding:3px 11px; border-radius:999px;}
+
+main{padding-bottom:30px;}
+section{margin:0 0 40px;}
+h2{font-family:var(--serif); font-weight:600; font-size:clamp(23px,3vw,30px);
+  line-height:1.25; margin:46px 0 16px; color:var(--ink);
+  padding-bottom:10px; border-bottom:1px solid var(--line);}
+h3{font-family:var(--serif); font-weight:600; font-size:21px; margin:30px 0 10px; color:var(--ink);}
+p{margin:0 0 17px;}
+ul,ol{margin:0 0 18px; padding-left:1.3em;}
+li{margin:0 0 8px;}
+li::marker{color:var(--terra);}
+hr{border:0; border-top:1px solid var(--line); margin:38px 0;}
+
+b,strong{color:var(--ink); font-weight:700;}
+.hi  {color:var(--terra); font-weight:600;}
+.hb  {color:var(--blue);  font-weight:600;}
+.hg  {color:var(--olive); font-weight:600;}
+.ha  {color:var(--amber); font-weight:600;}
+.ht  {color:var(--teal);  font-weight:600;}
+.mark{background:linear-gradient(180deg,transparent 62%, rgba(240,191,76,.30) 0); padding:0 2px;}
+
+code{font-family:var(--mono); font-size:.9em; color:#ffb98a;
+  background:rgba(240,163,97,.13); padding:2px 6px; border-radius:5px;}
+pre{margin:0 0 20px; padding:18px 20px; overflow:auto; border-radius:var(--radius);
+  background:#0a0f1b; color:#d6deef; border:1px solid #1c2438; box-shadow:var(--shadow-sm);}
+pre code{background:none; color:inherit; padding:0; font-size:13.5px; line-height:1.6;}
+
+.cite{font-family:var(--mono); font-size:.78em; color:var(--blue); vertical-align:super;}
+
+.callout{display:flex; gap:13px; padding:16px 18px; margin:0 0 22px;
+  border:1px solid var(--line); border-left-width:4px; border-radius:12px;
+  background:var(--panel); box-shadow:var(--shadow-sm);}
+.callout .ic{font-size:20px; line-height:1.5; flex:0 0 auto;}
+.callout .ct{flex:1;} .callout .ct p:last-child{margin:0;}
+.callout .ct .t{font-weight:700; color:var(--ink); display:block; margin-bottom:3px;}
+.callout.note{border-left-color:var(--blue);  background:var(--soft-blue);}
+.callout.tip {border-left-color:var(--olive); background:var(--soft-olive);}
+.callout.warn{border-left-color:var(--rust);  background:var(--soft-terra);}
+.callout.key {border-left-color:var(--amber); background:var(--soft-amber);}
+
+.mathbox{background:var(--panel); border:1px solid var(--line-2); border-radius:var(--radius);
+  padding:18px 22px; margin:0 0 22px; box-shadow:var(--shadow-sm);}
+.mathbox .lbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dim); margin-bottom:8px;}
+.mathbox.center{text-align:center;}
+
+figure{margin:0 0 24px;}
+figure .frame{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px; box-shadow:var(--shadow-sm); overflow:hidden;}
+figure img, figure svg{display:block; max-width:100%; height:auto; margin:0 auto; border-radius:8px;}
+figcaption{margin-top:10px; font-size:14px; color:var(--muted); text-align:center;}
+figcaption b{color:var(--ink);}
+
+.tablewrap{overflow-x:auto; margin:0 0 24px; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);}
+table{width:100%; border-collapse:collapse; background:var(--panel); font-size:15.5px;}
+thead th{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--terra); text-align:left; padding:12px 16px; background:var(--panel-2);
+  border-bottom:1px solid var(--line-2);}
+td{padding:11px 16px; border-bottom:1px solid var(--line); color:var(--muted);}
+td b{color:var(--ink);}
+tbody tr:last-child td{border-bottom:0;}
+tbody tr:hover td{background:var(--panel-2);}
+
+blockquote{margin:0 0 22px; padding:6px 0 6px 20px; border-left:3px solid var(--amber);
+  color:var(--muted); font-family:var(--serif); font-style:italic; font-size:19px;}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin:0 0 24px;}
+.cards .c{display:block; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:16px 17px; box-shadow:var(--shadow-sm); transition:transform .16s, box-shadow .16s;}
+.cards a.c:hover{transform:translateY(-3px); box-shadow:var(--shadow); text-decoration:none;}
+.cards .c .k{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--terra);}
+.cards .c h4{font-family:var(--serif); font-size:17px; margin:6px 0 5px; color:var(--ink);}
+.cards .c p{font-size:13.5px; color:var(--muted); margin:0;}
+
+/* ---------- 组件：交互演示 ---------- */
+.demo{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:14px; margin:18px 0 26px; box-shadow:var(--shadow-sm);}
+.demo canvas{display:block; width:100%; height:auto; background:#0a0f1b;
+  border:1px solid #1c2438; border-radius:10px;}
+.controls{display:flex; gap:8px 14px; flex-wrap:wrap; align-items:center; margin-top:11px;}
+.btn{font-family:var(--sans); font-size:13px; padding:6px 13px; border-radius:8px;
+  border:1px solid var(--line-2); background:var(--panel-2); color:var(--ink); cursor:pointer; transition:.15s;}
+.btn:hover{border-color:var(--terra);}
+.btn.on{background:var(--terra); color:#171207; border-color:var(--terra); font-weight:700;}
+.controls label{font-size:13px; color:var(--muted); display:inline-flex; align-items:center; gap:7px;}
+.controls input[type=range]{accent-color:var(--terra); min-width:110px;}
+.controls .val{font-family:var(--mono); color:var(--amber); font-size:12.5px;}
+.vcap{margin-top:10px; font-size:13.5px; color:var(--muted); line-height:1.6;}
+.vcap b{color:var(--ink);}
+
+/* 图内箭头的数据流动画 */
+.flow{stroke-dasharray:7 7; animation:flowdash 1s linear infinite;}
+@keyframes flowdash{to{stroke-dashoffset:-14;}}
+@media (prefers-reduced-motion: reduce){ .flow{animation:none;} }
+
+footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
+  font-size:13.5px; color:var(--dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+
+@media (max-width:560px){
+  body{font-size:16.5px;}
+  .wrap{padding:0 18px;}
+  h2{margin-top:34px;}
+}
+</style>
+
+<script>
+  window.MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] }, svg:{ fontCache:'global' } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body>
+<div id="progress"></div>
+
+<div class="wrap">
+
+  <nav class="topnav"><a class="back" href="../index.html">← 返回知识库门户</a></nav>
+
+  <header class="hero">
+    <div class="eyebrow">机器人 / SLAM · 状态估计地基</div>
+    <h1>卡尔曼滤波家族：从 <em>KF</em> 到 iEKF</h1>
+    <p class="lede">技术的进步是问题驱动的。本页按「<b>场景 → 翻车 → 解法 → 新边界</b>」的循环走完卡尔曼家族八轮进化：登月导航逼出 KF，弯曲的观测逼出 EKF，画错的切线逼出 iEKF，画不出的切线逼出 UKF，旋转逼出 ESKF，多峰信念逼出粒子滤波，回环逼出图优化——最后在 FAST-LIO 里合体。配 <b>9 个可动手的交互演示</b>。</p>
+    <div class="byline">
+      <span class="pill">2026-07-08</span>
+      <span class="pill">#卡尔曼滤波</span>
+      <span class="pill">#EKF</span>
+      <span class="pill">#iEKF</span>
+      <span class="pill">#UKF</span>
+      <span class="pill">9 个交互可视化</span>
+      <span class="pill">问题驱动叙事</span>
+      <span class="pill">约 40 分钟</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ═══════════ 0. 定位 ═══════════ -->
+    <section>
+      <p>这一页是 <a href="fast-lio.html">FAST-LIO 页</a>缺的那块地基，但不按教科书顺序讲。技术的进步是<b>问题驱动</b>的：每个算法都有隐含假设和适用边界，总是先有某个具体场景撞碎了假设，才逼出下一代方法。所以本页把家族排成<b>八轮进化</b>，每一轮都按同一个模板走：</p>
+      <div class="mathbox center">
+        <div class="lbl">每一轮的模板</div>
+        <p style="margin:0"><b>【场景】</b>它被用在哪 → <b>【翻车】</b>哪个隐含假设碎了 → <b>【解法】</b>新成员登场 → <b>【新边界】</b>它自己的适用范围，也是下一轮翻车的伏笔</p>
+      </div>
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">一句话看懂全家</span><p>所有成员都在解同一个问题——<b>用先验 + 观测求最大后验（MAP）</b>；分歧只在<b>怎么对付非线性</b>：KF 假装没有，EKF 画切线，iEKF 反复画切线，UKF 撒点绕过切线，ESKF 换坐标让非线性变小，粒子滤波和图优化则干脆改了信仰。<b>每个成员，都是上一轮翻车现场的答案。</b></p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 一、问题 ═══════════ -->
+    <section>
+      <h2>第 0 轮 · 起点：登月导航，两条路都走不通</h2>
+      <p><b>【场景】</b>1950–60 年代，弹道导弹与阿波罗登月。飞行器必须实时知道自己在哪（状态 \( x \)：位置、速度、姿态），手里有两类信息：</p>
+      <ul>
+        <li><b>运动模型 / 推算</b>：惯性器件积分加速度往前推（「这 0.1 秒里我往前走了 0.3 米」）——能预测，但误差<span class="ha">随时间累积</span>，飞到月球早偏出十万八千里；</li>
+        <li><b>观测</b>：雷达 / 光学能间接、带噪声地看到状态（往往测的不是 \( x \) 本身，而是 \( x \) 的某个函数 \( h(x) \)）——误差<span class="hg">不累积</span>，但单次噪声大，直接用会抖成筛子。</li>
+      </ul>
+      <div class="demo">
+        <canvas id="vz-rocket"></canvas>
+        <div class="controls">
+          <button class="btn on" id="rk-imu">惯推</button>
+          <button class="btn on" id="rk-radar">雷达</button>
+          <button class="btn on" id="rk-fuse">融合（KF 预告）</button>
+          <label>IMU 偏置 <input type="range" id="rk-bias" min="0" max="3" step="0.1" value="1.5"><span class="val" id="rk-bias-v">1.5</span></label>
+          <button class="btn" id="rk-re">重新发射</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 1 · 发射场：两条路都走不通。</b>火箭沿灰色虚线真实上升。<span style="color:#6aa6ff">蓝色 = 惯推</span>：机上加速度计积分两次得位置——带一点点偏置，误差按 t² 增长，越飞越漂；<span style="color:#f0bf4c">金色 ✚ = 雷达 / 光学定位</span>：不漂，但每个点都在真值附近乱跳，连起来没法用。<span style="color:#f0a361">橙色 = 融合</span>（KF 的预告：惯推做预测、雷达来修正，橙圈是它自报的不确定度）：既不漂也不抖。<b>动手试：</b>①只留「惯推」，把偏置拉满看它漂到多离谱；②只留「雷达」，体会「每个点都大致对、整条线没法用」；③全开对比——第 0 轮的答案就该长这样。</div>
+      </div>
+
+      <p><b>【翻车】</b>只信惯推会漂，只信雷达会抖，必须合并。而当时手里最好的工具各有死穴：滑动平均 / 低通滤波滞后严重，还估不出没直接测的量（比如速度）；最体面的<b>维纳滤波</b>从根上不适用。它值得单独解释——</p>
+      <p><b>维纳滤波（Wiener, 1949，二战防空火控的产物）是什么？</b>它在<b>频域</b>工作：假设信号和噪声都是<b>平稳</b>随机过程、功率谱已知——真实运动集中在低频（飞行器不会每秒抖十次），噪声摊在全频段——那就给每个频率一个固定权重：</p>
+      <div class="mathbox center">
+        <div class="lbl">维纳滤波 · 每个频率一个提前算好的权重</div>
+        \[ W(f)=\frac{S_s(f)}{S_s(f)+S_n(f)} \qquad \text{信号占优的频段保留，噪声占优的频段压掉} \]
+      </div>
+      <p>在「平稳 + 谱已知」的假设下，这是均方误差最优的<b>信号滤波器</b>。注意它的本质：<span class="mark">对信号波形做固定加权平均，权重离线算好、运行时永不改变</span>——它不认识「状态」，更不认识「动力学」。三处死穴由此而来：①<b>平稳假设</b>——火箭点火、转弯、关机，统计特性分分钟在变；②<b>离线设计</b>——权重定死，不随场景自适应；③<b>只滤信号</b>——给不出速度、姿态这些没直接测的量。眼见为实：</p>
+
+      <div class="demo">
+        <canvas id="vz-wiener"></canvas>
+        <div class="controls">
+          <label>测量噪声 σ <input type="range" id="wn-r" min="6" max="30" step="1" value="14"><span class="val" id="wn-r-v">14</span></label>
+          <button class="btn" id="wn-man">机动！（非平稳事件）</button>
+          <button class="btn" id="wn-reset">重置</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 2 · 维纳滤波：平稳巡航时很优，机动一来就翻车。</b>左图：金点 = 带噪的位置测量，橙色 = 维纳滤波输出——巡航段（平稳随机摆动）滤得又干净又稳，读数里能看到误差被压掉大半。右图是它的全部秘密：信号谱（绿）压在低频、噪声谱（金横线）摊满全频段，青色曲线 = 提前算好的固定权重 \( W(f) \)。<b>动手试：</b>①调大噪声——噪声谱抬高，\( W(f) \) 通带收窄，输出更平滑但<b>更滞后</b>（这个权衡是离线定死的，运行时不会变）；②点「机动！」——飞行器突然爬升，统计特性瞬间改变，而 \( W(f) \) 纹丝不动：输出被抹平、大幅滞后（红色误差区）。再快的机动它也只会「平均掉」——这两刀，正是逼出卡尔曼滤波的直接动机。</div>
+      </div>
+
+      <p><b>【解法】</b>Kalman 1960：换到<b>状态空间</b>，把「我知道多少」写成高斯分布，按可信度加权合并、随时间递推——权重不再定死在频率上，而是<b>每一拍按当前的不确定度现算</b>；不再滤信号，而是估计完整状态（位置、速度、姿态一起）。解法分两步——先解决「知道多少怎么表示、两份信息怎么合并」（下一节），再解决「怎么放进时间循环」（下下节）。</p>
+    </section>
+
+    <!-- ═══════════ 二、高斯与融合 ═══════════ -->
+    <section>
+      <h2>第 0 轮 · 解法（上）：高斯的语言，融合 = 两把尺子</h2>
+      <p><b>【解法 · 第一步】</b>关键的表示选择：不确定的量用高斯分布描述——<b>均值 = 当前最佳估计，方差 = 有多不确定</b>。选高斯不只因为它常见，更因为它在「线性变换 + 相乘（贝叶斯更新）」下保持高斯，整套递推才有闭式解。</p>
+      <p>最小的例子：用尺子 A 量一根杆，读数 10.0，精度 \( \sigma_A=2 \)；用尺子 B 量同一根杆，读数 10.6，精度 \( \sigma_B=1 \)。最优合并不是取平均，而是<span class="hi">按方差倒数加权</span>：</p>
+      <div class="mathbox center">
+        <div class="lbl">高斯融合 · 信息相加</div>
+        \[ \frac{1}{\sigma_+^2}=\frac{1}{\sigma_A^2}+\frac{1}{\sigma_B^2},
+        \qquad
+        \mu_+=\sigma_+^2\left(\frac{\mu_A}{\sigma_A^2}+\frac{\mu_B}{\sigma_B^2}\right) \]
+      </div>
+      <p>代入数字：\( \mu_+=10.48 \)（偏向更准的 B），\( \sigma_+^2=0.8 \)——<span class="mark">比任何一把尺子单独用都准</span>。两条铁律贯穿全页：<b>融合 = 按方差倒数加权；信息只增不减（合并后方差必然变小）</b>。</p>
+
+      <div class="demo">
+        <canvas id="vz-fuse"></canvas>
+        <div class="controls">
+          <label>σ_A（先验）<input type="range" id="fu-sa" min="0.5" max="4" step="0.1" value="2"><span class="val" id="fu-sa-v">2.0</span></label>
+          <label>σ_B（观测）<input type="range" id="fu-sb" min="0.5" max="4" step="0.1" value="1"><span class="val" id="fu-sb-v">1.0</span></label>
+          <label>读数差 μ_B−μ_A <input type="range" id="fu-d" min="0" max="3" step="0.1" value="0.6"><span class="val" id="fu-d-v">0.6</span></label>
+        </div>
+        <div class="vcap"><b>▶ 演示 3 · 两把尺子（这就是一次卡尔曼更新）。</b>蓝色 = 尺子 A（把它当<b>先验</b>），青色 = 尺子 B（把它当<b>观测</b>），橙色 = 融合后的后验。<b>动手试：</b>①把 σ_B 调小——观测越准，后验越贴向 B，权重 K 越接近 1；②把两把尺子都调差——后验也变宽，但<b>永远比两者都窄</b>；③拉大读数差——后验只是平移，权重不变（权重只看方差，不看读数）。</div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 三、KF ═══════════ -->
+    <section>
+      <h2>第 0 轮 · 解法（下）：把融合放进时间循环——KF 诞生</h2>
+      <p><b>【解法 · 第二步】</b>把「两把尺子」放到时间轴上循环起来，就是 1960 年的卡尔曼滤波——阿波罗导航计算机里真正跑过的算法。每一拍两个动作：</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 760 216" role="img" aria-label="预测–更新循环">
+            <defs>
+              <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#6b768f"/></marker>
+            </defs>
+            <rect x="86" y="66" width="230" height="84" rx="14" fill="rgba(106,166,255,.14)" stroke="#6aa6ff" stroke-width="1.5"/>
+            <text x="201" y="100" text-anchor="middle" font-family="Inter" font-size="15.5" font-weight="600" fill="#e4ebf7">预测 Predict</text>
+            <text x="201" y="124" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">运动模型推着走 · 协方差膨胀 ↑</text>
+            <rect x="446" y="66" width="230" height="84" rx="14" fill="rgba(240,163,97,.14)" stroke="#f0a361" stroke-width="1.5"/>
+            <text x="561" y="100" text-anchor="middle" font-family="Inter" font-size="15.5" font-weight="600" fill="#e4ebf7">更新 Update</text>
+            <text x="561" y="124" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">和观测 z 加权融合 · 协方差收缩 ↓</text>
+            <path class="flow" d="M316 84 C 360 60 400 60 446 84" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+            <text x="381" y="52" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">先验 x̂, P</text>
+            <path class="flow" d="M446 134 C 400 158 360 158 316 134" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+            <text x="381" y="178" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">后验 x̂⁺, P⁺ → 下一拍的起点</text>
+            <path class="flow" d="M24 108 H86" stroke="#6b768f" stroke-width="2" marker-end="url(#ar)"/>
+            <text x="24" y="94" font-family="Inter" font-size="11.5" fill="#6b768f">IMU / 模型</text>
+            <path class="flow" d="M736 108 H676" stroke="#6b768f" stroke-width="2" marker-end="url(#ar)"/>
+            <text x="736" y="94" text-anchor="end" font-family="Inter" font-size="11.5" fill="#6b768f">观测 z</text>
+          </svg>
+        </div>
+        <figcaption><b>图 1.</b> 卡尔曼滤波的心跳：预测让不确定度膨胀，更新让它收缩，循环往复。</figcaption>
+      </figure>
+
+      <div class="mathbox">
+        <div class="lbl">KF · 预测</div>
+        \[ \hat{\mathbf{x}}\leftarrow \mathbf{F}\hat{\mathbf{x}},\qquad
+           \mathbf{P}\leftarrow \mathbf{F}\mathbf{P}\mathbf{F}^{\top}+\mathbf{Q} \]
+        <div class="lbl" style="margin-top:14px">KF · 更新</div>
+        \[ \mathbf{K}=\mathbf{P}\mathbf{H}^{\top}(\mathbf{H}\mathbf{P}\mathbf{H}^{\top}+\mathbf{R})^{-1},\qquad
+           \hat{\mathbf{x}}\leftarrow \hat{\mathbf{x}}+\mathbf{K}(\mathbf{z}-\mathbf{H}\hat{\mathbf{x}}),\qquad
+           \mathbf{P}\leftarrow(\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P} \]
+      </div>
+      <p>卡尔曼增益 \( \mathbf{K} \) 就是「两把尺子」里的那个权重。一维时 \( K = P/(P+R) \)，一眼看穿：先验越不确定（\( P \) 大）\( K\to 1 \) 信观测；观测越烂（\( R \) 大）\( K\to 0 \) 信预测。\( \mathbf{Q} \) 是运动模型自己的噪声——它决定预测阶段协方差膨胀多快。</p>
+
+      <div class="demo">
+        <canvas id="vz-track"></canvas>
+        <div class="controls">
+          <button class="btn on" id="tr-meas">观测：开</button>
+          <label>测量噪声 σ_R <input type="range" id="tr-r" min="2" max="30" step="1" value="8"><span class="val" id="tr-r-v">8</span></label>
+          <label>过程噪声 Q <input type="range" id="tr-q" min="-1" max="2" step="0.1" value="1.5"><span class="val" id="tr-q-v">32</span></label>
+          <button class="btn" id="tr-reset">重置</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 4 · 一维卡尔曼追踪。</b>绿色 = 真实位置（你看不见它，滤波器更看不见），金点 = 带噪测量，橙色 = KF 估计，橙带 = ±2σ。<b>动手试：</b>①关掉观测——纯预测，橙带无限膨胀（这就是"只信模型会漂"）；②把 σ_R 调大——K 变小，估计更平滑但跟得更慢；③把 Q 调小（过分信任模型）——估计变得又自信又滞后，橙带窄到把真值排除在外，这是<b>过度自信</b>，滤波器调参的头号大坑；④把 Q 调大——估计紧咬测量，抖但不滞后。</div>
+      </div>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">为 iEKF 埋下的伏笔</span><p>当观测是线性的（\( \mathbf{z}=\mathbf{H}\mathbf{x}+\mathbf{v} \)）且噪声高斯时，KF 更新<b>精确最优</b>，因为它等价于最小化一个二次代价：\( J(\mathbf{x})=\|\mathbf{x}-\hat{\mathbf{x}}\|^2_{\mathbf{P}^{-1}}+\|\mathbf{z}-\mathbf{H}\mathbf{x}\|^2_{\mathbf{R}^{-1}} \)（别离先验太远 + 别离观测太远）。<b>二次函数的最低点一步解出——这就是更新公式的真身</b>。记住这句话，第 2 轮全靠它。</p></div>
+      </div>
+      <p><b>【新边界】</b>模型和观测都线性、噪声高斯。边界之内它严格最优、至今无可替代（目标跟踪、传感器平滑仍是它的天下）；边界之外——第 1 轮的翻车现场已经在等着，而且第一个撞上去的，就是发明它的阿波罗计划自己。</p>
+    </section>
+
+    <!-- ═══════════ 四、EKF ═══════════ -->
+    <section>
+      <h2>第 1 轮 · 翻车：观测函数是弯的 → EKF</h2>
+      <p><b>【场景】</b>讽刺的是，第一个撞上 KF 边界的正是阿波罗自己：轨道动力学非线性，测的又是角度和距离（反正切、开方）。相机测投影、雷达测距离方位、<a href="fast-lio.html">FAST-LIO</a> 测点到面距离——现实里观测函数几乎从不线性。</p>
+      <p><b>【翻车】</b>KF 要求的那个<b>常数矩阵 H 根本不存在</b>（这些函数连叠加原理都不满足）：高斯穿过弯曲函数不再是高斯，均值不穿函数传播（\( E[h(x)]\neq h(E[x]) \)），二次代价不再是抛物线，闭式解没了。KF 无法开机。</p>
+      <p><b>【解法】</b>EKF（NASA 的 Schmidt 为阿波罗搞出来的，早年就叫 Schmidt–Kalman 滤波）：既然全局的 H 不存在，就退而求其次——<span class="hi">在当前估计处给 \( h(\mathbf{x}) \) 画一条切线</span>（雅可比 \( \mathbf{H}=\partial h/\partial\mathbf{x} \)），要一个只在此地有效的<b>局部 H</b>，其余照抄 KF：</p>
+      <div class="mathbox center">
+        <div class="lbl">EKF · 更新（预测照旧，只是模型也可非线性）</div>
+        \[ \mathbf{H}=\left.\frac{\partial h}{\partial\mathbf{x}}\right|_{\hat{\mathbf{x}}},\qquad
+           \hat{\mathbf{x}}\leftarrow\hat{\mathbf{x}}+\mathbf{K}\big(\mathbf{z}-h(\hat{\mathbf{x}})\big) \]
+      </div>
+      <p>切线画得像不像，决定 EKF 死活。下面这个演示让你直接看「一个高斯穿过非线性函数」时发生了什么——这是理解 EKF、UKF 全部优缺点的一张图：</p>
+
+      <div class="demo">
+        <canvas id="vz-nl"></canvas>
+        <div class="controls">
+          <label>输入均值 μ <input type="range" id="nt-mu" min="-90" max="90" step="1" value="45"><span class="val" id="nt-mu-v">45</span></label>
+          <label>输入 σ <input type="range" id="nt-sg" min="5" max="40" step="1" value="22"><span class="val" id="nt-sg-v">22</span></label>
+          <button class="btn" id="nt-ukf">UKF sigma 点：关</button>
+          <button class="btn" id="nt-rs">重采样</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 5 · 高斯过弯：EKF vs 真相 vs UKF。</b>底部绿色小山 = 输入高斯 \( N(\mu,\sigma^2) \)，蓝色曲线 = 非线性 \( h(x) \)。把 6000 个样本逐个穿过曲线，左侧灰色直方图就是输出分布的<b>真相</b>（蒙特卡洛）；红色 = EKF 的答案（切线传播：均值 \( h(\mu) \)、方差 \( |h'(\mu)|^2\sigma^2 \)）。<b>动手试：</b>①把 μ 拖到曲线弯的地方、σ 调大——真相变歪（不再对称），均值明显<b>不等于</b> \( h(\mu) \)，红色高斯错得理直气壮；②打开 UKF：紫色菱形是 3 个确定性采样的 <b>sigma 点</b>，各自穿过<b>真实曲线</b>后加权重组，紫色高斯明显比红色更贴真相——不用求导，只多算两次 \( h \)；③把 μ 拖回平直段——三者重合，非线性弱时谁都一样。</div>
+      </div>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">EKF 的隐患不是「有误差」，而是「不知道自己错了」</span><p>切线画错产生的偏差<b>不是噪声，是系统性误差</b>——协方差照常收缩，滤波器依旧自信满满。这种「又错又自信」的状态长期喂进递推循环，就是发散的种子。切线画在哪最要命？画在<b>先验</b>处。先验偏得越远、曲线越弯，切线越离谱——这正是第 2 轮的翻车现场。</p></div>
+      </div>
+      <p><b>【新边界】</b>非线性温和、或先验足够好（不确定度罩住的那段曲线近似直）。边界之内，它做了半个世纪的工业标准（GPS/INS 组合导航）；边界之外有两种翻法，对应两轮进化：切线画错了地方（第 2 轮），切线根本画不出来（第 3 轮）。</p>
+    </section>
+
+    <!-- ═══════════ 五、iEKF ═══════════ -->
+    <section>
+      <h2>第 2 轮 · 翻车：切线画在了错误的地方 → iEKF</h2>
+      <p><b>【场景】</b>雷达刚捕获一个新目标（先验近乎瞎猜）；无人机剧烈机动后用激光修正位姿。共同点：<b>先验差 + 函数弯</b>。<b>【翻车】</b>切线画在先验处，错得理直气壮——上一轮演示 5 里红色高斯和灰色真相的距离，就是每一帧都朝同一方向犯的系统性错误，喂进递推循环就是发散。</p>
+      <p><b>【解法】</b>iEKF 的全部洞察就一句话：<span class="mark">更新完的估计比先验更接近真值，那切线为什么不挪过去重画一次？</span>于是在<b>同一帧观测内</b>迭代：在先验处画切线 → 解一次更新得 \( \mathbf{x}_1 \) → 在 \( \mathbf{x}_1 \) 处重画切线 → 再解一次 → …… 直到估计不再移动。</p>
+      <p>但有一个极易做错的细节：<b>不能</b>把上一步结果当新先验反复套 EKF 公式——那等于把同一个测量吃了 N 遍，协方差会虚假收缩 N 次。正确的第 \( i \) 次迭代是：</p>
+      <div class="mathbox center">
+        <div class="lbl">iEKF · 第 i 次迭代（起点永远是原始先验 x̂）</div>
+        \[ \mathbf{x}_{i+1}=\hat{\mathbf{x}}+\mathbf{K}_i\big(\mathbf{z}-h(\mathbf{x}_i)-\mathbf{H}_i(\hat{\mathbf{x}}-\mathbf{x}_i)\big),
+        \qquad \mathbf{K}_i=\mathbf{P}\mathbf{H}_i^{\top}(\mathbf{H}_i\mathbf{P}\mathbf{H}_i^{\top}+\mathbf{R})^{-1} \]
+      </div>
+      <p>多出来的 \( \mathbf{H}_i(\hat{\mathbf{x}}-\mathbf{x}_i) \) 是把残差重新表达到当前线性化点上。为什么长这样？因为这个公式<b>恰好就是</b>对第 0 轮伏笔里那个 MAP 代价（把 \( \mathbf{H}\mathbf{x} \) 换成 \( h(\mathbf{x}) \)）做<span class="hi">高斯–牛顿法</span>的迭代式：</p>
+      <div class="mathbox center">
+        <div class="lbl">目标从头到尾没变</div>
+        \[ J(\mathbf{x})=\|\mathbf{x}-\hat{\mathbf{x}}\|^2_{\mathbf{P}^{-1}}+\|\mathbf{z}-h(\mathbf{x})\|^2_{\mathbf{R}^{-1}} \]
+      </div>
+      <ul>
+        <li><b>KF</b>：\( J \) 本来就是抛物线，一步解到底；</li>
+        <li><b>EKF</b>：在先验处把 \( J \) 近似成抛物线，解一次就交卷；</li>
+        <li><b>iEKF</b>：用一串不断重新贴合的抛物线逼近真实的 \( J \)，收敛到它真正的谷底（MAP 点）。</li>
+      </ul>
+
+      <div class="demo">
+        <canvas id="vz-iekf"></canvas>
+        <div class="controls">
+          <button class="btn" id="ik-step">线性化 + 更新一步 ▶</button>
+          <button class="btn" id="ik-auto">自动迭代 ▶▶</button>
+          <button class="btn" id="ik-new">换一组先验 / 测量</button>
+          <label>非线性强度 <input type="range" id="ik-nl" min="0" max="100" step="5" value="80"><span class="val" id="ik-nl-v">强</span></label>
+        </div>
+        <div class="vcap"><b>▶ 演示 6 · iEKF 步进机。</b>左图测量空间：蓝色 \( h(x) \)、金色虚线 = 实际测量 \( z \)、绿色小山 = 先验、青色直线 = 当前<b>切线</b>。右图代价空间：灰色 = 真实 MAP 代价 \( J(x) \)，青色虚线 = 切线对应的<b>抛物线近似</b>——每次更新就是跳到抛物线最低点。<b>动手试：</b>①按一步——落点被红线标记「EKF 停在这」，和真谷底（绿线 MAP）差一截；②继续按，看切线随估计移动、抛物线逐步扶正、橙点滑进 MAP；③收敛后左图出现橙色小山——<b>协方差此刻才更新</b>（σ 22 → σ⁺）；④非线性调弱再试：EKF 一步 ≈ iEKF——<b>非线性越强、先验越差，迭代越值钱</b>。</div>
+      </div>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">协方差为什么最后才更新一次？</span><p>迭代过程中 \( \mathbf{P} \) 一直不动——你始终在解<b>同一个</b>贝叶斯更新问题，只是在找它的最优点，信息并没有多吃。收敛到 \( \mathbf{x}_N \) 后才用<b>最后一次</b>的雅可比更新：\( \mathbf{P}^{+}=(\mathbf{I}-\mathbf{K}_N\mathbf{H}_N)\mathbf{P} \)。协方差描述的是后验分布在峰值附近的曲率，当然要在收敛点处线性化才准——iEKF 不但均值更准，<b>协方差也更诚实</b>。</p></div>
+      </div>
+      <p><b>【新边界】</b>入场券是雅可比：推得出、算得起（每次迭代 ≈ 一次 EKF 更新，先验好时 2–3 次收敛，几乎白送）。雅可比推不动的系统怎么办？——第 3 轮。</p>
+    </section>
+
+    <!-- ═══════════ 六、UKF ═══════════ -->
+    <section>
+      <h2>第 3 轮 · 翻车：切线根本画不出来 → UKF</h2>
+      <p><b>【场景】</b>再入大气层的飞行器（气动模型是查表 + 经验公式的黑盒）、复杂化工过程、观测模型里嵌着一个仿真器。<b>【翻车】</b>EKF / iEKF 的入场券是雅可比——模型不可导、导数推不动、或推出来错误百出（历史上大量「EKF 事故」尸检后其实是雅可比推错了），整条切线路线堵死。</p>
+      <p><b>【解法】</b>UKF（Julier &amp; Uhlmann, 1997）走另一条路：<span class="ht">与其近似函数（切线），不如近似分布（采样）</span>。它按确定性规则取一小撮 <b>sigma 点</b>（\( n \) 维状态取 \( 2n+1 \) 个：均值 1 个 + 沿协方差每个主轴正负各 1 个），让每个点<b>穿过真实的非线性函数</b>，再对穿过后的点加权重组出均值和协方差。回到演示 5 打开「UKF sigma 点」就能看到：紫色高斯比红色（EKF）明显更贴蒙特卡洛真相。</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th></th><th>EKF / iEKF</th><th>UKF</th></tr></thead>
+          <tbody>
+            <tr><td><b>非线性怎么进来</b></td><td>只通过一阶导（切线）</td><td>函数本身被 sigma 点探测，含高阶效应</td></tr>
+            <tr><td><b>要不要求雅可比</b></td><td>要（解析推导或自动微分）</td><td>不要——只需会算 \( h(x) \)</td></tr>
+            <tr><td><b>每帧代价</b></td><td>1 次（EKF）或几次（iEKF）线性化+求解</td><td>\( 2n+1 \) 次完整的模型/观测计算</td></tr>
+            <tr><td><b>高维状态（如 18 维）</b></td><td>代价随维度温和增长</td><td>37 个 sigma 点 × 上千条残差，机载吃不消</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><b>【新边界】</b>状态维数别太高（18 维 = 37 个 sigma 点，每个都要过一遍完整观测模型）、调参略敏感。这也解释了 FAST-LIO 的选择：它的观测雅可比（点到面残差对位姿）有干净的解析形式，而 IMU 前向传播给的先验很好、iEKF 两三次迭代就收敛——<b>切线好求、初值不差时，iEKF 用 UKF 一小半的代价拿到不逊色的精度</b>。UKF 的主场是雅可比难求或极其难看的系统（气动模型、生化过程、深度网络观测模型）。</p>
+    </section>
+
+    <!-- ═══════════ 七、ESKF 与流形 ═══════════ -->
+    <section>
+      <h2>第 4 轮 · 翻车：状态里混进了旋转 → ESKF</h2>
+      <p><b>【场景】</b>无人机姿态估计。<b>【翻车】</b>这次翻的不是算法，是<b>状态本身</b>：旋转不是向量。用欧拉角——俯仰 90° 时万向节锁死；用四元数——4 个数带 1 个单位模长约束，协方差天生奇异，每步更新完还得手动归一化（数学上不体面的 hack）；旋转矩阵 9 个数只有 3 个自由度更没法直接进滤波器。KF 整座「均值 ± 协方差」的大厦建在向量空间的加减法上，而旋转所在的空间是<b>弯的</b>。翻车能有多具体？看下面——连「求个平均」都会翻：</p>
+
+      <div class="demo">
+        <canvas id="vz-ang"></canvas>
+        <div class="controls">
+          <label>航向 A <input type="range" id="ag-a" min="-180" max="180" step="1" value="170"><span class="val" id="ag-a-v">170°</span></label>
+          <label>航向 B <input type="range" id="ag-b" min="-180" max="180" step="1" value="-170"><span class="val" id="ag-b-v">−170°</span></label>
+        </div>
+        <div class="vcap"><b>▶ 演示 7 · 旋转不是向量：求个平均就翻车。</b>航向 170° 和 −170° 明明只差 20°、都朝西；当成普通数字取平均 = 0°——指向<b>正东</b>，反了 180°，误差最大化（红色箭头）。正确做法（青色）：在其中一个角的<b>切空间</b>里表示两者的小差值（循环差 20°），平均小差值再卷回圆上。「对全量直接做算术会翻、对局部小误差做算术没事」——这正是 ESKF「滤误差、不滤全量」的一维版。<b>动手试：</b>把两个航向拖到同侧（如 30° 和 60°），红青重合——小角度时怎么算都行，这就是误差状态永远合法的原因。</div>
+      </div>
+
+      <p><b>【解法】</b><b>误差状态卡尔曼滤波（ESKF）</b>：把状态拆成两层——</p>
+      <ul>
+        <li><b>名义状态</b>：大而怪（旋转矩阵/四元数），由 IMU 积分推着走，<b>不进滤波器</b>；</li>
+        <li><b>误差状态</b> \( \delta\mathbf{x} \)：小而乖——名义状态附近的小偏差，旋转误差只需 3 维小角度向量，活在<span class="ht">切空间</span>里，天然是普通向量，KF 全套照用。</li>
+      </ul>
+      <p>滤波器只滤误差：每次更新解出 \( \delta\mathbf{x} \)，注入名义状态（旋转走 \( \mathbf{R}\,\mathrm{Exp}(\delta\boldsymbol{\theta}) \)，即 <a href="lie-groups-slam.html">李群页</a>的指数映射），误差清零，下一拍继续。好处有二：误差永远在原点附近，<b>线性化误差天然小</b>；维数取流形的真实自由度，<b>协方差不退化</b>。这套「在切空间滤波、用 ⊞ 卷回流形」的语言正是 <a href="fast-lio.html">FAST-LIO</a> 的 18 维流形 iEKF：ESKF 给出坐标（误差状态 + ⊞），iEKF 给出算法（同帧迭代重线性化），两者相乘就是它的估计器内核。</p>
+      <div class="callout tip">
+        <div class="ic">🧭</div>
+        <div class="ct"><span class="t">从一维到 FAST-LIO 只差三处机械替换</span><p>标量 \( x \) → 流形上的 18 维状态（更新用 ⊞）；一条测量 \( z \) → 上千条点到面残差（每次迭代还会重找最近平面）；标量除法 → 18×18 求逆（增益新公式，见 FAST-LIO 页演示 5）。逻辑一字不改。</p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 第 5 轮 · 粒子滤波 ═══════════ -->
+    <section>
+      <h2>第 5 轮 · 翻车：「我在哪」有好几个答案 → 粒子滤波</h2>
+      <p><b>【场景】</b>机器人全局定位：开机时被扔进一条有几扇相同房门的走廊（或运行中被人抱走——经典的「绑架问题」）。观测和三个位置都吻合，真实的信念是<b>三个峰</b>。</p>
+      <p><b>【翻车】</b>前面所有成员共享同一条地基假设：<b>信念是单峰高斯</b>。三个峰硬用一个「均值 ± 协方差」表示，均值会落在几个峰<b>中间的墙里</b>——一个概率为零的地方。这不是精度问题，是<b>表达能力</b>问题：迭代（第 2 轮）和撒点（第 3 轮）都救不了，因为它们修的是均值和方差的「值」，而这里坏掉的是「均值 + 方差」这个表示本身。</p>
+      <p><b>【解法】</b>粒子滤波：彻底放弃高斯，用几百上千个带权重的随机样本表示任意形状的信念——多峰、歪斜、断裂都不在话下。预测 = 每个粒子按运动模型走一步；更新 = 按观测似然给粒子加权重、重采样。</p>
+
+      <div class="demo">
+        <canvas id="vz-pf"></canvas>
+        <div class="controls">
+          <button class="btn" id="pf-step">走一步 + 观测 ▶</button>
+          <button class="btn" id="pf-auto">自动 ▶▶</button>
+          <button class="btn" id="pf-kid">绑架！（瞬移机器人）</button>
+          <button class="btn" id="pf-reset">重置</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 8 · 走廊定位：单峰高斯 vs 粒子云。</b>机器人（绿色三角）在有三扇相同门（紫色）的走廊里，只能测「离最近的门多远」。橙色点云 = 粒子滤波的信念：一开始几簇并存（几个位置都解释得通），随着机器人移动、门间距的差异逐渐排除假设，粒子塌缩到真实位置附近。红色曲线 = 硬用一个高斯拟合同一信念：多簇并存时它的均值落在<b>簇与簇之间</b>——概率为零的位置。<b>动手试：</b>①点「自动」看三簇如何随证据积累收敛成一簇；②点「绑架」瞬移机器人——粒子云靠随机撒粒子的「后备兵」重新找回目标，单峰高斯则一路错到底。</div>
+      </div>
+
+      <p><b>【新边界】</b>维度灾难——覆盖状态空间所需的粒子数随维数<b>指数增长</b>：2D 定位游刃有余，18 维状态想都别想。所以它和卡尔曼家族是分工而非取代：低维、多峰用粒子；高维、单峰用滤波。</p>
+    </section>
+
+    <!-- ═══════════ 第 6 轮 · 图优化 ═══════════ -->
+    <section>
+      <h2>第 6 轮 · 翻车：滤波不能反悔 → 图优化 / 平滑</h2>
+      <p><b>【场景】</b>SLAM 建图，机器人绕一大圈回到出发点（回环）。此刻它拿到一条黄金信息：「我现在的位置 = 出发的位置」，按理能把整条轨迹的累积误差都修掉。</p>
+      <p><b>【翻车】</b>滤波器是<b>因果</b>的：历史状态早被边缘化掉了，过去每一帧的线性化点画错了就永远错了（EKF-SLAM 著名的不一致性问题）。回环信息来了，却没有「过去」可以修改——<b>滤波不能反悔</b>。</p>
+
+      <div class="demo">
+        <canvas id="vz-loop"></canvas>
+        <div class="controls">
+          <button class="btn" id="lp-run">出发绕一圈 ▶</button>
+          <button class="btn" id="lp-filter">滤波修正：只能修当前</button>
+          <button class="btn" id="lp-graph">图优化：批量修全部</button>
+          <button class="btn" id="lp-reset">重置</button>
+        </div>
+        <div class="vcap"><b>▶ 演示 9 · 回环时刻：滤波不能反悔，图优化可以。</b>机器人沿正方形巡逻（灰色虚线 = 真实路线），里程计带一点角度漂移，估计轨迹（橙色）越走越歪。回到起点时发现回环（金色虚线：「这两点应是同一点」）。点「滤波修正」——只有<b>当前位姿</b>被拉回起点，末端跳一下，历史轨迹（以及用它建的地图）依旧是歪的，还多了一道裂缝；点「图优化」——把回环误差<b>摊回整条历史</b>，全轨迹平滑舒展回正方形。<b>动手试：</b>先滤波修一次看裂缝，重置后再图优化修一次对比末态。</div>
+      </div>
+
+      <p><b>【解法】</b>图优化 / 平滑：不递推了，把所有历史位姿和所有约束（里程计、观测、回环）摆成一张图，<b>批量</b>求 MAP，每轮迭代重新线性化<b>全部</b>历史——第 2 轮「重画切线」的思想放大到整条轨迹。精度与一致性碾压滤波。<b>【新边界】</b>实时性。于是现代系统形成标准分工：<span class="mark">前端滤波实时出位姿，后端优化离线修全局</span>——第 2 轮和第 6 轮的答案各守一段。</p>
+    </section>
+
+    <!-- ═══════════ 第 7 轮 · FAST-LIO ═══════════ -->
+    <section>
+      <h2>第 7 轮 · 收束：FAST-LIO = 前六轮答案的组装</h2>
+      <p><b>【场景】</b>小型无人机机载 LiDAR-惯性里程计：观测非线性（第 1 轮）、快速运动下先验易差（第 2 轮）、状态含旋转（第 4 轮）、必须实时（第 6 轮的教训：前端别碰批量优化）。还附赠一个新翻车：一帧上千条点到面残差，传统增益公式要对上千维矩阵求逆，机载电脑算不动。</p>
+      <p><b>【解法】</b>组合拳 + 一个新发明：<b>ESKF 给坐标</b>（误差状态 + ⊞），<b>iEKF 给算法</b>（同帧迭代重线性化），<b>矩阵求逆引理给速度</b>（求逆从 m×m 降到 18×18）。每个零件都是前面某一轮翻车的答案——完整系统见 <a href="fast-lio.html">FAST-LIO 页</a>：那边的演示 4 对应这里的第 2 轮，演示 5 对应千维求逆的翻车，演示 6 则是「退化」这个 LiDAR 特有翻车现场的解剖。</p>
+    </section>
+
+    <!-- ═══════════ 八、全家福 ═══════════ -->
+    <section>
+      <h2>纵览：家族年表、谱系图与选型</h2>
+      <p>先把八轮进化收进一张年表——第三列是每一轮真正的主角：<b>被撞碎的隐含假设</b>：</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>轮</th><th>翻车场景</th><th>撞碎的隐含假设</th><th>解法</th></tr></thead>
+          <tbody>
+            <tr><td><b>0</b></td><td>登月导航：推算漂、观测抖</td><td>（维纳滤波：平稳、离线、单通道）</td><td><b>KF</b>：状态空间 + 预测–更新递推</td></tr>
+            <tr><td><b>1</b></td><td>轨道 / 雷达 / 相机：观测是弯的</td><td>「观测是线性的」</td><td><b>EKF</b>：切线要一个局部 H</td></tr>
+            <tr><td><b>2</b></td><td>目标初捕获：先验差 + 函数弯</td><td>「先验处的切线够准」</td><td><b>iEKF</b>：重画切线到收敛（高斯–牛顿）</td></tr>
+            <tr><td><b>3</b></td><td>气动黑盒：导数推不动</td><td>「雅可比可得」</td><td><b>UKF</b>：sigma 点穿真实函数</td></tr>
+            <tr><td><b>4</b></td><td>姿态估计：万向节锁 / 四元数约束</td><td>「状态是向量」</td><td><b>ESKF</b>：切空间里滤误差</td></tr>
+            <tr><td><b>5</b></td><td>走廊全局定位：信念有三个峰</td><td>「信念是单峰高斯」</td><td><b>粒子滤波</b>：样本表示任意分布</td></tr>
+            <tr><td><b>6</b></td><td>SLAM 回环：过去修不了</td><td>「不需要反悔」</td><td><b>图优化</b>：批量重解全部历史</td></tr>
+            <tr><td><b>7</b></td><td>机载 LIO：全部一起来 + 千维求逆</td><td>——</td><td><b>FAST-LIO</b>：ESKF + iEKF + 增益新公式</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 760 344" role="img" aria-label="卡尔曼滤波家族谱系">
+            <defs>
+              <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#6b768f"/></marker>
+            </defs>
+            <rect x="318" y="16" width="124" height="48" rx="12" fill="rgba(106,166,255,.16)" stroke="#6aa6ff" stroke-width="1.5"/>
+            <text x="380" y="38" text-anchor="middle" font-family="Inter" font-size="14.5" font-weight="600" fill="#e4ebf7">KF</text>
+            <text x="380" y="55" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">线性 · 精确最优</text>
+
+            <rect x="128" y="128" width="130" height="48" rx="12" fill="rgba(240,191,76,.14)" stroke="#f0bf4c"/>
+            <text x="193" y="150" text-anchor="middle" font-family="Inter" font-size="14" font-weight="600" fill="#e4ebf7">EKF</text>
+            <text x="193" y="167" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">一阶线性化</text>
+
+            <rect x="508" y="128" width="130" height="48" rx="12" fill="rgba(180,155,255,.14)" stroke="#b49bff"/>
+            <text x="573" y="150" text-anchor="middle" font-family="Inter" font-size="14" font-weight="600" fill="#e4ebf7">UKF</text>
+            <text x="573" y="167" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">sigma 点采样</text>
+
+            <rect x="36" y="238" width="130" height="48" rx="12" fill="rgba(240,163,97,.16)" stroke="#f0a361"/>
+            <text x="101" y="260" text-anchor="middle" font-family="Inter" font-size="14" font-weight="600" fill="#e4ebf7">iEKF</text>
+            <text x="101" y="277" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">同帧迭代重线性化</text>
+
+            <rect x="222" y="238" width="130" height="48" rx="12" fill="rgba(155,206,107,.14)" stroke="#9bce6b"/>
+            <text x="287" y="260" text-anchor="middle" font-family="Inter" font-size="14" font-weight="600" fill="#e4ebf7">ESKF</text>
+            <text x="287" y="277" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">只滤误差状态</text>
+
+            <rect x="118" y="308" width="220" height="30" rx="10" fill="rgba(70,215,204,.12)" stroke="#46d7cc"/>
+            <text x="228" y="328" text-anchor="middle" font-family="Inter" font-size="12.5" font-weight="600" fill="#e4ebf7">流形 iEKF（FAST-LIO）</text>
+
+            <rect x="600" y="238" width="130" height="48" rx="12" fill="none" stroke="#6b768f" stroke-dasharray="5 4"/>
+            <text x="665" y="260" text-anchor="middle" font-family="Inter" font-size="13" fill="#9aa6bf">粒子滤波 PF</text>
+            <text x="665" y="277" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#6b768f">放弃高斯 · 大量采样</text>
+            <rect x="600" y="302" width="130" height="38" rx="10" fill="none" stroke="#6b768f" stroke-dasharray="5 4"/>
+            <text x="665" y="325" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">图优化 / 平滑</text>
+
+            <path class="flow" d="M338 64 C 300 84 250 104 218 128" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#ar2)"/>
+            <text x="240" y="98" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">非线性？画切线</text>
+            <path class="flow" d="M422 64 C 460 84 510 104 542 128" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#ar2)"/>
+            <text x="522" y="98" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">非线性？撒点</text>
+            <path class="flow" d="M164 176 C 145 196 125 216 110 238" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#ar2)"/>
+            <text x="98" y="208" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">切线画错？迭代</text>
+            <path class="flow" d="M226 176 C 245 196 262 216 277 238" stroke="#6b768f" stroke-width="2" fill="none" marker-end="url(#ar2)"/>
+            <text x="300" y="208" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">旋转出格？滤误差</text>
+            <path class="flow" d="M120 286 C 135 296 155 304 172 312" stroke="#46d7cc" stroke-width="1.8" fill="none" marker-end="url(#ar2)"/>
+            <path class="flow" d="M280 286 C 270 294 258 302 248 308" stroke="#46d7cc" stroke-width="1.8" fill="none" marker-end="url(#ar2)"/>
+            <path d="M442 40 C 560 44 640 120 662 238" stroke="#6b768f" stroke-width="1.4" stroke-dasharray="4 5" fill="none" marker-end="url(#ar2)"/>
+          </svg>
+        </div>
+        <figcaption><b>图 2.</b> 家族谱系：每个后代只为修长辈的一个缺陷。虚线框是「换了信仰」的亲戚（第 5、6 轮）——PF 放弃高斯假设，图优化放弃递推。</figcaption>
+      </figure>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>成员</th><th>对付非线性</th><th>每帧代价</th><th>软肋</th><th>典型场景</th></tr></thead>
+          <tbody>
+            <tr><td><b>KF</b></td><td>假设没有</td><td>极低</td><td>模型必须线性</td><td>目标跟踪、传感器平滑、金融滤波</td></tr>
+            <tr><td><b>EKF</b></td><td>先验处一次切线</td><td>低</td><td>强非线性 + 差先验时又错又自信</td><td>GPS/INS 组合导航、通用非线性滤波</td></tr>
+            <tr><td><b>iEKF</b></td><td>同帧迭代重切线</td><td>低 × 迭代次数</td><td>需要好雅可比与收敛判断</td><td>LIO / VIO 前端（FAST-LIO）</td></tr>
+            <tr><td><b>ESKF</b></td><td>换坐标让非线性变小</td><td>低</td><td>本身不解决观测非线性（常与 EKF/iEKF 合体）</td><td>IMU 驱动的姿态/位姿估计</td></tr>
+            <tr><td><b>UKF</b></td><td>sigma 点穿真实函数</td><td>中（2n+1 次前向）</td><td>高维贵、参数敏感</td><td>雅可比难求的系统</td></tr>
+            <tr><td><b>粒子滤波</b></td><td>海量随机采样</td><td>高</td><td>维度灾难</td><td>多峰分布（全局定位、绑架问题）</td></tr>
+            <tr><td><b>图优化</b></td><td>批量重线性化全部历史</td><td>很高</td><td>实时性</td><td>SLAM 后端、回环、全局一致建图</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>选型的粗规则：<b>线性用 KF；非线性温和、先验好用 EKF；非线性强但雅可比好求用 iEKF；雅可比难求用 UKF；分布多峰用 PF；要全局一致、能忍延迟用图优化</b>。工程系统常常是组合拳——FAST-LIO 用 ESKF 坐标 + iEKF 算法做前端，再接图优化做后端。</p>
+
+      <h3>两点元观察</h3>
+      <p><b>技术是积累，不是替代。</b>这条链不是「越新越好」：KF 至今统治线性问题，EKF 仍是组合导航的工业标准，每个成员都活在自己那一轮划定的边界里。所谓进步，是<b>边界之外多了一个能用的工具</b>。</p>
+      <p><b>每次翻车都翻在同一个模式上：某个隐含假设撞上了不满足它的场景。</b>线性假设撞上弯曲的观测、「先验不差」撞上目标初捕获、「可导」撞上黑盒、「状态是向量」撞上旋转、「单峰」撞上走廊、「不需要反悔」撞上回环。学任何新算法时先问一句<span class="mark">「它隐含假设了什么」</span>，基本就能预言它下一次会在哪翻车。</p>
+    </section>
+
+    <!-- ═══════════ 九、复习清单 ═══════════ -->
+    <section>
+      <h2>必须背下来的 12 句话</h2>
+      <ol>
+        <li>状态估计 = 把<b>会漂的预测</b>和<b>带噪的观测</b>按可信度合并。</li>
+        <li>高斯融合 = 按<b>方差倒数</b>加权；信息只增不减。</li>
+        <li>KF 的心跳：预测让协方差<b>膨胀</b>，更新让它<b>收缩</b>；线性 + 高斯下精确最优。</li>
+        <li>KF 更新 = 解一个<b>二次代价</b>的最低点——这句话是后面一切的钥匙。</li>
+        <li>第 1 轮：观测是弯的、常数 H 不存在 → EKF 画<b>切线</b>要一个局部 H。</li>
+        <li>第 2 轮：切线画在差先验上 = <b>又错又自信</b> → iEKF 重画切线到收敛，≡ 高斯–牛顿。</li>
+        <li>iEKF 迭代起点永远是原始先验，协方差<b>收敛后才更新一次</b>。</li>
+        <li>第 3 轮：雅可比推不动 → UKF 用 sigma 点穿<b>真实函数</b>；高维时贵。</li>
+        <li>第 4 轮：旋转不是向量（求平均都会翻车）→ ESKF 在<b>切空间</b>滤误差；+ iEKF = FAST-LIO 的流形估计器。</li>
+        <li>第 5 轮：信念多峰 → 粒子滤波；第 6 轮：滤波不能反悔 → 图优化后端。</li>
+        <li>技术是<b>积累不是替代</b>：每个成员都活在自己那轮划定的边界里。</li>
+        <li>预言翻车的万能钥匙：先问<b>「它隐含假设了什么」</b>。</li>
+      </ol>
+      <div class="callout tip">
+        <div class="ic">🧭</div>
+        <div class="ct"><span class="t">接着读</span><p>本页是地基，往上盖楼：① <a href="lie-groups-slam.html">李群李代数页</a>把第 4 轮的「切空间 / Exp / ⊞」讲透；② <a href="fast-lio.html">FAST-LIO 页</a>看这套滤波器接上真实 LiDAR + IMU 后的完整系统（那边演示 1 是本页演示 4 的二维升级版，那边演示 4 与本页演示 6 同源）；③ <a href="linear-algebra-foundations.html">线代基础页</a>补矩阵求逆与特征分解的账。</p></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 延伸阅读 ═══════════ -->
+    <section>
+      <h2>延伸阅读</h2>
+      <div class="cards">
+        <a class="c" href="fast-lio.html"><span class="k">应用</span><h4>FAST-LIO：紧耦合激光惯性里程计</h4><p>本页滤波器在真实机器人系统里的完整用法。</p></a>
+        <a class="c" href="lie-groups-slam.html"><span class="k">地基</span><h4>流形与李群李代数</h4><p>ESKF/流形 iEKF 的切空间与指数映射。</p></a>
+        <a class="c" href="linear-algebra-foundations.html"><span class="k">地基</span><h4>线性代数基础</h4><p>协方差、求逆、特征分解的语言。</p></a>
+        <a class="c" href="https://arxiv.org/abs/1711.02508" target="_blank" rel="noopener"><span class="k">论文</span><h4>Solà：Quaternion kinematics for ESKF</h4><p>误差状态卡尔曼滤波的标准推导，arXiv:1711.02508。</p></a>
+        <a class="c" href="https://users.aalto.fi/~ssarkka/pub/cup_book_online_20131111.pdf" target="_blank" rel="noopener"><span class="k">书</span><h4>Särkkä：Bayesian Filtering and Smoothing</h4><p>贝叶斯滤波体系的免费教科书，KF/EKF/UKF/平滑全覆盖。</p></a>
+        <div class="c"><span class="k">起源</span><h4>Kalman (1960)</h4><p>《A New Approach to Linear Filtering and Prediction Problems》——阿波罗导航用的就是它。</p></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>知识库 · 机器人 / SLAM</span>
+    <a class="back" href="../index.html">← 返回门户</a>
+  </footer>
+
+</div>
+
+<script>
+  const bar = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  };
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+
+<script>
+/* ═══════════ 交互演示（9 个）═══════════ */
+(function(){
+'use strict';
+const TERRA='#f0a361',AMBER='#f0bf4c',OLIVE='#9bce6b',TEAL='#46d7cc',BLUE='#6aa6ff',
+      PLUM='#b49bff',RUST='#ff8a8a',INK='#e4ebf7',MUTED='#9aa6bf',DIM='#6b768f';
+const TAU=Math.PI*2;
+
+function cv(id,w,h){
+  const c=document.getElementById(id); if(!c)return null;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  c.width=w*dpr; c.height=h*dpr; c.style.aspectRatio=w+' / '+h;
+  const g=c.getContext('2d'); g.scale(dpr,dpr);
+  return {c,g,w,h};
+}
+const visMap=new Map();
+const io=new IntersectionObserver(es=>es.forEach(e=>visMap.set(e.target,e.isIntersecting)),{rootMargin:'120px'});
+function anim(c,fn){
+  io.observe(c); let pt=null;
+  function tick(t){
+    if(visMap.get(c)){ const dt=(pt==null)?0.016:Math.min(0.05,(t-pt)/1000); fn(dt); }
+    pt=t; requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function tx(g,s,x,y,col,size,align,bold){
+  g.fillStyle=col; g.font=(bold?'600 ':'')+(size||12)+'px Inter'; g.textAlign=align||'left'; g.fillText(s,x,y);
+}
+function line(g,x1,y1,x2,y2,col,wd){
+  g.strokeStyle=col; g.lineWidth=wd||1; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+}
+function dot(g,x,y,r,col){ g.fillStyle=col; g.beginPath(); g.arc(x,y,r,0,TAU); g.fill(); }
+function randn(){
+  let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*v);
+}
+
+/* ════ 演示 1：发射场——惯推 vs 雷达 vs 融合 ════ */
+(function(){
+  const V=cv('vz-rocket',760,380); if(!V)return; const {c,g,w,h}=V;
+  const GY=344, X0=130, Y0=GY-6, DUR=8.2, DISH={x:648,y:GY};
+  const tp=t=>({x:X0+0.55*t*t*t, y:Y0-5.0*t*t});          // 真实轨迹（重力转弯）
+  const ta=t=>({x:3.3*t, y:-10});                          // 真实加速度
+  let t2,hold,bias,imu,kfx,kfy,since,flash,zLast,crosses,trI,trK;
+  let showI=true,showR=true,showF=true,bScale=1.5;
+  const R2=18*18, q=40, MDT=0.65;
+  function kfNew(p){ return {p:p,v:0,P:[[120,0],[0,60]]}; }
+  function relaunch(){
+    t2=0; hold=0; since=0; flash=0; zLast=null; crosses=[]; trI=[]; trK=[];
+    const dirA=Math.random()*TAU;
+    bias={x:Math.cos(dirA), y:Math.sin(dirA)};
+    imu={px:X0,py:Y0,vx:0,vy:0};
+    kfx=kfNew(X0); kfy=kfNew(Y0);
+  }
+  function kfPredict(k,a,dt){
+    k.p+=k.v*dt+0.5*a*dt*dt; k.v+=a*dt;
+    const p00=k.P[0][0],p01=k.P[0][1],p10=k.P[1][0],p11=k.P[1][1];
+    k.P=[[p00+dt*(p10+p01)+dt*dt*p11+q*dt*dt*dt/3, p01+dt*p11+q*dt*dt/2],
+         [p10+dt*p11+q*dt*dt/2, p11+q*dt]];
+  }
+  function kfUpdate(k,z){
+    const S=k.P[0][0]+R2, K0=k.P[0][0]/S, K1=k.P[1][0]/S, inn=z-k.p;
+    k.p+=K0*inn; k.v+=K1*inn;
+    k.P=[[(1-K0)*k.P[0][0],(1-K0)*k.P[0][1]],
+         [k.P[1][0]-K1*k.P[0][0], k.P[1][1]-K1*k.P[0][1]]];
+  }
+  relaunch();
+  const bi=document.getElementById('rk-imu'),br=document.getElementById('rk-radar'),bf=document.getElementById('rk-fuse');
+  bi.onclick=()=>{ showI=!showI; bi.classList.toggle('on',showI); };
+  br.onclick=()=>{ showR=!showR; br.classList.toggle('on',showR); };
+  bf.onclick=()=>{ showF=!showF; bf.classList.toggle('on',showF); };
+  const bs=document.getElementById('rk-bias');
+  bs.oninput=()=>{ bScale=+bs.value; document.getElementById('rk-bias-v').textContent=bScale.toFixed(1); relaunch(); };
+  document.getElementById('rk-re').onclick=relaunch;
+  anim(c,dt=>{
+    flash=Math.max(0,flash-dt);
+    if(t2>=DUR){ hold+=dt; if(hold>1.4)relaunch(); }
+    else{
+      t2=Math.min(DUR,t2+dt);
+      const a=ta(t2), bx=bias.x*1.8*bScale, by=bias.y*1.8*bScale;
+      const ax=a.x+bx+randn()*1.5, ay=a.y+by+randn()*1.5;   // IMU 读数 = 真加速度 + 偏置 + 噪声
+      imu.vx+=ax*dt; imu.vy+=ay*dt; imu.px+=imu.vx*dt; imu.py+=imu.vy*dt;
+      kfPredict(kfx,ax,dt); kfPredict(kfy,ay,dt);           // 融合：惯推做预测
+      since+=dt;
+      const p=tp(t2);
+      if(since>=MDT){                                       // 雷达到达 → 修正
+        since=0;
+        zLast={x:p.x+randn()*18, y:p.y+randn()*18};
+        crosses.push({x:zLast.x,y:zLast.y,age:0});
+        if(crosses.length>12)crosses.shift();
+        kfUpdate(kfx,zLast.x); kfUpdate(kfy,zLast.y); flash=0.4;
+      }
+      trI.push({x:imu.px,y:imu.py}); trK.push({x:kfx.p,y:kfy.p});
+    }
+    for(const cr of crosses)cr.age+=dt;
+    g.clearRect(0,0,w,h);
+    line(g,0,GY,w,GY,'#36425e',2.5);
+    g.fillStyle='#36425e'; g.fillRect(X0-14,GY-4,28,4);
+    g.strokeStyle=MUTED; g.lineWidth=2;
+    g.beginPath(); g.arc(DISH.x,DISH.y-10,10,Math.PI*1.15,Math.PI*1.85); g.stroke();
+    line(g,DISH.x,DISH.y,DISH.x,DISH.y-9,MUTED,2);
+    tx(g,'雷达站',DISH.x,GY+20,DIM,11.5,'center');
+    tx(g,'发射台',X0,GY+20,DIM,11.5,'center');
+    g.setLineDash([5,6]);
+    g.strokeStyle='rgba(107,118,143,.6)'; g.lineWidth=1.6; g.beginPath();
+    for(let s=0;s<=DUR;s+=0.1){ const p=tp(s); s===0?g.moveTo(p.x,p.y):g.lineTo(p.x,p.y); }
+    g.stroke(); g.setLineDash([]);
+    if(showI&&trI.length>1){
+      g.strokeStyle=BLUE; g.lineWidth=1.8; g.beginPath();
+      for(let i=0;i<trI.length;i++)i===0?g.moveTo(trI[i].x,trI[i].y):g.lineTo(trI[i].x,trI[i].y);
+      g.stroke();
+    }
+    if(showR){
+      if(flash>0&&zLast){
+        g.strokeStyle='rgba(240,191,76,'+(flash*1.6)+')'; g.lineWidth=1.2;
+        g.beginPath(); g.moveTo(DISH.x,DISH.y-14); g.lineTo(zLast.x,zLast.y); g.stroke();
+      }
+      for(const cr of crosses){
+        const al=Math.max(.15,1-cr.age*0.18);
+        g.strokeStyle='rgba(240,191,76,'+al+')'; g.lineWidth=1.8;
+        g.beginPath(); g.moveTo(cr.x-5,cr.y-5); g.lineTo(cr.x+5,cr.y+5);
+        g.moveTo(cr.x-5,cr.y+5); g.lineTo(cr.x+5,cr.y-5); g.stroke();
+      }
+    }
+    if(showF&&trK.length>1){
+      g.strokeStyle=TERRA; g.lineWidth=2; g.beginPath();
+      for(let i=0;i<trK.length;i++)i===0?g.moveTo(trK[i].x,trK[i].y):g.lineTo(trK[i].x,trK[i].y);
+      g.stroke();
+      const sg2=Math.sqrt(Math.max(0,(kfx.P[0][0]+kfy.P[0][0])/2));
+      g.strokeStyle='rgba(240,163,97,.55)'; g.lineWidth=1.2;
+      g.beginPath(); g.arc(kfx.p,kfy.p,Math.min(60,2*sg2),0,TAU); g.stroke();
+    }
+    const p=tp(Math.min(t2,DUR));                            // 火箭本体 + 尾焰
+    const an=Math.atan2(-10*t2,1.65*t2*t2||1e-6);
+    g.save(); g.translate(p.x,p.y); g.rotate(an+Math.PI/2);
+    g.fillStyle=INK; g.beginPath(); g.moveTo(0,-11); g.lineTo(6,7); g.lineTo(-6,7); g.closePath(); g.fill();
+    if(t2<DUR){
+      g.fillStyle='rgba(240,163,97,.8)'; g.beginPath();
+      g.moveTo(-3,8); g.lineTo(0,15+Math.random()*5); g.lineTo(3,8); g.closePath(); g.fill();
+    }
+    g.restore();
+    const de=trI.length?Math.hypot(trI[trI.length-1].x-p.x,trI[trI.length-1].y-p.y):0;
+    const ke=trK.length?Math.hypot(trK[trK.length-1].x-p.x,trK[trK.length-1].y-p.y):0;
+    tx(g,'惯推漂移 '+de.toFixed(0)+' px（∝ t²）',24,28,BLUE,12.5);
+    tx(g,'融合误差 '+ke.toFixed(0)+' px',24,48,TERRA,12.5);
+    tx(g,'雷达单点噪声 σ=18 px',24,68,AMBER,12.5);
+  });
+})();
+
+/* ════ 演示 2：维纳滤波——平稳最优，机动翻车 ════ */
+(function(){
+  const V=cv('vz-wiener',760,380); if(!V)return; const {c,g,w,h}=V;
+  const M={x0:24,x1:498,y0:26,y1:330}, F={x0:534,x1:742,y0:60,y1:300};
+  const CY=185, SC=0.72, MAXN=540;
+  const py=v=>CY-v*SC;
+  let t=0,hist=[],sig=14,manT=0,manCur=0,flashM=0;
+  const kern=()=>{                                          // 固定高斯 FIR：带宽由 σ 离线决定
+    const s=4+sig*0.9, K=Math.ceil(3*s), ws=[];
+    let sum=0;
+    for(let k=0;k<=K;k++){ const w2=Math.exp(-k*k/(2*s*s)); ws.push(w2); sum+=w2; }
+    return ws.map(x=>x/sum);
+  };
+  let W=kern();
+  const xTrue=()=>52*Math.sin(0.5*t)+26*Math.sin(1.17*t+1.3)+manCur;
+  const rs=document.getElementById('wn-r');
+  rs.oninput=()=>{ sig=+rs.value; document.getElementById('wn-r-v').textContent=sig; W=kern(); };
+  document.getElementById('wn-man').onclick=()=>{ manT=manT>40?0:90; flashM=3; };
+  document.getElementById('wn-reset').onclick=()=>{ hist=[]; manT=0; manCur=0; flashM=0; };
+  anim(c,dt=>{
+    t+=dt; flashM=Math.max(0,flashM-dt);
+    manCur+=(manT-manCur)*Math.min(1,dt*7);
+    const xt=xTrue(), z=xt+randn()*sig;
+    hist.push({xt,z,out:0});
+    if(hist.length>MAXN)hist.shift();
+    const n=hist.length;
+    let o=0;
+    for(let k=0;k<W.length&&k<n;k++)o+=W[k]*hist[n-1-k].z;  // 因果加权平均，权重永不改变
+    hist[n-1].out=o;
+    g.clearRect(0,0,w,h);
+    /* 左：时域 */
+    g.strokeStyle='rgba(40,50,72,.8)'; g.lineWidth=1; g.strokeRect(M.x0,M.y0,M.x1-M.x0,M.y1-M.y0);
+    const X=i=>M.x1-6-(n-1-i)*((M.x1-M.x0-12)/MAXN);
+    g.save(); g.beginPath(); g.rect(M.x0,M.y0,M.x1-M.x0,M.y1-M.y0); g.clip();
+    for(let i=0;i<n;i++){                                   // 误差阴影（滞后/抹平可见）
+      if(Math.abs(hist[i].out-hist[i].xt)>16)
+        line(g,X(i),py(hist[i].xt),X(i),py(hist[i].out),'rgba(255,138,138,.3)',1.5);
+    }
+    for(let i=0;i<n;i+=2)dot(g,X(i),py(hist[i].z),1.4,'rgba(240,191,76,.4)');
+    g.strokeStyle='rgba(155,206,107,.85)'; g.lineWidth=1.5; g.beginPath();
+    for(let i=0;i<n;i++)i===0?g.moveTo(X(i),py(hist[i].xt)):g.lineTo(X(i),py(hist[i].xt));
+    g.stroke();
+    g.strokeStyle=TERRA; g.lineWidth=2; g.beginPath();
+    for(let i=0;i<n;i++)i===0?g.moveTo(X(i),py(hist[i].out)):g.lineTo(X(i),py(hist[i].out));
+    g.stroke();
+    g.restore();
+    let r1=0,r2=0,cnt=0;
+    for(let i=Math.max(0,n-120);i<n;i++){ r1+=(hist[i].z-hist[i].xt)**2; r2+=(hist[i].out-hist[i].xt)**2; cnt++; }
+    tx(g,'● 真实位置',M.x0+8,M.y0+18,OLIVE,12);
+    tx(g,'● 测量',M.x0+100,M.y0+18,AMBER,12);
+    tx(g,'● 维纳输出',M.x0+160,M.y0+18,TERRA,12);
+    if(cnt)tx(g,'RMS：原始 '+Math.sqrt(r1/cnt).toFixed(1)+' → 滤后 '+Math.sqrt(r2/cnt).toFixed(1),M.x1-8,M.y0+18,MUTED,12,'right');
+    if(flashM>0)tx(g,'机动！统计特性变了，固定的 W(f) 不会跟着变 →',M.x0+8,M.y1-12,RUST,13,'left',true);
+    /* 右：频域（它的全部秘密） */
+    g.strokeStyle='rgba(40,50,72,.8)'; g.lineWidth=1; g.strokeRect(F.x0,F.y0,F.x1-F.x0,F.y1-F.y0);
+    tx(g,'频域：提前算好的固定权重',F.x0,F.y0-10,MUTED,12);
+    const nl=(sig/34)**2;
+    const fx=f=>F.x0+f*(F.x1-F.x0), fy=v=>F.y1-8-v*(F.y1-F.y0-40);
+    g.strokeStyle=OLIVE; g.lineWidth=1.8; g.beginPath();
+    for(let f=0;f<=1.001;f+=0.01){ const s2=1/(1+Math.pow(f/0.12,4)); f<0.005?g.moveTo(fx(f),fy(s2)):g.lineTo(fx(f),fy(s2)); }
+    g.stroke();
+    g.setLineDash([4,4]); line(g,fx(0),fy(nl),fx(1),fy(nl),AMBER,1.6); g.setLineDash([]);
+    g.strokeStyle=TEAL; g.lineWidth=2.2; g.beginPath();
+    for(let f=0;f<=1.001;f+=0.01){ const s2=1/(1+Math.pow(f/0.12,4)), wv=s2/(s2+nl);
+      f<0.005?g.moveTo(fx(f),fy(wv)):g.lineTo(fx(f),fy(wv)); }
+    g.stroke();
+    tx(g,'信号谱 Sₛ',F.x0+6,F.y0+18,OLIVE,11.5);
+    tx(g,'噪声谱 Sₙ',F.x1-6,fy(nl)-6,AMBER,11.5,'right');
+    tx(g,'W(f)=Sₛ/(Sₛ+Sₙ)',F.x0+6,F.y0+36,TEAL,11.5);
+    tx(g,'0',fx(0),F.y1+16,DIM,11,'center');
+    tx(g,'频率 →',(F.x0+F.x1)/2,F.y1+16,DIM,11,'center');
+  });
+})();
+
+/* ════ 演示 3：两把尺子 · 高斯融合 ════ */
+(function(){
+  const V=cv('vz-fuse',760,290); if(!V)return; const {g,w,h}=V;
+  const X0=4,X1=17, PX0=56,PX1=724, BASE=232, HMAX=176;
+  const px=x=>PX0+(x-X0)/(X1-X0)*(PX1-PX0);
+  const sa=document.getElementById('fu-sa'),sb=document.getElementById('fu-sb'),dd=document.getElementById('fu-d');
+  function gauss(mu,s,x){ return Math.exp(-((x-mu)**2)/(2*s*s))/(s*Math.sqrt(TAU)); }
+  function curve(mu,s,col,fill){
+    const peak=gauss(mu,s,mu);                       // 峰高按 σ 缩放，窄=高
+    g.beginPath(); g.moveTo(px(X0),BASE);
+    for(let x=X0;x<=X1;x+=0.04)g.lineTo(px(x),BASE-gauss(mu,s,x)/peak*Math.min(HMAX,peak*380));
+    g.lineTo(px(X1),BASE);
+    if(fill){ g.fillStyle=fill; g.fill(); }
+    g.strokeStyle=col; g.lineWidth=2; g.stroke();
+  }
+  function draw(){
+    const sA=+sa.value, sB=+sb.value, muA=10, muB=10+ +dd.value;
+    document.getElementById('fu-sa-v').textContent=sA.toFixed(1);
+    document.getElementById('fu-sb-v').textContent=sB.toFixed(1);
+    document.getElementById('fu-d-v').textContent=(+dd.value).toFixed(1);
+    const P=1/(1/(sA*sA)+1/(sB*sB));
+    const mu=P*(muA/(sA*sA)+muB/(sB*sB));
+    const K=(sA*sA)/(sA*sA+sB*sB);
+    g.clearRect(0,0,w,h);
+    line(g,PX0-10,BASE,PX1+10,BASE,'rgba(54,66,94,.9)',1.5);          // 轴
+    for(let x=Math.ceil(X0);x<=X1;x++){ line(g,px(x),BASE,px(x),BASE+5,DIM,1); tx(g,''+x,px(x),BASE+20,DIM,11,'center'); }
+    curve(muA,sA,BLUE,null);
+    curve(muB,sB,TEAL,null);
+    curve(mu,Math.sqrt(P),TERRA,'rgba(240,163,97,.15)');
+    g.setLineDash([4,4]);
+    line(g,px(muA),BASE,px(muA),58,'rgba(106,166,255,.5)',1.2);
+    line(g,px(muB),BASE,px(muB),58,'rgba(70,215,204,.5)',1.2);
+    line(g,px(mu),BASE,px(mu),44,'rgba(240,163,97,.8)',1.5);
+    g.setLineDash([]);
+    tx(g,'A（先验）μ=10, σ='+sA.toFixed(1),px(muA),44,BLUE,12,'center');
+    tx(g,'B（观测）μ='+muB.toFixed(1)+', σ='+sB.toFixed(1),px(muB)+6,74,TEAL,12);
+    tx(g,'后验 μ⁺='+mu.toFixed(2)+', σ⁺='+Math.sqrt(P).toFixed(2),px(mu),30,TERRA,13,'center',true);
+    tx(g,'K = σ_A²/(σ_A²+σ_B²) = '+K.toFixed(2)+'   →   往观测方向走 '+(K*100).toFixed(0)+'% 的路',56,272,AMBER,13,'left',true);
+  }
+  sa.oninput=draw; sb.oninput=draw; dd.oninput=draw; draw();
+})();
+
+/* ════ 演示 4：一维卡尔曼追踪 ════ */
+(function(){
+  const V=cv('vz-track',760,380); if(!V)return; const {c,g,w,h}=V;
+  const CY=180, SCALE=1.15;                       // 位置→像素
+  const py=x=>CY-x*SCALE;
+  const MAXN=560, PXSTEP=1.28, MEAS_DT=0.55;
+  let xt=0,vt=0, xe=0,ve=0, P=[[400,0],[0,100]], hist=[], since=0;
+  let measOn=true, sR=8, q=Math.pow(10,1.5);
+  const mb=document.getElementById('tr-meas');
+  const rs=document.getElementById('tr-r'), qs=document.getElementById('tr-q');
+  mb.onclick=()=>{ measOn=!measOn; mb.classList.toggle('on',measOn); mb.textContent='观测：'+(measOn?'开':'关'); };
+  rs.oninput=()=>{ sR=+rs.value; document.getElementById('tr-r-v').textContent=sR; };
+  qs.oninput=()=>{ q=Math.pow(10,+qs.value); document.getElementById('tr-q-v').textContent=q<1?q.toFixed(1):Math.round(q); };
+  document.getElementById('tr-reset').onclick=()=>{ xt=0;vt=0;xe=0;ve=0;P=[[400,0],[0,100]];hist=[];since=0; };
+  anim(c,dt=>{
+    /* 真实系统（滤波器看不见）*/
+    const a=randn()*60-0.6*vt-0.027*xt;
+    vt+=a*dt; xt+=vt*dt;
+    /* KF 预测（CV 模型）*/
+    xe+=ve*dt;
+    const p00=P[0][0],p01=P[0][1],p10=P[1][0],p11=P[1][1];
+    P=[[p00+dt*(p10+p01)+dt*dt*p11+q*dt*dt*dt/3, p01+dt*p11+q*dt*dt/2],
+       [p10+dt*p11+q*dt*dt/2,                    p11+q*dt]];
+    /* 观测到达 → 更新 */
+    let z=null; since+=dt;
+    if(measOn&&since>=MEAS_DT){
+      since=0; z=xt+randn()*sR;
+      const R=sR*sR, S=P[0][0]+R, K0=P[0][0]/S, K1=P[1][0]/S, inn=z-xe;
+      xe+=K0*inn; ve+=K1*inn;
+      P=[[(1-K0)*P[0][0],(1-K0)*P[0][1]],
+         [P[1][0]-K1*P[0][0], P[1][1]-K1*P[0][1]]];
+    }
+    const sig=Math.sqrt(Math.max(0,P[0][0]));
+    hist.push({xt,xe,sig,z});
+    if(hist.length>MAXN)hist.shift();
+    /* —— 绘制 —— */
+    g.clearRect(0,0,w,h);
+    g.strokeStyle='rgba(40,50,72,.5)'; g.lineWidth=1;
+    for(let y=CY-120;y<=CY+120;y+=40)line(g,0,y,w,y,'rgba(40,50,72,.5)',1);
+    line(g,0,CY,w,CY,'rgba(54,66,94,.8)',1.2);
+    const X=i=>w-12-(hist.length-1-i)*PXSTEP;
+    g.beginPath();                                   // ±2σ 带
+    for(let i=0;i<hist.length;i++)g.lineTo(X(i),py(hist[i].xe+Math.min(140,2*hist[i].sig)));
+    for(let i=hist.length-1;i>=0;i--)g.lineTo(X(i),py(hist[i].xe-Math.min(140,2*hist[i].sig)));
+    g.closePath(); g.fillStyle='rgba(240,163,97,.13)'; g.fill();
+    g.strokeStyle=OLIVE; g.lineWidth=1.8; g.beginPath();     // 真值
+    for(let i=0;i<hist.length;i++){ const x=X(i),y=py(hist[i].xt); i===0?g.moveTo(x,y):g.lineTo(x,y); }
+    g.stroke();
+    g.strokeStyle=TERRA; g.lineWidth=1.8; g.beginPath();     // 估计
+    for(let i=0;i<hist.length;i++){ const x=X(i),y=py(hist[i].xe); i===0?g.moveTo(x,y):g.lineTo(x,y); }
+    g.stroke();
+    for(let i=0;i<hist.length;i++)if(hist[i].z!=null)dot(g,X(i),py(hist[i].z),2.6,AMBER);
+    tx(g,'● 真实位置（隐藏的真相）',16,26,OLIVE,12.5);
+    tx(g,'● 带噪测量 z（每 0.55s 一个）',16,44,AMBER,12.5);
+    tx(g,'● KF 估计 ± 2σ',16,62,TERRA,12.5);
+    tx(g,'σ = '+(hist.length?hist[hist.length-1].sig.toFixed(1):'—')+
+        (measOn?'':'（观测关闭：只膨胀不收缩）'),w-16,26,measOn?MUTED:RUST,12.5,'right');
+  });
+})();
+
+/* ════ 演示 5：高斯过弯 · EKF vs 真相 vs UKF ════ */
+(function(){
+  const V=cv('vz-nl',760,430); if(!V)return; const {g,w,h}=V;
+  /* 面板：主区 + 底部输入条 + 左侧输出条 */
+  const M={x0:172,x1:730,y0:22,y1:326};
+  const IN={y0:340,y1:412};
+  const OUT={x0:20,x1:156};
+  const XW0=-100,XW1=100, YW0=-130,YW1=130;
+  const px=x=>M.x0+(x-XW0)/(XW1-XW0)*(M.x1-M.x0);
+  const py=y=>M.y1-(y-YW0)/(YW1-YW0)*(M.y1-M.y0);
+  const hF=x=>85*Math.atan(x/40), dh=x=>85/40/(1+(x/40)*(x/40));
+  let mu=45, sg=22, ukfOn=false, mc=null;
+  const ms=document.getElementById('nt-mu'), ss=document.getElementById('nt-sg'), ub=document.getElementById('nt-ukf');
+  function sample(){
+    const N=6000, bins=new Float32Array(66); let mean=0; const ys=new Float32Array(N);
+    for(let i=0;i<N;i++){ const y=hF(mu+randn()*sg); ys[i]=y; mean+=y/N; }
+    let va=0;
+    for(let i=0;i<N;i++){ va+=(ys[i]-mean)**2/N;
+      const b=Math.floor((ys[i]-YW0)/(YW1-YW0)*66); if(b>=0&&b<66)bins[b]++; }
+    mc={bins,mean,sd:Math.sqrt(va),max:Math.max(...bins)};
+  }
+  function outGauss(m,s,col){
+    g.strokeStyle=col; g.lineWidth=2; g.beginPath();
+    const peak=1/(s*Math.sqrt(TAU));
+    for(let y=YW0;y<=YW1;y+=1.5){
+      const d=Math.exp(-((y-m)**2)/(2*s*s))/(s*Math.sqrt(TAU));
+      const X=OUT.x1-d/peak*(OUT.x1-OUT.x0)*0.94;
+      y===YW0?g.moveTo(X,py(y)):g.lineTo(X,py(y));
+    }
+    g.stroke();
+  }
+  function draw(){
+    document.getElementById('nt-mu-v').textContent=mu;
+    document.getElementById('nt-sg-v').textContent=sg;
+    g.clearRect(0,0,w,h);
+    g.strokeStyle='rgba(40,50,72,.8)';
+    g.strokeRect(M.x0,M.y0,M.x1-M.x0,M.y1-M.y0);
+    g.strokeRect(OUT.x0,M.y0,OUT.x1-OUT.x0,M.y1-M.y0);
+    g.strokeRect(M.x0,IN.y0,M.x1-M.x0,IN.y1-IN.y0);
+    tx(g,'h(x) 非线性观测函数',M.x0+8,M.y0+18,BLUE,12.5);
+    tx(g,'输出分布',OUT.x0+4,M.y0+18,MUTED,12);
+    tx(g,'输入高斯 N(μ, σ²)',M.x0+8,IN.y0+16,OLIVE,12);
+    /* 输入高斯 */
+    g.beginPath(); g.moveTo(px(XW0),IN.y1);
+    for(let x=XW0;x<=XW1;x+=1.5)g.lineTo(px(x),IN.y1-Math.exp(-((x-mu)**2)/(2*sg*sg))*(IN.y1-IN.y0-14));
+    g.lineTo(px(XW1),IN.y1); g.closePath();
+    g.fillStyle='rgba(155,206,107,.2)'; g.fill(); g.strokeStyle=OLIVE; g.lineWidth=1.6; g.stroke();
+    /* h 曲线 */
+    g.save(); g.beginPath(); g.rect(M.x0,M.y0,M.x1-M.x0,M.y1-M.y0); g.clip();
+    g.strokeStyle=BLUE; g.lineWidth=2.2; g.beginPath();
+    for(let x=XW0;x<=XW1;x+=1.5){ const X=px(x),Y=py(hF(x)); x===XW0?g.moveTo(X,Y):g.lineTo(X,Y); }
+    g.stroke();
+    const H=dh(mu), h0=hF(mu);                          // 切线
+    g.setLineDash([3,4]); g.strokeStyle=TEAL; g.lineWidth=1.6; g.beginPath();
+    g.moveTo(px(XW0),py(h0+H*(XW0-mu))); g.lineTo(px(XW1),py(h0+H*(XW1-mu))); g.stroke();
+    g.setLineDash([]);
+    g.restore();
+    /* 投影虚线 */
+    g.setLineDash([4,4]);
+    line(g,px(mu),IN.y0,px(mu),py(h0),'rgba(228,235,247,.3)',1.1);
+    line(g,px(mu),py(h0),OUT.x1,py(h0),'rgba(255,138,138,.45)',1.1);
+    g.setLineDash([]);
+    dot(g,px(mu),py(h0),4,INK);
+    /* 蒙特卡洛直方图 */
+    for(let b=0;b<66;b++){
+      const y0=YW0+(b/66)*(YW1-YW0), y1=YW0+((b+1)/66)*(YW1-YW0);
+      const len=mc.bins[b]/mc.max*(OUT.x1-OUT.x0)*0.94;
+      g.fillStyle='rgba(154,166,191,.4)';
+      g.fillRect(OUT.x1-len,py(y1),len,py(y0)-py(y1)-0.5);
+    }
+    outGauss(h0,Math.max(1.5,Math.abs(H)*sg),RUST);      // EKF
+    let uM=null,uS=null;
+    if(ukfOn){                                           // UKF：3 sigma 点
+      const pts=[mu,mu-sg*Math.sqrt(3),mu+sg*Math.sqrt(3)], ws=[2/3,1/6,1/6];
+      const ys2=pts.map(hF);
+      uM=ys2.reduce((a,y,i)=>a+ws[i]*y,0);
+      uS=Math.sqrt(Math.max(1,ys2.reduce((a,y,i)=>a+ws[i]*(y-uM)**2,0)));
+      outGauss(uM,uS,PLUM);
+      for(let i=0;i<3;i++){                              // sigma 点菱形
+        const X=px(pts[i]),Y=py(ys2[i]);
+        g.fillStyle=PLUM; g.beginPath();
+        g.moveTo(X,Y-6);g.lineTo(X+6,Y);g.lineTo(X,Y+6);g.lineTo(X-6,Y);g.closePath();g.fill();
+        line(g,X,IN.y1-4,X,Y,'rgba(180,155,255,.35)',1);
+      }
+    }
+    /* 读数 */
+    tx(g,'真相(MC)：μ='+mc.mean.toFixed(1)+' σ='+mc.sd.toFixed(1),M.x0+8,M.y1-46,MUTED,12.5);
+    tx(g,'EKF 切线：μ='+h0.toFixed(1)+' σ='+(Math.abs(H)*sg).toFixed(1)+'   偏差 '+Math.abs(h0-mc.mean).toFixed(1),M.x0+8,M.y1-28,RUST,12.5);
+    if(ukfOn)tx(g,'UKF：μ='+uM.toFixed(1)+' σ='+uS.toFixed(1)+'   偏差 '+Math.abs(uM-mc.mean).toFixed(1),M.x0+8,M.y1-10,PLUM,12.5);
+  }
+  ms.oninput=()=>{ mu=+ms.value; sample(); draw(); };
+  ss.oninput=()=>{ sg=+ss.value; sample(); draw(); };
+  ub.onclick=()=>{ ukfOn=!ukfOn; ub.classList.toggle('on',ukfOn); ub.textContent='UKF sigma 点：'+(ukfOn?'开':'关'); draw(); };
+  document.getElementById('nt-rs').onclick=()=>{ sample(); draw(); };
+  sample(); draw();
+})();
+
+/* ════ 演示 6：iEKF 步进机（1 维 EKF vs iEKF）════ */
+(function(){
+  const V=cv('vz-iekf',760,400); if(!V)return; const {c,g,w,h}=V;
+  const A=75, P=484, SIG0=22, R=49, SIGR=7;
+  const XMIN=-130,XMAX=130;
+  const L={x0:46,x1:368,y0:36,y1:316};
+  const Rt={x0:412,x1:734,y0:36,y1:316};
+  let s=90-0.46*80;
+  let x0,xt,nu,z,map,its,converged,sigPost,animT=1,auto=false,cool=0;
+  const hFn=x=>A*Math.atan(x/s), dh=x=>A/s/(1+(x/s)*(x/s));
+  const J=x=>(x-x0)**2/(2*P)+(z-hFn(x))**2/(2*R);
+  const lx=x=>L.x0+(x-XMIN)/(XMAX-XMIN)*(L.x1-L.x0);
+  const ly=m=>L.y1-(m+100)/200*(L.y1-L.y0);
+  const rx=x=>Rt.x0+(x-XMIN)/(XMAX-XMIN)*(Rt.x1-Rt.x0);
+  let Jmin=0,Jcap=22;
+  const ry=j=>{ const n=Math.min(1,Math.max(0,(j-Jmin)/Jcap)); return (Rt.y1-10)-n*(Rt.y1-Rt.y0-30); };
+  const nl=document.getElementById('ik-nl'),nlv=document.getElementById('ik-nl-v');
+  const ab=document.getElementById('ik-auto');
+  function rebuild(){
+    z=hFn(xt)+nu;
+    map=XMIN; let best=1e18;
+    for(let x=XMIN;x<=XMAX;x+=0.05){ const j=J(x); if(j<best){best=j;map=x;} }
+    Jmin=best;
+    its=[x0]; converged=false; sigPost=null; animT=1; auto=false; ab.classList.remove('on');
+  }
+  function newScen(){
+    x0=-65+Math.random()*50; xt=15+Math.random()*50; nu=(Math.random()*2-1)*SIGR;
+    rebuild();
+  }
+  function step(){
+    if(converged||animT<1)return;
+    const xi=its[its.length-1], H=dh(xi), K=P*H/(H*H*P+R);
+    const xn=x0+K*(z-hFn(xi)-H*(x0-xi));
+    its.push(xn); animT=0;
+    if(Math.abs(xn-xi)<0.15||its.length>13){
+      converged=true;
+      const Hf=dh(xn), Kf=P*Hf/(Hf*Hf*P+R);
+      sigPost=Math.sqrt(Math.max(1e-6,(1-Kf*Hf)*P));
+      auto=false; ab.classList.remove('on');
+    }
+  }
+  newScen();
+  document.getElementById('ik-step').onclick=step;
+  ab.onclick=()=>{ auto=!auto&&!converged; ab.classList.toggle('on',auto); if(auto)step(); };
+  document.getElementById('ik-new').onclick=newScen;
+  nl.oninput=()=>{ const v=+nl.value; s=90-0.46*v;
+    nlv.textContent=v>=67?'强':(v>=34?'中':'弱'); rebuild(); };
+  function hump(cx,sig,col,hMax){
+    g.beginPath(); g.moveTo(lx(XMIN),L.y1);
+    for(let x=XMIN;x<=XMAX;x+=2){ g.lineTo(lx(x),L.y1-hMax*Math.exp(-((x-cx)**2)/(2*sig*sig))); }
+    g.lineTo(lx(XMAX),L.y1); g.closePath();
+    g.fillStyle=col; g.globalAlpha=.25; g.fill(); g.globalAlpha=1;
+    g.strokeStyle=col; g.lineWidth=1.4; g.stroke();
+  }
+  anim(c,dt=>{
+    animT=Math.min(1,animT+dt/0.4); cool+=dt;
+    if(auto&&animT>=1&&cool>0.55){ cool=0; step(); }
+    const n=its.length, xPrev=its[Math.max(0,n-2)], xLast=its[n-1];
+    const e=animT*(2-animT), xd=xPrev+(xLast-xPrev)*e;
+    g.clearRect(0,0,w,h);
+    /* 左：测量空间 */
+    g.strokeStyle='rgba(40,50,72,.8)'; g.lineWidth=1;
+    g.strokeRect(L.x0,L.y0,L.x1-L.x0,L.y1-L.y0);
+    tx(g,'测量空间：h(x) 与切线（线性化）',L.x0,L.y0-10,MUTED,12.5);
+    g.save(); g.beginPath(); g.rect(L.x0,L.y0,L.x1-L.x0,L.y1-L.y0); g.clip();
+    g.strokeStyle=BLUE; g.lineWidth=2; g.beginPath();
+    for(let x=XMIN;x<=XMAX;x+=2){ const X=lx(x),Y=ly(hFn(x)); x===XMIN?g.moveTo(X,Y):g.lineTo(X,Y); }
+    g.stroke();
+    g.setLineDash([5,5]); line(g,L.x0,ly(z),L.x1,ly(z),AMBER,1.6); g.setLineDash([]);
+    const Hd=dh(xd);
+    g.setLineDash([2,3]);
+    line(g,lx(XMIN),ly(hFn(xd)+Hd*(XMIN-xd)),lx(XMAX),ly(hFn(xd)+Hd*(XMAX-xd)),TEAL,1.6);
+    g.setLineDash([]);
+    hump(x0,SIG0,OLIVE,52);
+    if(converged&&sigPost!=null)hump(xLast,sigPost,TERRA,52);
+    line(g,lx(xd),L.y0,lx(xd),L.y1,'rgba(228,235,247,.25)',1);
+    dot(g,lx(xd),ly(hFn(xd)),4.5,INK);
+    g.restore();
+    tx(g,'z 实际测量',L.x1-6,ly(z)-7,AMBER,11.5,'right');
+    tx(g,'先验 x̂ (σ=22)',lx(x0),L.y1+16,OLIVE,11.5,'center');
+    if(converged&&sigPost!=null)tx(g,'后验 (σ⁺='+sigPost.toFixed(1)+')',lx(xLast),L.y0+16,TERRA,11.5,'center');
+    /* 右：代价空间 */
+    g.strokeStyle='rgba(40,50,72,.8)'; g.lineWidth=1;
+    g.strokeRect(Rt.x0,Rt.y0,Rt.x1-Rt.x0,Rt.y1-Rt.y0);
+    tx(g,'代价空间：J(x) 与二次近似',Rt.x0,Rt.y0-10,MUTED,12.5);
+    g.save(); g.beginPath(); g.rect(Rt.x0,Rt.y0,Rt.x1-Rt.x0,Rt.y1-Rt.y0); g.clip();
+    g.strokeStyle='rgba(154,166,191,.9)'; g.lineWidth=2; g.beginPath();
+    for(let x=XMIN;x<=XMAX;x+=1.5){ const X=rx(x),Y=ry(J(x)); x===XMIN?g.moveTo(X,Y):g.lineTo(X,Y); }
+    g.stroke();
+    const hi=hFn(xd);
+    g.setLineDash([5,4]); g.strokeStyle=TEAL; g.lineWidth=1.6; g.beginPath();
+    for(let x=XMIN;x<=XMAX;x+=1.5){
+      const jq=(x-x0)**2/(2*P)+(z-hi-Hd*(x-xd))**2/(2*R);
+      const X=rx(x),Y=ry(jq); x===XMIN?g.moveTo(X,Y):g.lineTo(X,Y);
+    }
+    g.stroke(); g.setLineDash([]);
+    g.setLineDash([4,4]);
+    line(g,rx(map),Rt.y0,rx(map),Rt.y1,'rgba(155,206,107,.8)',1.4);
+    line(g,rx(x0),Rt.y0,rx(x0),Rt.y1,'rgba(107,118,143,.6)',1.2);
+    if(n>1)line(g,rx(its[1]),Rt.y0,rx(its[1]),Rt.y1,'rgba(255,138,138,.75)',1.4);
+    g.setLineDash([]);
+    g.strokeStyle='rgba(240,163,97,.5)'; g.lineWidth=1; g.beginPath();
+    for(let k=0;k<n;k++){ const X=rx(its[k]),Y=ry(J(its[k])); k===0?g.moveTo(X,Y):g.lineTo(X,Y); }
+    g.stroke();
+    for(let k=0;k<n;k++){
+      dot(g,rx(its[k]),ry(J(its[k])),3,k===n-1?TERRA:'rgba(240,163,97,.55)');
+      tx(g,''+k,rx(its[k])+6,ry(J(its[k]))-6,'rgba(240,163,97,.8)',10.5);
+    }
+    dot(g,rx(xd),ry(J(xd)),5,TERRA);
+    g.restore();
+    tx(g,'MAP',rx(map),Rt.y0+16,OLIVE,11.5,'center');
+    tx(g,'先验',rx(x0),Rt.y1+16,DIM,11.5,'center');
+    if(n>1)tx(g,'EKF 停在这',rx(its[1]),Rt.y0+32,RUST,11.5,'center');
+    const err=Math.abs(xLast-map);
+    tx(g,'iter '+(n-1)+' · x̂ = '+xLast.toFixed(1)+' · MAP = '+map.toFixed(1)+' · 偏差 '+err.toFixed(1),
+       46,h-16,AMBER,13,'left',true);
+    tx(g,converged?('已收敛 ✓ 协方差收缩 σ: 22 → '+sigPost.toFixed(1))
+                  :(n===1?'还没更新：这是先验（预测步的结果）':(n===2?'这就是 EKF 的最终答案；iEKF 继续 →':'重线性化中…')),
+       w-26,h-16,converged?OLIVE:MUTED,13,'right');
+  });
+})();
+
+/* ════ 演示 7：旋转不是向量——求平均翻车 ════ */
+(function(){
+  const V=cv('vz-ang',760,300); if(!V)return; const {g,w,h}=V;
+  const CX=230,CY=152,R=100;
+  const wrap=d=>((d+180)%360+360)%360-180;
+  const sa=document.getElementById('ag-a'),sb=document.getElementById('ag-b');
+  function arrow(deg,col,len,dash,wd){
+    const a=deg*Math.PI/180, dx=Math.cos(a), dy=-Math.sin(a);   // 屏幕 y 向下，取负保持逆时针
+    if(dash)g.setLineDash([6,5]);
+    line(g,CX,CY,CX+dx*len,CY+dy*len,col,wd||2.5);
+    g.setLineDash([]);
+    const ex=CX+dx*len, ey=CY+dy*len;
+    g.fillStyle=col; g.beginPath();
+    g.moveTo(ex+dx*11,ey+dy*11);
+    g.lineTo(ex-dy*6,ey+dx*6); g.lineTo(ex+dy*6,ey-dx*6);
+    g.closePath(); g.fill();
+  }
+  function draw(){
+    const A=+sa.value, B=+sb.value;
+    document.getElementById('ag-a-v').textContent=A+'°';
+    document.getElementById('ag-b-v').textContent=B+'°';
+    const naive=(A+B)/2;
+    const d=wrap(B-A), mani=wrap(A+d/2);
+    g.clearRect(0,0,w,h);
+    g.strokeStyle='rgba(54,66,94,.9)'; g.lineWidth=1.5;
+    g.beginPath(); g.arc(CX,CY,R,0,TAU); g.stroke();
+    for(const [deg,lab] of [[0,'0°'],[90,'90°'],[180,'±180°'],[-90,'−90°']]){
+      const a=deg*Math.PI/180;
+      line(g,CX+Math.cos(a)*(R-5),CY-Math.sin(a)*(R-5),CX+Math.cos(a)*(R+5),CY-Math.sin(a)*(R+5),DIM,1.5);
+      tx(g,lab,CX+Math.cos(a)*(R+22),CY-Math.sin(a)*(R+22)+4,DIM,11.5,'center');
+    }
+    arrow(A,BLUE,R-14);
+    arrow(B,OLIVE,R-14);
+    arrow(naive,RUST,R-32,true,3);
+    arrow(mani,TEAL,R-32,false,3);
+    tx(g,'A',CX+Math.cos(A*Math.PI/180)*(R-38)+0,CY-Math.sin(A*Math.PI/180)*(R-38)+4,BLUE,13,'center',true);
+    tx(g,'B',CX+Math.cos(B*Math.PI/180)*(R-38),CY-Math.sin(B*Math.PI/180)*(R-38)+4,OLIVE,13,'center',true);
+    /* 右侧读数 */
+    const X=440;
+    tx(g,'循环差 wrap(B−A) = '+d+'°（真实夹角）',X,66,MUTED,13.5);
+    tx(g,'算术平均 (A+B)/2 = '+naive.toFixed(0)+'°',X,104,RUST,13.5,'left',true);
+    tx(g,'切空间平均 A ⊞ (差/2) = '+mani.toFixed(0)+'°',X,136,TEAL,13.5,'left',true);
+    const off=Math.abs(wrap(naive-mani));
+    tx(g,off>0.5?('两者相差 '+off.toFixed(0)+'°'+(off>90?' —— 算术平均几乎指反了！':''))
+                :'两者重合：小角度时怎么算都行',X,180,off>90?RUST:(off>0.5?AMBER:OLIVE),14,'left',true);
+    tx(g,'红 = 把角度当普通数字取平均',X,224,DIM,12);
+    tx(g,'青 = 在 A 的切空间里平均小差值再卷回（ESKF 的做法）',X,244,DIM,12);
+  }
+  sa.oninput=draw; sb.oninput=draw; draw();
+})();
+
+/* ════ 演示 8：走廊粒子滤波 vs 单峰高斯 ════ */
+(function(){
+  const V=cv('vz-pf',760,360); if(!V)return; const {c,g,w,h}=V;
+  const PX0=40,PX1=720, DOORS=[18,44,82], N=450;
+  const px=x=>PX0+x/100*(PX1-PX0);
+  const dnd=x=>Math.min(...DOORS.map(d=>Math.abs(x-d)));
+  let xt,dir,parts,animT=1,auto=false,cool=0,kidFlash=0;
+  const ab=document.getElementById('pf-auto');
+  function reset(){
+    xt=5+Math.random()*90; dir=1; animT=1; kidFlash=0;
+    parts=Array.from({length:N},()=>({x:Math.random()*100,prev:0,jy:Math.random()}));
+    parts.forEach(p=>p.prev=p.x);
+    auto=false; ab.classList.remove('on');
+  }
+  function step(){
+    if(animT<1)return;
+    if(xt+4*dir>97||xt+4*dir<3)dir=-dir;          // 到头折返（里程计 u 已知）
+    const u=4*dir;
+    xt=Math.max(1,Math.min(99,xt+u+randn()*0.5));
+    const z=dnd(xt)+randn()*1.2;
+    let sum=0;
+    for(const p of parts){                         // 预测 + 加权
+      p.prev=p.x;
+      p.x=Math.max(0,Math.min(100,p.x+u+randn()*1.4));
+      p.w=Math.exp(-((z-dnd(p.x))**2)/(2*2.2*2.2))+1e-9;
+      sum+=p.w;
+    }
+    const cum=[]; let s=0;
+    for(const p of parts){ s+=p.w/sum; cum.push(s); }
+    const out=[]; let uu=Math.random()/N, i=0;     // 系统重采样
+    for(let k=0;k<N;k++){
+      while(cum[i]<uu)i++;
+      out.push({x:parts[i].x,prev:parts[i].prev,jy:Math.random()});
+      uu+=1/N;
+    }
+    for(let k=0;k<Math.floor(N*0.03);k++){         // 3% 随机注入：绑架后的「后备兵」
+      const j=Math.floor(Math.random()*N);
+      out[j]={x:Math.random()*100,prev:out[j].prev,jy:Math.random()};
+    }
+    parts=out; animT=0;
+  }
+  reset();
+  document.getElementById('pf-step').onclick=step;
+  ab.onclick=()=>{ auto=!auto; ab.classList.toggle('on',auto); };
+  document.getElementById('pf-kid').onclick=()=>{ xt=(xt+37+Math.random()*30)%94+3; kidFlash=1; };
+  document.getElementById('pf-reset').onclick=reset;
+  anim(c,dt=>{
+    animT=Math.min(1,animT+dt/0.3); cool+=dt; kidFlash=Math.max(0,kidFlash-dt);
+    if(auto&&animT>=1&&cool>0.7){ cool=0; step(); }
+    const e=animT*(2-animT);
+    g.clearRect(0,0,w,h);
+    /* 走廊 */
+    line(g,PX0-8,60,PX1+8,60,'#36425e',3); line(g,PX0-8,122,PX1+8,122,'#36425e',3);
+    for(const d of DOORS){
+      g.fillStyle='rgba(180,155,255,.8)'; g.fillRect(px(d)-11,55,22,8);
+      tx(g,'门',px(d),46,PLUM,11.5,'center');
+    }
+    const rx=px(xt);                                // 机器人（动画只在观测步之间离散跳，用闪光标记更新）
+    g.fillStyle=OLIVE; g.beginPath();
+    g.moveTo(rx,80); g.lineTo(rx-8,102); g.lineTo(rx+8,102); g.closePath(); g.fill();
+    tx(g,'真实位置（对滤波器隐藏）',rx,140,OLIVE,11.5,'center');
+    if(kidFlash>0)tx(g,'被绑架了！',rx,72,RUST,14,'center',true);
+    /* 粒子云 */
+    for(const p of parts){
+      const X=px(p.prev+(p.x-p.prev)*e);
+      dot(g,X,168+p.jy*40,1.8,'rgba(240,163,97,.55)');
+    }
+    tx(g,'粒子云（信念的样本表示）',PX0,162,TERRA,12);
+    /* 直方图 + 高斯拟合 */
+    const bins=new Float32Array(50);
+    let m=0; for(const p of parts)m+=p.x/N;
+    let va=0; for(const p of parts){ va+=(p.x-m)**2/N; const b=Math.floor(p.x/2); if(b>=0&&b<50)bins[b]++; }
+    const sd=Math.sqrt(va), bmax=Math.max(...bins,1);
+    const BY=346,BH=100;
+    for(let b=0;b<50;b++){
+      const X=px(b*2+1), bh=bins[b]/bmax*BH;
+      g.fillStyle='rgba(240,163,97,.4)'; g.fillRect(X-5,BY-bh,10,bh);
+    }
+    g.strokeStyle=RUST; g.lineWidth=2; g.beginPath();      // 高斯拟合
+    for(let x=0;x<=100;x+=0.8){
+      const d2=Math.exp(-((x-m)**2)/(2*sd*sd));
+      const Y=BY-d2*BH;
+      x===0?g.moveTo(px(x),Y):g.lineTo(px(x),Y);
+    }
+    g.stroke();
+    g.setLineDash([4,4]); line(g,px(xt),BY-BH-12,px(xt),BY,'rgba(155,206,107,.8)',1.5); g.setLineDash([]);
+    tx(g,'信念直方图',PX0,BY-BH-18,MUTED,12);
+    tx(g,'单峰高斯拟合 μ='+m.toFixed(0)+' σ='+sd.toFixed(0)+(sd>18?'（均值掉在簇间的墙里）':''),PX1,BY-BH-18,RUST,12,'right');
+  });
+})();
+
+/* ════ 演示 9：回环——滤波不能反悔 vs 图优化 ════ */
+(function(){
+  const V=cv('vz-loop',760,380); if(!V)return; const {c,g,w,h}=V;
+  const CORN=[[170,86],[590,86],[590,296],[170,296]], SEGL=[420,210,420,210], S=1260;
+  const D=0.26, ds=4;
+  function truePt(s){
+    s=Math.max(0,Math.min(S,s)); let i=0;
+    while(i<3&&s>SEGL[i]){ s-=SEGL[i]; i++; }
+    const p0=CORN[i], p1=CORN[(i+1)%4], f=s/SEGL[i];
+    return {x:p0[0]+(p1[0]-p0[0])*f, y:p0[1]+(p1[1]-p0[1])*f};
+  }
+  /* 预计算里程计（带渐增航向漂移）与图优化修正后的轨迹 */
+  const odom=[{x:170,y:86}], sArr=[0];
+  {
+    let X=170,Y=86;
+    for(let s=ds;s<=S;s+=ds){
+      const sm=s-ds/2; let i=0,ss=sm;
+      while(i<3&&ss>SEGL[i]){ ss-=SEGL[i]; i++; }
+      const p0=CORN[i],p1=CORN[(i+1)%4];
+      const th=Math.atan2(p1[1]-p0[1],p1[0]-p0[0])+D*sm/S;
+      X+=ds*Math.cos(th); Y+=ds*Math.sin(th);
+      odom.push({x:X,y:Y}); sArr.push(s);
+    }
+  }
+  const A={x:170,y:86}, M=odom.length;
+  const rot=(p,a)=>({x:A.x+Math.cos(a)*(p.x-A.x)-Math.sin(a)*(p.y-A.y),
+                     y:A.y+Math.sin(a)*(p.x-A.x)+Math.cos(a)*(p.y-A.y)});
+  const rEnd=rot(odom[M-1],-D);
+  const fixed=odom.map((p,i)=>{
+    const r=rot(p,-D*sArr[i]/S), f=i/(M-1);
+    return {x:r.x+f*(A.x-rEnd.x), y:r.y+f*(A.y-rEnd.y)};
+  });
+  let phase='idle', sCur=0, t=0;
+  const bF=document.getElementById('lp-filter'), bG=document.getElementById('lp-graph');
+  document.getElementById('lp-run').onclick=()=>{ phase='run'; sCur=0; };
+  bF.onclick=()=>{ if(phase==='closed'){ phase='filter'; t=0; } };
+  bG.onclick=()=>{ if(phase==='closed'){ phase='graph'; t=0; } };
+  document.getElementById('lp-reset').onclick=()=>{ phase='idle'; sCur=0; };
+  function trail(pts,n,col,wd){
+    g.strokeStyle=col; g.lineWidth=wd; g.beginPath();
+    for(let i=0;i<n;i++)i===0?g.moveTo(pts[i].x,pts[i].y):g.lineTo(pts[i].x,pts[i].y);
+    g.stroke();
+  }
+  anim(c,dt=>{
+    if(phase==='run'){ sCur+=dt*260; if(sCur>=S){ sCur=S; phase='closed'; } }
+    if(phase==='filter'||phase==='graph')t=Math.min(1,t+dt/(phase==='graph'?1.2:0.5));
+    g.clearRect(0,0,w,h);
+    g.setLineDash([6,6]);                             // 真实路线
+    g.strokeStyle='rgba(107,118,143,.55)'; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(CORN[0][0],CORN[0][1]);
+    for(let i=1;i<=4;i++)g.lineTo(CORN[i%4][0],CORN[i%4][1]);
+    g.stroke(); g.setLineDash([]);
+    tx(g,'真实路线',380,76,DIM,12,'center');
+    dot(g,A.x,A.y,6,INK); tx(g,'起点/终点',A.x-12,A.y-12,MUTED,11.5,'right');
+    const n=phase==='idle'?1:(phase==='run'?Math.max(2,Math.floor(sCur/ds)):M);
+    if(phase==='graph'){
+      const e=t*(2-t);
+      const mix=odom.map((p,i)=>({x:p.x+(fixed[i].x-p.x)*e, y:p.y+(fixed[i].y-p.y)*e}));
+      trail(mix,M,TERRA,2);
+      if(t>=1)tx(g,'✓ 回环误差被摊回整条历史，全轨迹一致',380,356,OLIVE,13.5,'center',true);
+      else tx(g,'批量重线性化 · 全部历史一起优化…',380,356,TEAL,13,'center');
+    }else{
+      trail(odom,n,TERRA,2);
+      if(phase==='run'){
+        const tp=truePt(sCur), op=odom[Math.min(M-1,Math.floor(sCur/ds))];
+        dot(g,tp.x,tp.y,5,OLIVE); dot(g,op.x,op.y,5,TERRA);
+        tx(g,'里程计带航向漂移，越走越歪 →',380,356,MUTED,13,'center');
+      }
+      if(phase==='closed'){
+        const e2=odom[M-1];
+        g.setLineDash([5,5]); line(g,e2.x,e2.y,A.x,A.y,AMBER,2); g.setLineDash([]);
+        tx(g,'回环检测：这两点应是同一点！',(e2.x+A.x)/2+14,(e2.y+A.y)/2,AMBER,13,'left',true);
+        dot(g,e2.x,e2.y,5,TERRA);
+        tx(g,'← 现在选：滤波修正 or 图优化',380,356,MUTED,13,'center');
+      }
+      if(phase==='filter'){
+        const e2=odom[M-1];
+        const cx=e2.x+(A.x-e2.x)*t, cy=e2.y+(A.y-e2.y)*t;
+        dot(g,cx,cy,5,TERRA);
+        line(g,e2.x,e2.y,cx,cy,'rgba(255,138,138,.8)',1.5);
+        if(t>=1){
+          tx(g,'✗ 当前位姿归位了，但历史轨迹还是歪的——裂缝留在了地图里',380,356,RUST,13.5,'center',true);
+          tx(g,'裂缝',e2.x+10,e2.y+4,RUST,12,'left',true);
+        }
+      }
+    }
+    tx(g,'橙 = 估计轨迹（里程计积分）',24,26,TERRA,12);
+  });
+})();
+
+})();
+</script>
+</body>
+</html>
