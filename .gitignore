@@ -15,5 +15,9 @@ venv/
 tools/apple/*.npy
 tools/apple/*.csv
 
+# 外部方法框架代码（git clone 下来的第三方仓库，不纳入版本管理）
+frameworks/
+
 # 私有内容：内部技术分享，绝不进入本（公开）仓库
 private/
+.claude/settings.local.json

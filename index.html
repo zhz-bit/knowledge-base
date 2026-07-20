@@ -212,6 +212,7 @@
    ================================================================ */
 
 const CATEGORIES = {
+  "自动驾驶":     { color:"#f0a361", g:["#b0703a","#6f4522"] },
   "数学基础":     { color:"#6aa6ff", g:["#3b6a93","#22405c"] },
   "神经网络":     { color:"#9bce6b", g:["#38826d","#1f4d40"] },
   "大模型":       { color:"#b49bff", g:["#7d6392","#4c3a5e"] },
@@ -221,6 +222,12 @@ const CATEGORIES = {
 };
 
 const PAGES = [
+  {
+    file:"pages/e2e-autonomous-driving-vla.html",
+    title:"端到端自动驾驶 × VLA：方法全景",
+    sub:"基于 Zotero「端到端自动驾驶」分类 34 篇文献的全景梳理：开篇是内部引用关系的时间轴 DAG（节点大小=被引入度、红环=PageRank、顶部奠基根节点含未入库缺口），随后按路线逐篇详解：模块化端到端（UniAD/VADv2/DiffusionDrive）→ VLM/VLA（EMMA 系/AutoVLA/Alpamayo-R1）→ RL 后训练（RAD/RAP/Poutine）→ 越野 → 综述基准。每篇含模型框图、创新点、数据集、实验设置（batch/设备/时长）、开闭环评测与中英摘要对照。",
+    cat:"自动驾驶", tags:["端到端","VLA","引用时间轴","闭环评测","NAVSIM","扩散策略","GRPO"], icon:"🚙", date:"2026-07-20"
+  },
   {
     file:"pages/kalman-filter-family.html",
     title:"卡尔曼滤波家族：从 KF 到 iEKF",

@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>端到端自动驾驶 × VLA：方法全景 · 知识库</title>
+<meta name="description" content="基于 Zotero「端到端自动驾驶」文献分类的 34 篇论文全景：模块化端到端、VLM/VLA、强化学习后训练、越野场景与综述基准，含框图、创新点、数据集、开闭环与双语摘要。" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+:root{
+  color-scheme: dark;
+  --bg:      #0e1320;
+  --bg-soft: #121829;
+  --panel:   #161d2e;
+  --panel-2: #1d2540;
+  --ink:    #e4ebf7;
+  --muted:  #9aa6bf;
+  --dim:    #6b768f;
+  --line:   #283248;
+  --line-2: #36425e;
+  --terra:  #f0a361;
+  --amber:  #f0bf4c;
+  --olive:  #9bce6b;
+  --teal:   #46d7cc;
+  --blue:   #6aa6ff;
+  --plum:   #b49bff;
+  --rust:   #ff8a8a;
+  --soft-terra: rgba(240,163,97,.14);
+  --soft-amber: rgba(240,191,76,.14);
+  --soft-olive: rgba(155,206,107,.13);
+  --soft-teal:  rgba(70,215,204,.13);
+  --soft-blue:  rgba(106,166,255,.14);
+  --soft-plum:  rgba(180,155,255,.14);
+  --shadow:    0 18px 46px rgba(0,0,0,.42);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,.30);
+  --radius: 16px;
+  --maxw: 1080px;
+  --serif: "Spectral", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --sans:  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+           "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; min-height:100vh;
+  background:
+    radial-gradient(1200px 700px at 84% -12%, #16203a 0%, #111729 46%, var(--bg) 100%);
+  background-attachment:fixed;
+  color:var(--ink); font-family:var(--sans); line-height:1.72;
+  font-size:16.5px; -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(240,163,97,.30);}
+#progress{position:fixed; left:0; top:0; height:3px; width:0;
+  background:linear-gradient(90deg,var(--terra),var(--amber)); z-index:60; transition:width .12s;}
+
+/* ---- 浮动导航 ---- */
+#floatnav{position:fixed; left:0; right:0; top:3px; z-index:50;
+  background:rgba(14,19,32,.88); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);}
+#floatnav .fnin{max-width:var(--maxw); margin:0 auto; padding:0 24px;
+  display:flex; align-items:center; gap:2px; overflow-x:auto; white-space:nowrap;
+  scrollbar-width:none;}
+#floatnav .fnin::-webkit-scrollbar{display:none;}
+#floatnav a{font-family:var(--mono); font-size:12px; color:var(--muted);
+  padding:9px 11px; border-bottom:2px solid transparent; flex:0 0 auto;}
+#floatnav a:hover{color:var(--terra); text-decoration:none;}
+#floatnav a.on{color:var(--terra); border-bottom-color:var(--terra);}
+#floatnav a.home{color:var(--dim); margin-right:6px;}
+#floatnav a.totop{margin-left:auto; color:var(--dim);}
+section[id], article.paper{scroll-margin-top:64px;}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+.topnav{padding:26px 0 0;}
+.back{font-family:var(--mono); font-size:13px; color:var(--muted);
+  display:inline-flex; align-items:center; gap:7px; transition:color .15s;}
+.back:hover{color:var(--terra);}
+a{color:var(--terra); text-decoration:none;}
+a:hover{text-decoration:underline; text-underline-offset:3px;}
+header.hero{padding:30px 0 26px; border-bottom:1px solid var(--line); margin-bottom:38px;}
+.eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--terra); display:flex; align-items:center; gap:11px; margin-bottom:18px;}
+.eyebrow::before{content:""; width:30px; height:1px; background:linear-gradient(90deg,var(--terra),transparent);}
+h1{font-family:var(--serif); font-weight:700; font-size:clamp(30px,5vw,44px);
+  line-height:1.14; letter-spacing:-.01em; margin:0 0 16px; color:var(--ink);}
+h1 em{font-style:italic; color:var(--terra);}
+.lede{font-size:clamp(16px,2vw,20px); color:var(--muted); margin:0; line-height:1.6;}
+.lede b{color:var(--ink); font-weight:600;}
+.byline{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:22px;
+  font-family:var(--mono); font-size:12.5px; color:var(--dim);}
+.byline .pill{background:var(--panel); border:1px solid var(--line);
+  padding:3px 11px; border-radius:999px;}
+main{padding-bottom:30px;}
+section{margin:0 0 40px;}
+h2{font-family:var(--serif); font-weight:600; font-size:clamp(23px,3vw,30px);
+  line-height:1.25; margin:46px 0 16px; color:var(--ink);
+  padding-bottom:10px; border-bottom:1px solid var(--line);}
+h2 .gtag{font-family:var(--mono); font-size:13px; color:var(--dim); margin-left:10px; letter-spacing:.08em;}
+h3{font-family:var(--serif); font-weight:600; font-size:21px; margin:30px 0 10px; color:var(--ink);}
+p{margin:0 0 17px;}
+ul,ol{margin:0 0 18px; padding-left:1.3em;}
+li{margin:0 0 8px;}
+li::marker{color:var(--terra);}
+b,strong{color:var(--ink); font-weight:700;}
+.hi{color:var(--terra); font-weight:600;}
+.hb{color:var(--blue); font-weight:600;}
+.hg{color:var(--olive); font-weight:600;}
+.ha{color:var(--amber); font-weight:600;}
+.ht{color:var(--teal); font-weight:600;}
+code{font-family:var(--mono); font-size:.9em; color:#ffb98a;
+  background:rgba(240,163,97,.13); padding:2px 6px; border-radius:5px;}
+.callout{display:flex; gap:13px; padding:16px 18px; margin:0 0 22px;
+  border:1px solid var(--line); border-left-width:4px; border-radius:12px;
+  background:var(--panel); box-shadow:var(--shadow-sm);}
+.callout .ic{font-size:20px; line-height:1.5; flex:0 0 auto;}
+.callout .ct{flex:1;} .callout .ct p:last-child{margin:0;}
+.callout .ct .t{font-weight:700; color:var(--ink); display:block; margin-bottom:3px;}
+.callout.note{border-left-color:var(--blue); background:var(--soft-blue);}
+.callout.key{border-left-color:var(--amber); background:var(--soft-amber);}
+.tablewrap{overflow-x:auto; margin:0 0 24px; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);}
+table{width:100%; border-collapse:collapse; background:var(--panel); font-size:14px;}
+thead th{font-family:var(--mono); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--terra); text-align:left; padding:11px 13px; background:var(--panel-2);
+  border-bottom:1px solid var(--line-2); white-space:nowrap;}
+td{padding:9px 13px; border-bottom:1px solid var(--line); color:var(--muted); vertical-align:top;}
+td b{color:var(--ink);}
+tbody tr:last-child td{border-bottom:0;}
+tbody tr:hover td{background:var(--panel-2);}
+td.c{text-align:center;}
+.ok{color:var(--olive); font-weight:700;}
+.no{color:var(--dim);}
+.half{color:var(--amber); font-weight:700;}
+
+/* ---- 筛选栏 ---- */
+.filters{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 16px;
+  padding:12px 14px; background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  box-shadow:var(--shadow-sm);}
+.filters .flbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--terra);}
+.filters select{font-family:var(--sans); font-size:13.5px; color:var(--ink);
+  background:var(--panel-2); border:1px solid var(--line-2); border-radius:9px;
+  padding:6px 10px; cursor:pointer; outline:none;}
+.filters select:hover{border-color:var(--terra);}
+.filters button{font-family:var(--mono); font-size:12px; color:var(--muted);
+  background:transparent; border:1px solid var(--line-2); border-radius:9px;
+  padding:6px 12px; cursor:pointer;}
+.filters button:hover{color:var(--terra); border-color:var(--terra);}
+.filters .fcount{font-family:var(--mono); font-size:12px; color:var(--dim); margin-left:auto;}
+
+/* ---- 论文卡片 ---- */
+.paper{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:24px 26px 18px; margin:0 0 26px; box-shadow:var(--shadow-sm); scroll-margin-top:24px;}
+.paper h3{margin:0 0 4px; font-size:22px;}
+.paper h3 .en{display:block; font-family:var(--sans); font-weight:500; font-size:14.5px; color:var(--muted); margin-top:3px; font-style:normal;}
+.pmeta{display:flex; flex-wrap:wrap; gap:6px 14px; font-family:var(--mono); font-size:12px;
+  color:var(--dim); margin:10px 0 16px; align-items:center;}
+.pmeta a{color:var(--blue);}
+.badge{display:inline-block; font-family:var(--mono); font-size:11.5px; padding:2px 10px;
+  border-radius:999px; border:1px solid var(--line-2);}
+.badge.open{color:var(--blue); background:var(--soft-blue); border-color:rgba(106,166,255,.4);}
+.badge.closed{color:var(--olive); background:var(--soft-olive); border-color:rgba(155,206,107,.4);}
+.badge.na{color:var(--dim); background:var(--panel-2);}
+.chip{display:inline-block; font-family:var(--mono); font-size:11.5px; color:var(--teal);
+  background:var(--soft-teal); border:1px solid rgba(70,215,204,.35);
+  padding:2px 10px; border-radius:999px;}
+
+/* ---- 论文原图 ---- */
+figure.pfig{margin:6px 0 6px;}
+figure.pfig .frame{background:#fff; border:1px solid var(--line); border-radius:12px;
+  padding:12px; overflow:hidden;}
+figure.pfig img{display:block; max-width:100%; height:auto; margin:0 auto;}
+figure.pfig figcaption{margin:7px 2px 12px; font-size:12.5px; color:var(--dim); text-align:right;
+  font-family:var(--mono);}
+
+/* ---- GPU 需求分级徽章 ---- */
+.badge.gpu-none       {color:var(--teal);  background:var(--soft-teal);  border-color:rgba(70,215,204,.4);}
+.badge.gpu-consumer   {color:var(--olive); background:var(--soft-olive); border-color:rgba(155,206,107,.4);}
+.badge.gpu-workstation{color:var(--blue);  background:var(--soft-blue);  border-color:rgba(106,166,255,.4);}
+.badge.gpu-datacenter {color:var(--amber); background:var(--soft-amber); border-color:rgba(240,191,76,.4);}
+.badge.gpu-industrial {color:var(--rust);  background:rgba(255,138,138,.13); border-color:rgba(255,138,138,.4);}
+.badge.gpu-unknown, .badge.gpu-na{color:var(--dim); background:var(--panel-2);}
+td .gdot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:1px;}
+
+/* ---- 框图（CSS 流水线）---- */
+.pipe{display:flex; flex-wrap:wrap; align-items:stretch; gap:0; margin:6px 0 6px;
+  background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:16px 14px;}
+.pipe .box{flex:1 1 auto; min-width:96px; display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:9px 10px; border-radius:10px; border:1.5px solid;
+  font-size:13px; line-height:1.35; font-weight:600;}
+.pipe .arrow{flex:0 0 auto; display:flex; align-items:center; padding:0 7px;
+  color:var(--dim); font-family:var(--mono); font-size:15px;}
+.box.in {border-color:var(--blue);  background:var(--soft-blue);  color:var(--blue);}
+.box.enc{border-color:var(--teal);  background:var(--soft-teal);  color:var(--teal);}
+.box.llm{border-color:var(--plum);  background:var(--soft-plum);  color:var(--plum);}
+.box.out{border-color:var(--terra); background:var(--soft-terra); color:var(--terra);}
+.box.aux{border-color:var(--olive); background:var(--soft-olive); color:var(--olive);}
+.box.rl {border-color:var(--amber); background:var(--soft-amber); color:var(--amber);}
+.pipenote{font-size:13px; color:var(--dim); margin:6px 2px 16px;}
+
+/* ---- 创新点 / 元信息 ---- */
+.innov{margin:0 0 14px;}
+.innov li{font-size:15px;}
+
+/* ---- 实验设置表 ---- */
+.expr{width:100%; border-collapse:collapse; margin:0 0 18px; font-size:13.5px;
+  background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  display:block;}
+.expr tbody{display:table; width:100%;}
+.expr td{padding:8px 13px; border-bottom:1px solid var(--line); color:var(--muted);}
+.expr tr:last-child td{border-bottom:0;}
+.expr td.k{font-family:var(--mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--dim); white-space:nowrap; width:110px; vertical-align:top;}
+.expr td b{color:var(--ink); font-weight:600;}
+.expr .unk{color:var(--dim); font-style:italic;}
+.factrow{display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; margin:0 0 18px;
+  padding:12px 14px; background:var(--bg-soft); border:1px solid var(--line); border-radius:12px;}
+.factrow .lbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.1em; color:var(--dim);
+  text-transform:uppercase; margin-right:2px;}
+.factrow .sep{flex-basis:100%; height:0;}
+
+/* ---- 双语摘要：左英文右中文 ---- */
+.absgrid{display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line);
+  border-radius:12px; overflow:hidden; margin:0 0 6px;}
+.abscol{padding:16px 18px; font-size:13.8px; line-height:1.75;}
+.abscol.en{background:var(--bg-soft); color:var(--muted); border-right:1px solid var(--line);}
+.abscol.zh{background:var(--panel-2); color:var(--ink);}
+.abscol .albl{font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  margin-bottom:8px;}
+.abscol.en .albl{color:var(--blue);}
+.abscol.zh .albl{color:var(--terra);}
+.absmissing{font-size:13.5px; color:var(--dim); font-style:italic; padding:12px 16px;
+  background:var(--bg-soft); border:1px dashed var(--line-2); border-radius:12px; margin:0 0 6px;}
+details.absfold summary{cursor:pointer; font-family:var(--mono); font-size:12.5px; color:var(--blue);
+  margin-bottom:10px; user-select:none;}
+footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
+  font-size:13.5px; color:var(--dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+@media (max-width:760px){
+  body{font-size:15.5px;}
+  .wrap{padding:0 16px;}
+  .absgrid{grid-template-columns:1fr;}
+  .abscol.en{border-right:0; border-bottom:1px solid var(--line);}
+  .paper{padding:18px 16px 12px;}
+}
+
+.controls{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:20px 0 12px;
+  padding:12px 14px; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow-sm);}
+.controls .flbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--terra);}
+.controls .seg{display:inline-flex; border:1px solid var(--line-2); border-radius:9px; overflow:hidden;}
+.controls .seg button{font-family:var(--mono); font-size:12px; color:var(--muted); background:transparent; border:0; padding:7px 12px; cursor:pointer;}
+.controls .seg button.on{background:var(--panel-2); color:var(--terra);}
+.controls label.chk{font-family:var(--mono); font-size:12px; color:var(--muted); display:inline-flex; align-items:center; gap:6px; cursor:pointer;}
+.controls .hint{font-family:var(--mono); font-size:11.5px; color:var(--dim); margin-left:auto;}
+.legend{display:flex; flex-wrap:wrap; gap:8px 16px; margin:0 0 14px; font-size:12.5px; color:var(--muted); align-items:center;}
+.legend .it{display:inline-flex; align-items:center; gap:7px; cursor:pointer; user-select:none; padding:2px 4px; border-radius:6px;}
+.legend .it.off{opacity:.35;}
+.legend .sw{width:12px; height:12px; border-radius:50%;}
+.legend .ln{width:22px; height:0; border-top:2px solid;}
+.legend .sep{width:1px; height:16px; background:var(--line-2); margin:0 2px;}
+.legend svg{vertical-align:middle;}
+.stage{position:relative; overflow:auto; border:1px solid var(--line); border-radius:var(--radius);
+  background:linear-gradient(180deg,var(--bg-soft),var(--panel)); box-shadow:var(--shadow-sm); max-height:82vh;}
+#graph{display:block;}
+#graph text{font-family:var(--sans); pointer-events:none;}
+.ax-line{stroke:var(--line); stroke-width:1; stroke-dasharray:3 5;}
+.ax-lbl{fill:var(--dim); font-family:var(--mono); font-size:12px;}
+.edge{fill:none; stroke:var(--line-2); stroke-width:1.2; opacity:.5;}
+.edge.tr{stroke:var(--muted); stroke-width:1.6; opacity:.72;}
+.edge.back{stroke:var(--rust); stroke-width:1.2; stroke-dasharray:4 4; opacity:.5;}
+.edge.dim{opacity:.05;}
+.redge{fill:none; stroke:var(--amber); stroke-width:1.3; opacity:.5; stroke-dasharray:2 3;}
+.node{cursor:pointer;}
+.node .core{stroke:var(--bg); stroke-width:2;}
+.node .prring{fill:none; stroke:var(--rust);}
+.node .nl{fill:var(--ink); font-size:12px; font-weight:600;}
+.node.dim{opacity:.16;}
+.node.hl .core{stroke:var(--ink);}
+.node.root0 .core{stroke:var(--terra); stroke-width:3;}
+.node.iso .core{opacity:.62;}
+.node.iso .nl{fill:var(--muted); font-weight:500; font-size:11.5px;}
+.rnode .core{stroke-width:2;}
+.rnode.missing .core{fill:rgba(155,165,191,.10); stroke:var(--dim); stroke-dasharray:3 3;}
+.rnode .rl{fill:var(--muted); font-size:11px; font-weight:600;}
+.rnode.missing .rl{fill:var(--dim);}
+.rnode .rby{fill:var(--dim); font-family:var(--mono); font-size:10px;}
+.rnode.dim{opacity:.16;}
+.rnode.hl .core{stroke:var(--ink); stroke-dasharray:none;}
+.lane-div{stroke:var(--line-2); stroke-width:1; stroke-dasharray:2 4;}
+.band-div{stroke:var(--line-2); stroke-width:1.2;}
+.band-hd{fill:var(--terra); font-family:var(--mono); font-size:12px; letter-spacing:.14em;}
+.lane-hd{fill:var(--dim); font-family:var(--mono); font-size:11px; letter-spacing:.1em;}
+#tip{position:fixed; z-index:40; max-width:330px; background:var(--panel); border:1px solid var(--line-2);
+  border-radius:10px; padding:11px 13px; box-shadow:var(--shadow); font-size:13px; pointer-events:none; opacity:0; transition:opacity .1s;}
+#tip .tt{font-family:var(--serif); font-weight:600; color:var(--ink); margin-bottom:3px; font-size:14px;}
+#tip .tm{font-family:var(--mono); font-size:11px; color:var(--dim);}
+#tip .tc{margin-top:6px; font-size:12px; color:var(--muted);} #tip .tc b{color:var(--ink);}
+.note{display:flex; gap:12px; padding:14px 16px; margin:22px 0; border:1px solid var(--line); border-left:4px solid var(--blue);
+  border-radius:12px; background:rgba(106,166,255,.08);}
+.note .ic{font-size:19px;} .note .ct{flex:1; font-size:13.5px; color:var(--muted);} .note .ct b{color:var(--ink);}
+/* —— 引用图嵌入样式 END —— */
+
+/* —— 综述折叠区块 —— */
+details.blk{border:1px solid var(--line); border-radius:14px; margin:0 0 16px; background:var(--panel); box-shadow:var(--shadow-sm);}
+details.blk>summary{list-style:none; cursor:pointer; padding:15px 20px; display:flex; align-items:baseline; gap:12px; user-select:none;}
+details.blk>summary::-webkit-details-marker{display:none;}
+details.blk>summary::before{content:"＋"; font-family:var(--mono); color:var(--terra); font-size:15px; align-self:center;}
+details.blk[open]>summary::before{content:"－";}
+details.blk>summary .stt{font-family:var(--serif); font-weight:600; font-size:21px; color:var(--ink);}
+details.blk>summary .scount{font-family:var(--mono); font-size:12px; color:var(--dim);}
+details.blk>*:not(summary){margin-left:20px; margin-right:20px;}
+details.blk>details:last-child,details.blk>div:last-child{margin-bottom:16px;}
+.blkdesc{color:var(--muted); font-size:14.5px; margin:0 20px 12px;}
+details.sub{border-top:1px solid var(--line);}
+details.sub>summary,details.sub2>summary{list-style:none; cursor:pointer; padding:11px 0; font-family:var(--serif); font-weight:600; font-size:17px; color:var(--ink); user-select:none; display:flex; align-items:center; gap:9px;}
+details.sub>summary::-webkit-details-marker,details.sub2>summary::-webkit-details-marker{display:none;}
+details.sub>summary::before,details.sub2>summary::before{content:"＋"; font-family:var(--mono); color:var(--terra); font-size:13px;}
+details.sub[open]>summary::before,details.sub2[open]>summary::before{content:"－";}
+details.sub2{margin-left:8px; border-left:2px solid var(--line); padding-left:12px;}
+details.sub2>summary{font-size:15.5px;}
+.grpdesc{color:var(--muted); font-size:14px; margin:2px 0 14px;}
+ul.skel{list-style:none; padding:0; margin:2px 0 14px; display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:4px 20px;}
+ul.skel li{font-size:13.5px; color:var(--muted); padding:4px 0; border-bottom:1px dashed var(--line);}
+ul.skel li.gap{color:var(--dim);}
+ul.skel li.empty{color:var(--dim); font-style:italic; border:0;}
+ul.skel .ly{font-family:var(--mono); font-size:11px; color:var(--dim); margin-left:6px;}
+ul.skel .lb{font-family:var(--mono); font-size:10px; padding:1px 7px; border-radius:999px; margin-left:6px; white-space:nowrap;}
+ul.skel .lb.lib{color:var(--olive); background:var(--soft-olive);}
+ul.skel .lb.gap{color:var(--dim); background:var(--panel-2);}
+#floatnav .fn-btn{font-family:var(--mono); font-size:12px; color:var(--muted); background:transparent; border:0; padding:9px 11px; cursor:pointer; margin-left:auto;}
+#floatnav .fn-btn:hover{color:var(--terra);}
+</style>
+</head>
+
+<body>
+<div id="progress"></div>
+
+<nav id="floatnav"><div class="fnin">
+  <a class="home" href="../index.html">⌂ 门户</a>
+  <a href="#citegraph" data-spy>谱系总览</a>
+  <a href="#sec0" data-spy>0 基石</a>
+  <a href="#sec1" data-spy>1 城区</a>
+  <a href="#sec2" data-spy>2 越野</a>
+  <a href="#sec3" data-spy>3 数据集</a>
+  <a href="#secA" data-spy>附录</a>
+  <button id="toggle-all" class="fn-btn">全部展开</button>
+  <a class="totop" href="#top">↑ 顶部</a>
+</div></nav>
+
+<div class="wrap" id="top" style="padding-top:38px;">
+
+  <nav class="topnav"><a class="back" href="../index.html">← 返回知识库门户</a>　·　<a class="back" href="#citegraph">↓ 引用时间轴</a></nav>
+
+  <header class="hero">
+    <div class="eyebrow">自动驾驶 · A LITERATURE REVIEW</div>
+    <h1>自动驾驶<em>文献综述</em></h1>
+    <p class="lede">以引用谱系组织的自动驾驶文献综述：顶层分<b>城区/结构化</b>与<b>非结构化/越野</b>两条线，共立于<b>公用基石</b>之上；每条线内按<b>模块化时代 → 端到端时代</b>展开。开篇是全库<b>引用时间轴</b>，其余按目录可折叠 <span style="font-family:var(--mono);font-size:13px;color:var(--terra)">＋/－</span>。现有 <b>34 篇</b>端到端文献含详解卡，其余节点先列骨架。</p>
+    <div class="byline">
+      <span class="pill">2026-07-20</span>
+      <span class="pill">#端到端</span>
+      <span class="pill">#VLA</span>
+      <span class="pill">#闭环评测</span>
+      <span class="pill">34 篇</span>
+    </div>
+  </header>
+
+  <main>
+
+
+    <details class="blk" id="citegraph" open><summary><span class="stt">谱系总览 · 引用时间轴</span><span class="scount">全库引用 DAG · 大小=入度 · 红环=PageRank</span></summary>
+  <div class="controls">
+    <span class="flbl">引用边</span>
+    <div class="seg" id="seg-edge">
+      <button data-mode="tr" class="on">主干骨架</button>
+      <button data-mode="all">全部引用</button>
+      <button data-mode="both">叠加</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="ck-back"> 逆时间边</label>
+    <label class="chk"><input type="checkbox" id="ck-roots" checked> 显示奠基根节点</label>
+    <span class="hint" id="stat"></span>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="stage"><svg id="graph"></svg></div>
+
+  <div class="note">
+    <div class="ic">🧭</div>
+    <div class="ct"><b>怎么读</b>:一条边从上指向下 = 上方(更早)论文被下方(更新)论文引用。<b>大小编码入度</b>(几篇直接建立在它之上),<b>红环编码 PageRank</b>(结构中心度)——「又大又红」= 既被直接继承、又是网络枢纽(如 UniAD)。悬停焦点节点:<span style="color:var(--blue)">蓝=祖先链</span>、<span style="color:var(--olive)">绿=后代链</span>、<span style="color:var(--amber)">金色虚线=它引用的奠基根</span>。悬停根节点则高亮引用它的论文。顶部根节点里<b>虚线灰点是尚未入库的关键前作</b>(如 VAD、CARLA、ST-P3),建议补录。引用数据 Semantic Scholar + OpenAlex,只统计集合内的边。</div>
+  </div>
+
+<div id="tip"></div>
+    </details>
+
+    <details class="blk" id="sec0"><summary><span class="stt">0 · 公用基石</span><span class="scount">Shared Foundations · 两线共同的根</span></summary>
+      <p class="blkdesc">视觉骨干 / 语言模型 / 多模态基座 / 生成模型 / 学习范式——城区与越野都建立在其上，故单列一处、不并列。</p>
+      <details class="sub"><summary>0.1 视觉骨干</summary><ul class="skel"><li>Deep Residual Learning for <span class="ly">2015</span><span class="lb lib">已在库</span></li><li>An Image is Worth 16x16 Wo <span class="ly">2020</span><span class="lb lib">已在库</span></li><li>Deformable DETR <span class="ly">2020</span><span class="lb lib">已在库</span></li></ul></details>
+      <details class="sub"><summary>0.2 语言模型</summary><ul class="skel"><li>DeepSeek-R1 incentivizes r <span class="ly">2025</span><span class="lb lib">已在库</span></li><li>DeepSeekMath <span class="ly">2024</span><span class="lb lib">已在库</span></li><li>Attention is All you Need <span class="ly">2017</span><span class="lb lib">已在库</span></li><li>Qwen2 Technical Report <span class="ly">2024</span><span class="lb lib">已在库</span></li><li class="gap">GPT-4 Technical Report <span class="ly">2023</span><span class="lb gap">缺口·被引10</span></li><li class="gap">LLaMA <span class="ly">2023</span><span class="lb gap">缺口·被引7</span></li><li class="gap">Language Models are Few-Shot L <span class="ly">2020</span><span class="lb gap">缺口·被引6</span></li></ul></details>
+      <details class="sub"><summary>0.3 多模态基座</summary><ul class="skel"><li>Cosmos-Reason1 <span class="ly">2025</span><span class="lb lib">已在库</span></li><li>Learning Transferable Visu <span class="ly">2021</span><span class="lb lib">已在库</span></li><li>BLIP-2 <span class="ly">2023</span><span class="lb lib">已在库</span></li><li>Qwen2.5-VL Technical Repor <span class="ly">2025</span><span class="lb lib">已在库</span></li><li>BLIP <span class="ly">2022</span><span class="lb lib">已在库</span></li><li>Qwen2-VL <span class="ly">2024</span><span class="lb lib">已在库</span></li><li class="gap">Visual Instruction Tuning <span class="ly">2023</span><span class="lb gap">缺口·被引7</span></li></ul></details>
+      <details class="sub"><summary>0.4 生成模型</summary><ul class="skel"><li>3DGUT <span class="ly">2025</span><span class="lb lib">已在库</span></li><li>3D Gaussian Splatting for  <span class="ly">2023</span><span class="lb lib">已在库</span></li></ul></details>
+      <details class="sub"><summary>0.5 学习范式</summary><ul class="skel"><li>Chain of Thought Prompting <span class="ly">2022</span><span class="lb lib">已在库</span></li><li>RT-2 <span class="ly">2023</span><span class="lb lib">已在库</span></li><li class="gap">ALVINN, an autonomous land veh <span class="ly">2015</span><span class="lb gap">缺口·被引6</span></li></ul></details>
+    </details>
+
+    <details class="blk" id="sec1" open><summary><span class="stt">1 · 城区 / 结构化</span><span class="scount">Urban · 主线</span></summary>
+      <details class="sub" id="sec11"><summary>1.1 模块化时代 (pre-UniAD)</summary>
+        <p class="blkdesc">UniAD 之前，感知 / 建图 / 预测 / 占用 / 规划各自为战的年代。</p>
+        <details class="sub2"><summary>感知</summary><ul class="skel"><li>TransFuser <span class="ly">2022</span><span class="lb lib">已在库</span></li><li>BEVFormer <span class="ly">2022</span><span class="lb lib">已在库</span></li><li>Lift, Splat, Shoot <span class="ly">2020</span><span class="lb lib">已在库</span></li><li>BEVFusion <span class="ly">2022</span><span class="lb lib">已在库</span></li></ul></details>
+        <details class="sub2"><summary>建图</summary><ul class="skel"><li class="gap">MapTR <span class="ly">2022</span><span class="lb gap">缺口·被引7</span></li><li class="gap">MapTRv2 <span class="ly">2023</span><span class="lb gap">缺口·被引6</span></li></ul></details>
+        <details class="sub2"><summary>预测</summary><ul class="skel"><li>ViP3D <span class="ly">2022</span><span class="lb lib">已在库</span></li><li>Wayformer <span class="ly">2022</span><span class="lb lib">已在库</span></li><li class="gap">VectorNet <span class="ly">2020</span><span class="lb gap">缺口·被引3</span></li><li class="gap">MTR++ <span class="ly">2023</span><span class="lb gap">缺口·被引3</span></li></ul></details>
+        <details class="sub2"><summary>占用</summary><ul class="skel"><li>Tri-Perspective View for V <span class="ly">2023</span><span class="lb lib">已在库</span></li></ul></details>
+        <details class="sub2"><summary>规划</summary><ul class="skel"><li>Motion Planning for Autono <span class="ly">2023</span><span class="lb lib">已在库</span></li></ul></details>
+      </details>
+      <details class="sub" id="sec12" open><summary>1.2 端到端时代 (UniAD →) · 34 篇详解卡</summary>
+        <details class="sub2" open><summary>模块化 E2E</summary><div class="mount" id="m-g1"></div></details>
+        <details class="sub2" open><summary>VLM · VLA</summary><div class="mount" id="m-g2"></div></details>
+        <details class="sub2" open><summary>RL 后训练</summary><div class="mount" id="m-g3"></div></details>
+        <details class="sub2"><summary>综述 · 数据集 · 基建</summary><div class="mount" id="m-g5"></div></details>
+      </details>
+    </details>
+
+    <details class="blk" id="sec2"><summary><span class="stt">2 · 非结构化 / 越野</span><span class="scount">Off-road · 支线</span></summary>
+      <p class="blkdesc">无车道线、无高精地图的世界：地形分割、可通行性、越野 VLA；跨线复用城区 VLM/E2E 骨架。</p>
+      <div class="mount" id="m-g4"></div>
+    </details>
+
+    <details class="blk" id="sec3"><summary><span class="stt">3 · 数据集 &amp; 基准</span><span class="scount">Benchmarks</span></summary>
+      <details class="sub"><summary>3.1 城区</summary><ul class="skel"><li>TAD-E2E <span class="ly">2025</span><span class="lb lib">已在库</span></li><li>AutoDrive-QA <span class="ly">2025</span><span class="lb lib">已在库</span></li><li>nuScenes <span class="ly">2019</span><span class="lb lib">已在库</span></li><li>DriveLM <span class="ly">2023</span><span class="lb lib">已在库</span></li><li>NAVSIM <span class="ly">2024</span><span class="lb lib">已在库</span></li><li>Bench2Drive <span class="ly">2024</span><span class="lb lib">已在库</span></li><li>Scalability in Perception  <span class="ly">2019</span><span class="lb lib">已在库</span></li><li class="gap">CARLA <span class="ly">2017</span><span class="lb gap">缺口·被引11</span></li><li class="gap">NuScenes-QA <span class="ly">2023</span><span class="lb gap">缺口·被引8</span></li></ul></details>
+      <details class="sub"><summary>3.2 越野</summary><ul class="skel"><li class="empty">（待补录）</li></ul></details>
+    </details>
+
+    <details class="blk" id="secA"><summary><span class="stt">附录 · 全库速查 &amp; 方法</span><span class="scount">筛选表 + 数据来源</span></summary>
+      <div class="filters">
+        <span class="flbl">筛选</span>
+        <select id="f-year"></select><select id="f-data"></select><select id="f-loop"></select><select id="f-gpu"></select>
+        <button id="f-reset">重置</button><span class="fcount" id="f-count"></span>
+      </div>
+      <div class="tablewrap" id="ov-table"></div>
+      <p class="pipenote">※ 点方法名跳到详解卡。开/闭环：✓ 有该评测 · — 无 · ○ NAVSIM 类非反应式仿真。</p>
+      <div class="callout note"><div class="ic">📌</div><div class="ct"><span class="t">数据来源</span><p>本页由 Zotero 个人库经 zotkit + Web API 导出；引用关系来自 Semantic Scholar + OpenAlex。摘要为论文原文，中文翻译与创新点为笔记，理解偏差以原文为准。</p></div></div>
+    </details>
+
+  </main>
+
+  <footer>
+    <span>知识库 · 端到端自动驾驶 × VLA 方法全景</span>
+    <a class="back" href="../index.html">← 返回知识库门户</a>
+  </footer>
+
+</div>
+
+<script>
+const GROUPS = [
+  {id:"g1", tag:"ROUTE 1", name:"模块化端到端 · 视觉为中心", cls:"hb",
+   desc:"把感知—预测—规划做成一张可微分的网络，用 query 或生成式建模打通模块间信息流。开环基准以 nuScenes 为主，VADv2 起转向 CARLA / NAVSIM。"},
+  {id:"g2", tag:"ROUTE 2", name:"VLM / VLA · 大模型进入驾驶", cls:"ht",
+   desc:"以预训练多模态大模型为底座，把驾驶输入输出统一到语言（或 token）空间，换取世界知识与长尾推理能力；代价是算力与 3D 空间感知。"},
+  {id:"g3", tag:"ROUTE 3", name:"强化学习与数据增强后训练", cls:"ha",
+   desc:"针对模仿学习的开环天花板（因果混淆、误差累积、无恢复数据），用 RL、逆强化学习奖励模型或合成视角增强做后训练。"},
+  {id:"g4", tag:"ROUTE 4", name:"越野与非结构化场景", cls:"hg",
+   desc:"没有车道线与高精地图的世界：可行驶区域边界模糊，方法转向视觉提示、零样本分割与 VLM 推理。"},
+  {id:"g5", tag:"ROUTE 5", name:"综述 · 数据集 · 基准 · 基础设施", cls:"hi",
+   desc:"三篇综述提供地图，数据集与基准定义比赛规则，渲染与 tokenization 基础设施决定闭环训练与实时部署的可行性。"},
+];
+
+const PAPERS = [
+{key:"IKR946PP", gpu:"unknown", fig:"../assets/e2e-ad/IKR946PP.png", g:"g1", name:"UniAD", title:"Planning-oriented Autonomous Driving",
+ authors:"Hu et al. (16人)", year:"2023", venue:"CVPR 2023 (Best Paper)", venueShort:"CVPR'23",
+ url:"http://arxiv.org/abs/2212.10156",
+ one:"以规划为导向统一全栈任务，query 接口串联感知—预测—规划",
+ loop:["open"], loopNote:"nuScenes 开环规划（L2 / 碰撞率）+ 全栈感知预测指标",
+ data:["nuScenes"],
+ innov:[
+  '把「规划」立为最终目标，<span class="hi">反向决定感知与预测模块的取舍与优先级</span>，而非简单多任务堆叠；',
+  '全栈任务放进一张网络：TrackFormer / MapFormer / MotionFormer / OccFormer 用<span class="hb">统一 query 接口</span>互相喂特征，避免模块间信息瓶颈与误差累积；',
+  'nuScenes 上全面刷新 SOTA，成为后续模块化端到端工作的公共基线（CVPR 2023 最佳论文）。'],
+ dg:[["环视相机","in"],["BEV 编码","enc"],["Track / Map Former","enc"],["MotionFormer","aux"],["OccFormer","aux"],["Planner","out"]],
+ dgNote:"所有模块以 query 为货币交换信息，端到端可微，最终服务规划。",
+ expr:{input:"nuScenes 环视 6 相机图像 + 自车状态（纯视觉，无 LiDAR）",
+   backbone:"BEV 编码器 + 多组 Transformer query 模块（跟踪/建图/运动/占用/规划）",
+   hw:null, batch:null,
+   time:"<b>两阶段</b>：先单独训练跟踪与建图模块 6 epochs，再全栈端到端联合训练 20 epochs（PDF 正文）"},
+ absEn:"Modern autonomous driving system is characterized as modular tasks in sequential order, i.e., perception, prediction, and planning. In order to perform a wide diversity of tasks and achieve advanced-level intelligence, contemporary approaches either deploy standalone models for individual tasks, or design a multi-task paradigm with separate heads. However, they might suffer from accumulative errors or deficient task coordination. Instead, we argue that a favorable framework should be devised and optimized in pursuit of the ultimate goal, i.e., planning of the self-driving car. Oriented at this, we revisit the key components within perception and prediction, and prioritize the tasks such that all these tasks contribute to planning. We introduce Unified Autonomous Driving (UniAD), a comprehensive framework up-to-date that incorporates full-stack driving tasks in one network. It is exquisitely devised to leverage advantages of each module, and provide complementary feature abstractions for agent interaction from a global perspective. Tasks are communicated with unified query interfaces to facilitate each other toward planning. We instantiate UniAD on the challenging nuScenes benchmark. With extensive ablations, the effectiveness of using such a philosophy is proven by substantially outperforming previous state-of-the-arts in all aspects. Code and models are public.",
+ absZh:"现代自动驾驶系统的特点是按顺序执行模块化任务，即感知、预测与规划。为了执行多样任务并达到高级别智能，当代方法要么为各任务部署独立模型，要么设计带多个头的多任务范式，但它们可能遭受累积误差或任务协调不足之苦。我们认为，理想的框架应当以追求最终目标——自车的规划——来设计与优化。据此我们重新审视感知与预测中的关键组件，并对任务排定优先级，使所有任务都服务于规划。我们提出统一自动驾驶框架 UniAD，一张网络囊括全栈驾驶任务，精心设计以发挥各模块优势，并从全局视角为智能体交互提供互补的特征抽象；任务经统一的 query 接口相互沟通，共同朝规划靠拢。我们在极具挑战的 nuScenes 基准上实例化 UniAD，充分的消融实验证明这一哲学在各方面显著超越此前最先进方法。代码与模型已公开。"},
+
+{key:"RK2HT2U4", gpu:"unknown", fig:"../assets/e2e-ad/RK2HT2U4.png", g:"g1", name:"VADv2", title:"VADv2: End-to-End Vectorized Autonomous Driving via Probabilistic Planning",
+ authors:"Chen et al. (9人)", year:"2024", venue:"arXiv 2402.13243", venueShort:"arXiv'24",
+ url:"http://arxiv.org/abs/2402.13243",
+ one:"把规划建模为动作概率分布，采样控车破解「非凸不确定性」",
+ loop:["closed"], loopNote:"CARLA Town05 闭环 SOTA，无规则兜底也可稳定行驶",
+ data:["CARLA Town05"],
+ innov:[
+  '指出确定性回归规划无法应对规划解的<span class="hi">非凸多模态</span>（会输出「两个正确答案的中间值」），改为学习<span class="hb">大规模动作词表上的概率分布</span>，推理时采样控车；',
+  '流式（streaming）处理多视角图像序列 → 环境 token，纯相机输入即达 CARLA Town05 闭环 SOTA；',
+  '概率化规划天然兼容规则/优化式后处理，但去掉规则兜底也能稳定闭环行驶。'],
+ dg:[["环视图像流","in"],["环境 token 编码","enc"],["动作概率分布","out"],["采样 → 控车","out"]],
+ dgNote:"与导航信息、自车状态融合后输出动作分布，而非单条轨迹。",
+ expr:{input:"环视多视角图像序列（流式、纯相机）+ 导航命令 + 自车状态",
+   backbone:"Transformer 环境 token 化 + 概率化规划头（大规模离散动作词表）",
+   hw:null, batch:null, time:null},
+ absEn:"Learning a human-like driving policy from large-scale driving demonstrations is promising, but the uncertainty and non-deterministic nature of planning make it challenging. In this work, to cope with the uncertainty problem, we propose VADv2, an end-to-end driving model based on probabilistic planning. VADv2 takes multi-view image sequences as input in a streaming manner, transforms sensor data into environmental token embeddings, outputs the probabilistic distribution of action, and samples one action to control the vehicle. Only with camera sensors, VADv2 achieves state-of-the-art closed-loop performance on the CARLA Town05 benchmark, significantly outperforming all existing methods. It runs stably in a fully end-to-end manner, even without the rule-based wrapper. Closed-loop demos are presented at https://hgao-cv.github.io/VADv2.",
+ absZh:"从大规模驾驶示范中学习类人驾驶策略前景可期，但规划的不确定性与非确定性本质使其颇具挑战。为应对不确定性问题，我们提出 VADv2——基于概率规划的端到端驾驶模型。VADv2 以流式方式接收多视角图像序列，将传感器数据转换为环境 token 嵌入，输出动作的概率分布，并采样一个动作来控制车辆。仅用相机传感器，VADv2 就在 CARLA Town05 基准上取得了最先进的闭环性能，显著超越所有现有方法，并且即使去掉基于规则的兜底封装，也能以完全端到端的方式稳定运行。闭环演示见项目主页。"},
+
+{key:"9KCXQJZU", gpu:"workstation", fig:"../assets/e2e-ad/9KCXQJZU.png", g:"g1", name:"GenAD", title:"GenAD: Generative End-to-End Autonomous Driving",
+ authors:"Zheng et al. (5人)", year:"2024", venue:"ECCV 2024", venueShort:"ECCV'24",
+ url:"http://arxiv.org/abs/2402.11502",
+ one:"把驾驶写成生成式问题：VAE 学轨迹先验，隐空间同时做预测与规划",
+ loop:["open"], loopNote:"nuScenes 开环（视觉为中心方法中 SOTA、高效率）",
+ data:["nuScenes"],
+ innov:[
+  '跳出「感知→预测→规划」串行分解，把驾驶重写为<span class="hi">「预测自车与环境如何共同演化」的生成建模问题</span>；',
+  '实例中心场景 tokenizer 把周围场景转成地图感知的实例 token，<span class="hb">VAE 在结构化隐空间学习轨迹先验</span>，时序模型在隐空间滚动未来；',
+  '预测与规划在同一隐空间中一次采样同时完成，nuScenes 视觉为中心端到端 SOTA 且推理高效。'],
+ dg:[["环视相机","in"],["实例中心 tokenizer","enc"],["VAE 轨迹隐空间","aux"],["时序演化模型","aux"],["预测 + 规划","out"]],
+ expr:{input:"nuScenes 环视相机图像（ResNet + FPN 提特征 → BEV token）",
+   backbone:"实例中心场景 tokenizer + VAE 结构化隐空间 + GRU 时序模型",
+   hw:"8 × RTX 3090（推理 FPS 也在单卡 3090 上测量）",
+   batch:"总 batch 8",
+   time:"60 epochs（AdamW，lr 2×10⁻⁴，cosine 调度，weight decay 0.01）"},
+ absEn:"Directly producing planning results from raw sensors has been a long-desired solution for autonomous driving and has attracted increasing attention recently. Most existing end-to-end autonomous driving methods factorize this problem into perception, motion prediction, and planning. However, we argue that the conventional progressive pipeline still cannot comprehensively model the entire traffic evolution process, e.g., the future interaction between the ego car and other traffic participants and the structural trajectory prior. In this paper, we explore a new paradigm for end-to-end autonomous driving, where the key is to predict how the ego car and the surroundings evolve given past scenes. We propose GenAD, a generative framework that casts autonomous driving into a generative modeling problem. We propose an instance-centric scene tokenizer that first transforms the surrounding scenes into map-aware instance tokens. We then employ a variational autoencoder to learn the future trajectory distribution in a structural latent space for trajectory prior modeling. We further adopt a temporal model to capture the agent and ego movements in the latent space to generate more effective future trajectories. GenAD finally simultaneously performs motion prediction and planning by sampling distributions in the learned structural latent space conditioned on the instance tokens and using the learned temporal model to generate futures. Extensive experiments on the widely used nuScenes benchmark show that the proposed GenAD achieves state-of-the-art performance on vision-centric end-to-end autonomous driving with high efficiency. Code: https://github.com/wzzheng/GenAD.",
+ absZh:"从原始传感器直接产出规划结果一直是自动驾驶梦寐以求的方案，近来受到越来越多关注。现有端到端方法大多把问题分解为感知、运动预测与规划；但我们认为，这种传统串行流水线仍无法全面建模整个交通演化过程——例如自车与其他交通参与者之间的未来交互、以及结构化的轨迹先验。本文探索端到端自动驾驶的新范式，关键在于「给定过去场景，预测自车与周围环境如何演化」。我们提出 GenAD，把自动驾驶转化为生成式建模问题：先用实例中心的场景 tokenizer 把周围场景转为带地图感知的实例 token；再用变分自编码器在结构化隐空间中学习未来轨迹分布以建模轨迹先验；进一步用时序模型捕捉隐空间中的自车与智能体运动，生成更有效的未来。最终，GenAD 在以实例 token 为条件的结构化隐空间中采样、借助学到的时序模型滚动未来，同时完成运动预测与规划。在广泛使用的 nuScenes 基准上，GenAD 以高效率取得了视觉为中心端到端自动驾驶的最先进性能。"},
+
+{key:"RE7QZKBZ", gpu:"unknown", fig:"../assets/e2e-ad/RE7QZKBZ.png", g:"g1", name:"PARA-Drive", title:"PARA-Drive: Parallelized Architecture for Real-time Autonomous Driving",
+ authors:"Weng, Ivanovic et al. (5人, NVIDIA)", year:"2024", venue:"CVPR 2024", venueShort:"CVPR'24",
+ url:"https://ieeexplore.ieee.org/document/10656117/",
+ one:"系统性探索模块化 E2E 设计空间，发现全并行架构最优且快近 3×",
+ loop:["open"], loopNote:"nuScenes 开环（感知 / 预测 / 规划全栈指标）",
+ data:["nuScenes"],
+ innov:[
+  '首个对模块化端到端栈的<span class="hi">设计空间系统消融</span>：哪些模块必要？连接方式、位置、内部表征怎样影响驾驶性能？',
+  '结论反直觉：感知/预测/规划<span class="hb">全并行</span>（而非串行喂）即可达到 SOTA，推理提速近 3×；',
+  '可解释性与安全性不受损——中间任务保留为并行监督头，推理时可关闭。'],
+ dg:[["环视相机","in"],["共享 BEV 特征","enc"],["建图 ∥ 检测 ∥ 占用 ∥ 规划（并行头）","out"]],
+ dgNote:"各任务头并行读取同一 BEV 特征，训练时互为监督，推理时只留规划头。",
+ expr:{input:"nuScenes 环视相机（共享 BEV 特征表示）",
+   backbone:"统一可重构框架（模块可开关/重连/换表征）→ 收敛到全并行架构",
+   hw:null, batch:null, time:null},
+ absEn:"Recent works have proposed end-to-end autonomous vehicle (AV) architectures comprised of differentiable modules, achieving state-of-the-art driving performance. While they provide advantages over the traditional perceptionprediction-planning pipeline (e.g., removing information bottlenecks between components and alleviating integration challenges), they do so using a diverse combination of tasks, modules, and their interconnectivity. As of yet, however, there has been no systematic analysis of the necessity of these modules or the impact of their connectivity, placement, and internal representations on overall driving performance. Addressing this gap, our work conducts a comprehensive exploration of the design space of end-to-end modular AV stacks. Our findings culminate in the development of PARA-Drive1: a fully parallel end-to-end AV architecture. PARA-Drive not only achieves state-of-the-art performance in perception, prediction, and planning, but also significantly enhances runtime speed by nearly 3×, without compromising on interpretability or safety.",
+ absZh:"近期工作提出了由可微模块组成的端到端自动驾驶架构，取得了最先进的驾驶性能。相比传统「感知—预测—规划」流水线，它们去除了组件间的信息瓶颈、缓解了集成难题；但各家使用的任务、模块与互联方式五花八门。迄今为止，尚无对这些模块的必要性、连接方式、位置与内部表征如何影响整体驾驶性能的系统分析。为填补这一空白，我们对端到端模块化自动驾驶栈的设计空间进行了全面探索，最终得到 PARA-Drive：一个完全并行的端到端架构。PARA-Drive 不仅在感知、预测与规划上均达到最先进水平，还把运行速度提升近 3 倍，且不牺牲可解释性与安全性。"},
+
+{key:"VKQV6UA6", gpu:"workstation", fig:"../assets/e2e-ad/VKQV6UA6.png", g:"g1", name:"DiffusionDrive", title:"DiffusionDrive: Truncated Diffusion Model for End-to-End Autonomous Driving",
+ authors:"Liao, Chen et al. (11人)", year:"2025", venue:"CVPR 2025", venueShort:"CVPR'25",
+ url:"http://arxiv.org/abs/2411.15139",
+ one:"截断扩散：锚定多模先验 + 2 步去噪，45 FPS 实时输出多模轨迹",
+ loop:["navsim","open"], loopNote:"NAVSIM navtest PDMS 88.1 创纪录；nuScenes 开环验证",
+ data:["NAVSIM","nuScenes"],
+ innov:[
+  '诊断机器人扩散策略搬到驾驶的两大痛点：去噪步数多（慢）、交通场景动态开放（模式坍缩），提出<span class="hi">截断扩散</span>——从锚定的多模高斯先验出发学去噪，仅需 <b>2 步</b>，比原始扩散策略少 10×；',
+  '<span class="hb">级联扩散解码器</span>增强与 BEV / 场景上下文的条件交互，轨迹质量与多样性双升；',
+  '对齐 ResNet-34 骨干下 NAVSIM PDMS 88.1 创纪录，单卡 4090 上 45 FPS 实时运行。'],
+ dg:[["前视相机 + LiDAR","in"],["BEV / 场景特征","enc"],["锚定多模先验","aux"],["截断扩散解码器 ×2 步","out"],["多模轨迹","out"]],
+ expr:{input:"NAVSIM：前视相机 + LiDAR（C&L 双模态）；nuScenes 验证用环视相机",
+   backbone:"ResNet-34 感知骨干 + 级联截断扩散解码器",
+   hw:"8 × RTX 4090（推理单卡 4090 达 45 FPS）",
+   batch:"总 batch 512（AdamW，lr 6×10⁻⁴）",
+   time:"100 epochs（navtrain 从零训练，无测试时增强）"},
+ absEn:"Recently, the diffusion model has emerged as a powerful generative technique for robotic policy learning, capable of modeling multi-mode action distributions. Leveraging its capability for end-to-end autonomous driving is a promising direction. However, the numerous denoising steps in the robotic diffusion policy and the more dynamic, open-world nature of traffic scenes pose substantial challenges for generating diverse driving actions at a real-time speed. To address these challenges, we propose a novel truncated diffusion policy that incorporates prior multi-mode anchors and truncates the diffusion schedule, enabling the model to learn denoising from anchored Gaussian distribution to the multi-mode driving action distribution. Additionally, we design an efficient cascade diffusion decoder for enhanced interaction with conditional scene context. The proposed model, DiffusionDrive, demonstrates 10$\\times$ reduction in denoising steps compared to vanilla diffusion policy, delivering superior diversity and quality in just 2 steps. On the planning-oriented NAVSIM dataset, with the aligned ResNet-34 backbone, DiffusionDrive achieves 88.1 PDMS without bells and whistles, setting a new record, while running at a real-time speed of 45 FPS on an NVIDIA 4090. Qualitative results on challenging scenarios further confirm that DiffusionDrive can robustly generate diverse plausible driving actions. Code and model will be available at https://github.com/hustvl/DiffusionDrive.",
+ absZh:"近来，扩散模型作为强大的生成技术进入机器人策略学习，能够建模多模态动作分布，将其用于端到端自动驾驶是很有前景的方向。然而机器人扩散策略的大量去噪步数、以及交通场景更动态开放的特性，给实时生成多样驾驶动作带来了实质挑战。为此我们提出新颖的截断扩散策略：引入先验多模锚点、截断扩散调度，让模型学习从「锚定的高斯分布」到多模驾驶动作分布的去噪；并设计高效的级联扩散解码器以增强与条件场景上下文的交互。所提出的 DiffusionDrive 相比原始扩散策略去噪步数减少 10 倍，仅 2 步即可提供更优的多样性与质量。在以规划为导向的 NAVSIM 数据集上，配合对齐的 ResNet-34 骨干，DiffusionDrive 无任何花哨技巧即达 88.1 PDMS 创下新纪录，同时在 NVIDIA 4090 上以 45 FPS 实时运行。挑战性场景的定性结果进一步证实其能稳健生成多样且合理的驾驶动作。"},
+
+{key:"TZBW6RXZ", gpu:"industrial", fig:"../assets/e2e-ad/TZBW6RXZ.png", g:"g2", name:"EMMA", title:"EMMA: End-to-end Multimodal Model for Autonomous Driving",
+ authors:"Hwang et al. (13人, Waymo)", year:"2024", venue:"arXiv 2410.23262", venueShort:"arXiv'24",
+ url:"http://arxiv.org/abs/2410.23262",
+ one:"Gemini 底座，把驾驶输入输出全部写成自然语言，一个模型多任务",
+ loop:["open"], loopNote:"nuScenes 运动规划 SOTA；WOMD 规划、WOD 相机 3D 检测均有竞争力",
+ data:["nuScenes","WOMD","WOD","Waymo 内部日志"],
+ innov:[
+  '以 <span class="ht">Gemini</span> 为底座，把非传感输入（导航指令、自车状态）与输出（轨迹、3D 框、路网元素）<span class="hi">统一表示为自然语言文本</span>，在语言空间联合处理多驾驶任务；',
+  '任务提示词切换任务：规划轨迹、感知目标、路网估计<span class="hb">共训互益</span>，展示通才模型潜力；',
+  '坦承三大局限：帧数受限、无 LiDAR/雷达 3D 感知、推理开销大——为后续 OpenEMMA / LightEMMA 等开源复现留下靶子。'],
+ dg:[["环视相机视频","in"],["导航指令 + 自车状态（文本）","in"],["Gemini MLLM","llm"],["文本化轨迹 / 3D 框 / 路网","out"]],
+ dgNote:"自回归 next-token 生成：O = G(T, V)，任务由 prompt 指定。",
+ expr:{input:"环视相机视频 + 高层路由指令 + 自车历史状态（后两者以纯文本输入）",
+   backbone:"Gemini（多模态大模型，微调驾驶日志）",
+   hw:"论文未公开（Waymo 内部基础设施）",
+   batch:null,
+   time:null},
+ absEn:"We introduce EMMA, an End-to-end Multimodal Model for Autonomous driving. Built on a multi-modal large language model foundation, EMMA directly maps raw camera sensor data into various driving-specific outputs, including planner trajectories, perception objects, and road graph elements. EMMA maximizes the utility of world knowledge from the pre-trained large language models, by representing all non-sensor inputs (e.g. navigation instructions and ego vehicle status) and outputs (e.g. trajectories and 3D locations) as natural language text. This approach allows EMMA to jointly process various driving tasks in a unified language space, and generate the outputs for each task using task-specific prompts. Empirically, we demonstrate EMMA's effectiveness by achieving state-of-the-art performance in motion planning on nuScenes as well as competitive results on the Waymo Open Motion Dataset (WOMD). EMMA also yields competitive results for camera-primary 3D object detection on the Waymo Open Dataset (WOD). We show that co-training EMMA with planner trajectories, object detection, and road graph tasks yields improvements across all three domains, highlighting EMMA's potential as a generalist model for autonomous driving applications. However, EMMA also exhibits certain limitations: it can process only a small amount of image frames, does not incorporate accurate 3D sensing modalities like LiDAR or radar and is computationally expensive. We hope that our results will inspire further research to mitigate these issues and to further evolve the state of the art in autonomous driving model architectures.",
+ absZh:"我们提出 EMMA——面向自动驾驶的端到端多模态模型。EMMA 建立在多模态大语言模型基座之上，把原始相机传感数据直接映射为多种驾驶专用输出，包括规划轨迹、感知目标与路网元素。EMMA 将所有非传感输入（如导航指令与自车状态）和输出（如轨迹与 3D 位置）统一表示为自然语言文本，从而最大化利用预训练大模型的世界知识，在统一的语言空间中联合处理各类驾驶任务，并用任务特定提示生成对应输出。实验上，EMMA 在 nuScenes 运动规划上取得最先进性能，在 Waymo 开放运动数据集（WOMD）上亦具竞争力；其相机为主的 3D 目标检测在 Waymo 开放数据集（WOD）上同样表现出色。轨迹规划、目标检测与路网任务共训使三个领域全部提升，显示了 EMMA 作为自动驾驶通才模型的潜力。然而 EMMA 也存在局限：只能处理少量图像帧、未融合 LiDAR / 雷达等精确 3D 传感、计算开销大。我们希望这些结果能启发进一步研究以缓解上述问题。"},
+
+{key:"QIAPYMJL", gpu:"unknown", fig:"../assets/e2e-ad/QIAPYMJL.png", g:"g2", name:"Senna", title:"Senna: Bridging Large Vision-Language Models and End-to-End Autonomous Driving",
+ authors:"Jiang et al. (9人)", year:"2024", venue:"arXiv 2410.22313", venueShort:"arXiv'24",
+ url:"http://arxiv.org/abs/2410.22313",
+ one:"解耦：VLM 用自然语言做高层决策，E2E 模型出精确轨迹",
+ loop:["open"], loopNote:"nuScenes + DriveX 开环规划；预训练迁移后误差 −27.12%、碰撞率 −33.33%",
+ data:["DriveX（大规模预训练）","nuScenes"],
+ innov:[
+  '看清 LVLM 的长短板：擅长场景理解与常识推理、<span class="hi">不擅长精确数值回归</span>——因此让 Senna-VLM 输出自然语言级「元决策」，Senna-E2E（VAD 系）负责轨迹数值；',
+  '<span class="hb">多图编码 + 环视 prompt</span>：压缩图像 token 并让模型分清各视角，解决 LVLM 环视输入的效率与空间感知问题；',
+  '面向规划的 QA + 三阶段训练：保住常识的同时强化规划；大规模 DriveX 预训练 → nuScenes 微调，展示跨场景可迁移性。'],
+ dg:[["环视多图 + 指令","in"],["Senna-VLM（语言决策）","llm"],["元动作（自然语言）","aux"],["Senna-E2E（VAD）","enc"],["精确轨迹","out"]],
+ expr:{input:"多视角图像序列 + 用户指令 + 导航命令（环视 prompt 区分视角）",
+   backbone:"Senna-VLM（LLaVA 系多图编码）+ Senna-E2E（VAD 端到端模型）",
+   hw:null, batch:null,
+   time:"三阶段训练策略（混合驾驶 QA 与通用 QA 以保常识；具体时长未说明）"},
+ absEn:"End-to-end autonomous driving demonstrates strong planning capabilities with large-scale data but still struggles in complex, rare scenarios due to limited commonsense. In contrast, Large Vision-Language Models (LVLMs) excel in scene understanding and reasoning. The path forward lies in merging the strengths of both approaches. Previous methods using LVLMs to predict trajectories or control signals yield suboptimal results, as LVLMs are not well-suited for precise numerical predictions. This paper presents Senna, an autonomous driving system combining an LVLM (Senna-VLM) with an end-to-end model (Senna-E2E). Senna decouples high-level planning from low-level trajectory prediction. Senna-VLM generates planning decisions in natural language, while Senna-E2E predicts precise trajectories. Senna-VLM utilizes a multi-image encoding approach and multi-view prompts for efficient scene understanding. Besides, we introduce planning-oriented QAs alongside a three-stage training strategy, which enhances Senna-VLM's planning performance while preserving commonsense. Extensive experiments on two datasets show that Senna achieves state-of-the-art planning performance. Notably, with pre-training on a large-scale dataset DriveX and fine-tuning on nuScenes, Senna significantly reduces average planning error by 27.12% and collision rate by 33.33% over model without pre-training. We believe Senna's cross-scenario generalization and transferability are essential for achieving fully autonomous driving. Code and models will be released at https://github.com/hustvl/Senna.",
+ absZh:"端到端自动驾驶依靠大规模数据展现出强规划能力，但在复杂、罕见场景中仍因常识受限而挣扎；相反，大型视觉-语言模型（LVLM）擅长场景理解与推理。出路在于融合两者之长。以往用 LVLM 直接预测轨迹或控制信号的方法效果欠佳，因为 LVLM 并不适合精确数值预测。本文提出 Senna：一个把 LVLM（Senna-VLM）与端到端模型（Senna-E2E）结合的自动驾驶系统，将高层规划与低层轨迹预测解耦——Senna-VLM 以自然语言生成规划决策，Senna-E2E 预测精确轨迹。Senna-VLM 采用多图编码与多视角提示以高效理解场景；我们还引入面向规划的 QA 与三阶段训练策略，在保留常识的同时提升规划能力。在两个数据集上的大量实验表明 Senna 取得最先进的规划性能：在大规模 DriveX 数据集预训练、nuScenes 微调后，平均规划误差较无预训练下降 27.12%，碰撞率下降 33.33%。我们相信 Senna 的跨场景泛化与可迁移性是迈向完全自动驾驶的关键。"},
+
+{key:"RXLWJCWQ", gpu:"consumer", fig:"../assets/e2e-ad/RXLWJCWQ.png", g:"g2", name:"OpenEMMA", title:"OpenEMMA: Open-Source Multimodal Model for End-to-End Autonomous Driving",
+ authors:"Xing et al. (7人)", year:"2025", venue:"WACV 2025 Workshop", venueShort:"WACV'25W",
+ url:"http://arxiv.org/abs/2412.15208",
+ one:"EMMA 的开源平替：现成 MLLM + CoT 提示 + YOLO3D，低成本复现",
+ loop:["open"], loopNote:"nuScenes 开环轨迹预测（多款 MLLM 均较基线显著提升）",
+ data:["nuScenes"],
+ innov:[
+  '不微调大模型：用<span class="hi">链式思维（CoT）提示</span>驱动现成 MLLM（GPT-4o / Gemini / Qwen / LLaVA…）输出速度-曲率序列再积分成轨迹，绕开 EMMA 级训练成本；',
+  '3D 检测外包给<span class="hb">微调过的 YOLO3D</span> 补足 MLLM 的空间短板，感知输出保持人类可读、可解释；',
+  '框架对多款 MLLM 即插即用，提供了检验「推理算力 vs 训练算力」路线的开源基座。'],
+ dg:[["前视相机 + 自车历史（文本）","in"],["CoT 提示","aux"],["现成 MLLM","llm"],["速度 / 曲率 → 轨迹","out"]],
+ dgNote:"辅路：YOLO3D 微调模型单独负责 3D 目标检测。",
+ expr:{input:"前视相机图像 + 文本化自车历史状态",
+   backbone:"现成 MLLM 零训练（CoT 提示）+ 微调 YOLO 3D 检测头",
+   hw:"辅助检测头：单卡 RTX 4060 Ti（MLLM 本体不训练）",
+   batch:"检测头 batch 50（SGD，lr 0.01 线性衰减）",
+   time:"检测头 300 epochs（best@290，mAP50 = 0.603）"},
+ absEn:"Since the advent of Multimodal Large Language Models (MLLMs), they have made a significant impact across a wide range of real-world applications, particularly in Autonomous Driving (AD). Their ability to process complex visual data and reason about intricate driving scenarios has paved the way for a new paradigm in end-to-end AD systems. However, the progress of developing end-to-end models for AD has been slow, as existing fine-tuning methods demand substantial resources, including extensive computational power, large-scale datasets, and significant funding. Drawing inspiration from recent advancements in inference computing, we propose OpenEMMA, an open-source end-to-end framework based on MLLMs. By incorporating the Chain-of-Thought reasoning process, OpenEMMA achieves significant improvements compared to the baseline when leveraging a diverse range of MLLMs. Furthermore, OpenEMMA demonstrates effectiveness, generalizability, and robustness across a variety of challenging driving scenarios, offering a more efficient and effective approach to autonomous driving. We release all the codes in https://github.com/taco-group/OpenEMMA.",
+ absZh:"多模态大语言模型（MLLM）问世以来在众多现实应用中产生了重大影响，尤其是自动驾驶领域。其处理复杂视觉数据、推理复杂驾驶场景的能力，为端到端自动驾驶系统开辟了新范式。然而端到端驾驶模型的进展一直缓慢：现有微调方法对算力、大规模数据与资金的要求都很高。受推理计算（inference computing）最新进展的启发，我们提出 OpenEMMA——基于 MLLM 的开源端到端框架。通过引入链式思维推理过程，OpenEMMA 在利用多种 MLLM 时相比基线取得显著提升，并在各类挑战性驾驶场景中展现出有效性、泛化性与鲁棒性，提供了一条更高效的自动驾驶路径。代码已全部开源。"},
+
+{key:"LVYK5YWL", gpu:"none", fig:"../assets/e2e-ad/LVYK5YWL.png", g:"g2", name:"LightEMMA", title:"LightEMMA: Lightweight End-to-End Multimodal Model for Autonomous Driving",
+ authors:"Qiao et al. (4人)", year:"2025", venue:"arXiv 2505.00284", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2505.00284",
+ one:"12 个 VLM 驾驶代理的统一评测台：VLM 会「看」不等于会「开」",
+ loop:["open"], loopNote:"nuScenes 预测任务开环横评（附算力 / token 成本指标）",
+ data:["nuScenes"],
+ innov:[
+  '统一、零定制的 VLM 驾驶框架，<span class="hi">12 款商业与开源 VLM</span> 即插即评，支持模型快速更换与公平对比；',
+  '结论清醒：VLM 场景解读能力强，但<span class="hb">实际驾驶指标堪忧</span>——模型更大、推理链更长并不必然更好，任务特化设计仍然必要；',
+  '同时报告算力、token 用量与成本，为「VLM 上车」提供工程决策数据。'],
+ dg:[["前视相机 + 驾驶历史","in"],["CoT 提示","aux"],["任意 VLM（12 款）","llm"],["动作序列 → 轨迹","out"]],
+ expr:{input:"前视相机原图（不做预处理/增广，不接外部感知模型）+ 文本化驾驶历史",
+   backbone:"12 款商业 / 开源 VLM（GPT、Gemini、Claude、Qwen、LLaVA 等）零样本",
+   hw:"开源模型本地部署于 H100（多数单卡即可，大模型自动多卡映射）",
+   batch:"不适用（零样本提示，无训练）",
+   time:"不适用（零样本提示，无训练）"},
+ absEn:"Vision-Language Models (VLMs) have demonstrated significant potential for end-to-end autonomous driving. However, the field still lacks a practical platform that enables dynamic model updates, rapid validation, fair comparison, and intuitive performance assessment. To that end, we introduce LightEMMA, a Lightweight End-to-End Multimodal Model for Autonomous driving. LightEMMA provides a unified, VLM-based autonomous driving framework without ad hoc customizations, enabling easy integration with evolving state-of-the-art commercial and open-source models. We construct twelve autonomous driving agents using various VLMs and evaluate their performance on the challenging nuScenes prediction task, comprehensively assessing computational metrics and providing critical insights. Illustrative examples show that, although VLMs exhibit strong scenario interpretation capabilities, their practical performance in autonomous driving tasks remains a concern. Additionally, increased model complexity and extended reasoning do not necessarily lead to better performance, emphasizing the need for further improvements and task-specific designs. The code is available at https://github.com/michigan-traffic-lab/LightEMMA.",
+ absZh:"视觉-语言模型（VLM）在端到端自动驾驶中已展现出显著潜力，但该领域仍缺一个支持动态模型更新、快速验证、公平对比与直观性能评估的实用平台。为此我们提出 LightEMMA——轻量级端到端多模态驾驶框架。它提供统一的、无 ad-hoc 定制的 VLM 驾驶方案，可轻松接入不断演进的商业与开源模型。我们用多款 VLM 构建了 12 个驾驶代理，在挑战性的 nuScenes 预测任务上全面评估其表现与算力指标。示例分析显示：尽管 VLM 表现出强大的场景解读能力，其在自动驾驶任务中的实际表现仍令人担忧；且模型复杂度提高、推理链拉长并不必然带来更好表现，凸显了针对性设计的必要。代码已开源。"},
+
+{key:"6ZGMAL9Z", gpu:"unknown", fig:"../assets/e2e-ad/6ZGMAL9Z.png", g:"g2", name:"VLM-AD", title:"VLM-AD: End-to-End Autonomous Driving through Vision-Language Model Supervision",
+ authors:"Xu et al. (8人)", year:"2025", venue:"arXiv 2412.14446", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2412.14446",
+ one:"VLM 只当老师不上车：推理标注蒸馏进 E2E 模型，推理期零开销",
+ loop:["open","closed"], loopNote:"nuScenes 开环（规划精度 / 碰撞率↑）+ 闭环路线完成率 / 驾驶分提升",
+ data:["nuScenes"],
+ innov:[
+  'VLM 作为<span class="hi">离线教师</span>：把自车未来轨迹投影到前视图上，请 VLM 产出推理文本与结构化动作标注，作为超越轨迹标签的辅助监督；',
+  '训练时蒸馏推理特征，<span class="hb">推理时完全不需要 VLM</span>——保持实时性，可直接叠加到 UniAD / VAD 等现有方法上；',
+  '开环规划精度与碰撞率、闭环路线完成率与驾驶分同时改善，验证「推理知识蒸馏」的实用价值。'],
+ dg:[["环视相机","in"],["E2E 基线（UniAD / VAD）","enc"],["VLM 教师标注（仅训练期）","llm"],["特征对齐蒸馏","aux"],["轨迹","out"]],
+ expr:{input:"基线模型：环视相机；VLM 教师：前视图 + 投影未来轨迹（红线提示）",
+   backbone:"UniAD / VAD 基线 + 文本头（MLP 特征对齐，三路 MHCA）",
+   hw:null, batch:null,
+   time:"随基线方法训练流程（附加监督头），未单独说明"},
+ absEn:"Human drivers rely on commonsense reasoning to navigate diverse and dynamic real-world scenarios. Existing end-to-end (E2E) autonomous driving (AD) models are typically optimized to mimic driving patterns observed in data, without capturing the underlying reasoning processes. This limitation constrains their ability to handle challenging driving scenarios. To close this gap, we propose VLM-AD, a method that leverages vision-language models (VLMs) as teachers to enhance training by providing additional supervision that incorporates unstructured reasoning information and structured action labels. Such supervision enhances the model's ability to learn richer feature representations that capture the rationale behind driving patterns. Importantly, our method does not require a VLM during inference, making it practical for real-time deployment. When integrated with state-of-the-art methods, VLM-AD achieves significant improvements in planning accuracy and reduced collision rates on the nuScenes dataset. It further improves route completion and driving scores under closed-loop evaluation, demonstrating its effectiveness in long-horizon, interactive driving scenarios and its potential for safe and reliable real-world deployment.",
+ absZh:"人类驾驶员依靠常识推理来应对多样、动态的现实场景，而现有端到端自动驾驶模型通常只是模仿数据中的驾驶模式，未能捕捉其背后的推理过程，这限制了其应对挑战性场景的能力。为此我们提出 VLM-AD：利用视觉-语言模型（VLM）作为教师，通过提供包含非结构化推理信息与结构化动作标签的额外监督来增强训练，使模型学到更丰富的、蕴含驾驶行为依据的特征表示。重要的是，我们的方法在推理阶段不需要 VLM，具备实时部署可行性。与最先进方法结合时，VLM-AD 在 nuScenes 上显著提升规划精度并降低碰撞率，在闭环评测中也提升了路线完成率与驾驶分数，证明其对长时程、交互性驾驶场景的有效性与真实部署潜力。"},
+
+{key:"XRUHACJ6", gpu:"unknown", fig:"../assets/e2e-ad/XRUHACJ6.png", g:"g2", name:"BEVDriver", title:"BEVDriver: Leveraging BEV Maps in LLMs for Robust Closed-Loop Driving",
+ authors:"Winter et al. (3人)", year:"2025", venue:"arXiv 2503.03074", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2503.03074",
+ one:"潜空间 BEV 特征直接喂 LLM：3D 空间接地 + 语言指令闭环导航",
+ loop:["closed"], loopNote:"CARLA LangAuto 基准闭环，驾驶分较 SOTA 最高 +18.9%",
+ data:["CARLA","LangAuto"],
+ innov:[
+  '直击「LLM 缺 3D 空间接地」痛点：多视角相机 + LiDAR 点云融合成<span class="hi">潜空间 BEV 特征</span>，经 Q-Former 与语言指令对齐后输入 LLM；',
+  'BEV 编码器带目标检测 / 语义分割 / 红绿灯 / 自监督对齐四路预训练损失，感知表征紧凑且信息充分；',
+  'LLM 直接预测未来路点（<span class="hb">LoRA 适配</span>，PID 转控制指令），LangAuto 闭环驾驶分最高提升 18.9%。'],
+ dg:[["4 路环视 + LiDAR","in"],["BEV 编码器","enc"],["Q-Former 对齐","aux"],["LLM（LoRA）","llm"],["路点 → PID 控制","out"]],
+ expr:{input:"4 路多视角相机图像 + 3D LiDAR 点云（融合为 BEV）+ 自然语言导航指令",
+   backbone:"BEV 编码器（4 路预训练损失）+ Q-Former + LLaMA 系 LLM（LoRA 微调）",
+   hw:null, batch:null, time:null},
+ absEn:"Autonomous driving has the potential to set the stage for more efficient future mobility, requiring the research domain to establish trust through safe, reliable and transparent driving. Large Language Models (LLMs) possess reasoning capabilities and natural language understanding, presenting the potential to serve as generalized decision-makers for ego-motion planning that can interact with humans and navigate environments designed for human drivers. While this research avenue is promising, current autonomous driving approaches are challenged by combining 3D spatial grounding and the reasoning and language capabilities of LLMs. We introduce BEVDriver, an LLM-based model for end-to-end closed-loop driving in CARLA that utilizes latent BEV features as perception input. BEVDriver includes a BEV encoder to efficiently process multi-view images and 3D LiDAR point clouds. Within a common latent space, the BEV features are propagated through a Q-Former to align with natural language instructions and passed to the LLM that predicts and plans precise future trajectories while considering navigation instructions and critical scenarios. On the LangAuto benchmark, our model reaches up to 18.9% higher performance on the Driving Score compared to SoTA methods.",
+ absZh:"自动驾驶有望奠定更高效的未来出行，这要求研究领域通过安全、可靠、透明的驾驶来建立信任。大语言模型（LLM）具备推理与自然语言理解能力，有潜力充当自车运动规划的通用决策者，与人类交互并在为人类驾驶员设计的环境中导航。这一方向虽有前景，但现有方法难以兼顾 3D 空间接地与 LLM 的推理语言能力。我们提出 BEVDriver：基于 LLM 的 CARLA 端到端闭环驾驶模型，以潜空间 BEV 特征作为感知输入。BEVDriver 用 BEV 编码器高效处理多视角图像与 3D LiDAR 点云；BEV 特征在统一潜空间中经 Q-Former 与自然语言指令对齐后传给 LLM，由其结合导航指令与关键场景预测并规划精确的未来轨迹。在 LangAuto 基准上，我们的模型驾驶分数较最先进方法最高提升 18.9%。"},
+
+{key:"25HST56S", gpu:"datacenter", g:"g2", name:"OpenDriveVLA", title:"OpenDriveVLA: Towards End-to-End Autonomous Driving with Large Vision Language Action Model",
+ authors:"Zhou et al. (6人)", year:"2025", venue:"arXiv 2503.23463", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2503.23463",
+ one:"分层视觉-语言对齐 + 3D 实例 token，开源 LLM 上的空间接地 VLA",
+ loop:["open"], loopNote:"nuScenes 开环轨迹规划 SOTA + 驾驶 QA",
+ data:["nuScenes"],
+ innov:[
+  '针对 VLM「2D 预训练缺 3D 归纳偏置」，用 query 式编码器产出<span class="hi">场景 / 智能体 / 地图三类环境 token</span>，分层投影进语言语义空间；',
+  '自回归解码中显式建模<span class="hb">智能体—环境—自车交互</span>，捕捉轨迹规划关键的细粒度空间依赖；',
+  '全开源 LLM 底座，nuScenes 开环规划与驾驶 QA 双 SOTA。'],
+ dg:[["环视多图","in"],["ResNet-101 + FPN query 编码","enc"],["场景/智能体/地图 token","aux"],["开源 LLM","llm"],["轨迹","out"]],
+ expr:{input:"环视多视角图像（共享 ResNet-101 + FPN 多尺度 2D 特征）+ 自车状态 + 语言指令",
+   backbone:"Query 式 3D 感知编码器 + 分层对齐 + 开源 LLM（多规模）",
+   hw:"4 × H100",
+   batch:"batch size 1",
+   time:"约 2 天"},
+ absEn:"We present OpenDriveVLA, a Vision Language Action model designed for end-to-end autonomous driving, built upon open-source large language models. OpenDriveVLA generates spatially grounded driving actions by leveraging multimodal inputs, including 2D and 3D instance-aware visual representations, ego vehicle states, and language commands. To bridge the modality gap between driving visual representations and language embeddings, we introduce a hierarchical vision language alignment process, projecting both 2D and 3D structured visual tokens into a unified semantic space. Furthermore, we incorporate structured agent environment ego interaction modeling into the autoregressive decoding process, enabling the model to capture fine-grained spatial dependencies and behavior-aware dynamics critical for reliable trajectory planning. Extensive experiments on the nuScenes dataset demonstrate that OpenDriveVLA achieves state-of-the-art results across open-loop trajectory planning and driving-related question answering tasks. Qualitative analyses further illustrate its capability to follow high-level driving commands and generate trajectories under challenging scenarios, highlighting its potential for next-generation end-to-end autonomous driving.",
+ absZh:"我们提出 OpenDriveVLA——面向端到端自动驾驶的视觉-语言-动作模型，构建在开源大语言模型之上。它以多模态输入（2D 与 3D 实例感知的视觉表征、自车状态、语言指令）生成空间接地的驾驶动作。为弥合驾驶视觉表征与语言嵌入之间的模态鸿沟，我们提出分层视觉-语言对齐，把 2D 与 3D 结构化视觉 token 投影进统一语义空间；并把结构化的「智能体—环境—自车」交互建模纳入自回归解码过程，使模型能捕捉对可靠轨迹规划至关重要的细粒度空间依赖与行为动态。在 nuScenes 上的大量实验表明，OpenDriveVLA 在开环轨迹规划与驾驶相关问答上均取得最先进结果；定性分析进一步展示其遵循高层驾驶指令、在挑战场景下生成轨迹的能力。"},
+
+{key:"99FI9HQC", gpu:"datacenter", fig:"../assets/e2e-ad/99FI9HQC.png", g:"g2", name:"SimLingo", title:"SimLingo: Vision-Only Closed-Loop Autonomous Driving with Language-Action Alignment",
+ authors:"Renz et al. (4人)", year:"2025", venue:"CVPR 2025", venueShort:"CVPR'25",
+ url:"http://arxiv.org/abs/2503.09594",
+ one:"纯视觉闭环 + 语言-动作对齐，CARLA Challenge 2024 冠军",
+ loop:["closed"], loopNote:"CARLA Bench2Drive 闭环 SOTA；CARLA Challenge 2024 冠军方案",
+ data:["CARLA","Bench2Drive"],
+ innov:[
+  '一个模型同扛三活：<span class="hi">闭环驾驶、视觉-语言理解、语言-动作对齐</span>——指出 VQA 只有对齐到动作空间才对驾驶有意义（否则「嘴上一套、开车一套」）；',
+  '纯相机、无 LiDAR：高分辨率图像切 tile 复用 448×448 预训练编码器，<span class="hb">InternVL-2 + LoRA</span> 同时产语言与动作；',
+  'Bench2Drive 闭环 SOTA 并夺得 CARLA Challenge 2024 冠军，兼顾大量语言任务不掉驾驶分。'],
+ dg:[["高分辨率前视（切 tile）","in"],["InternVL-2 视觉编码","enc"],["LLM（Qwen2-0.5B, LoRA）","llm"],["语言 ∥ 路点双输出","out"]],
+ expr:{input:"纯相机高分辨率图像（切 tile 编码）+ 导航条件 + 语言 prompt",
+   backbone:"InternVL-2（Qwen2-0.5B LLM 部分）+ LoRA 微调 + MLP 路点头",
+   hw:"8 × A100 80GB",
+   batch:"batch size 12",
+   time:"14 epochs（分桶采样后每 epoch 65 万样本；带平移/旋转数据增强）"},
+ absEn:"Integrating large language models (LLMs) into autonomous driving has attracted significant attention with the hope of improving generalization and explainability. However, existing methods often focus on either driving or vision-language understanding but achieving both high driving performance and extensive language understanding remains challenging. In addition, the dominant approach to tackle vision-language understanding is using visual question answering. However, for autonomous driving, this is only useful if it is aligned with the action space. Otherwise, the model's answers could be inconsistent with its behavior. Therefore, we propose a model that can handle three different tasks: (1) closed-loop driving, (2) vision-language understanding, and (3) language-action alignment. Our model SimLingo is based on a vision language model (VLM) and works using only camera, excluding expensive sensors like LiDAR. SimLingo obtains state-of-the-art performance on the widely used CARLA simulator on the Bench2Drive benchmark and is the winning entry at the CARLA challenge 2024. Additionally, we achieve strong results in a wide variety of language-related tasks while maintaining high driving performance.",
+ absZh:"把大语言模型引入自动驾驶备受关注，人们希望借此提升泛化与可解释性。然而现有方法往往顾此失彼：要么专注驾驶、要么专注视觉-语言理解，难以两者兼得。此外，处理视觉-语言理解的主流方式是视觉问答（VQA）；但对自动驾驶而言，只有当问答与动作空间对齐时才有用，否则模型的回答可能与其行为不一致。因此我们提出能同时处理三项任务的模型 SimLingo：（1）闭环驾驶；（2）视觉-语言理解；（3）语言-动作对齐。SimLingo 基于视觉-语言模型，仅使用相机、不依赖 LiDAR 等昂贵传感器。在广泛使用的 CARLA 模拟器 Bench2Drive 基准上取得最先进性能，并夺得 CARLA Challenge 2024 冠军；同时在大量语言相关任务上取得强结果并保持高驾驶性能。"},
+
+{key:"9E2WUYQY", gpu:"unknown", fig:"../assets/e2e-ad/9E2WUYQY.png", g:"g2", name:"AutoVLA", title:"AutoVLA: A Vision-Language-Action Model for End-to-End Autonomous Driving with Adaptive Reasoning and Reinforcement Fine-Tuning",
+ authors:"Zhou et al. (7人, UCLA)", year:"2025", venue:"NeurIPS 2025", venueShort:"NeurIPS'25",
+ url:"http://arxiv.org/abs/2506.13757",
+ one:"单一自回归模型统一推理与动作 token，GRPO 学会「该想才想」",
+ loop:["open","closed"], loopNote:"nuPlan / nuScenes / Waymo 开环 + CARLA 闭环；Waymo E2E 榜领先",
+ data:["nuPlan","nuScenes","WOMD/WOD-E2E","CARLA"],
+ innov:[
+  '连续轨迹<span class="hi">离散化为物理可行的动作 token</span>（动作码本）直接并入语言模型词表，一个自回归解码器统一推理与动作生成，避免文本轨迹的物理不可行问题；',
+  'SFT 赋予<span class="hb">双思维模式</span>：快思维（直接出轨迹）/ 慢思维（CoT 推理后出轨迹），大 VLM 教师蒸馏推理数据；',
+  '<span class="ha">GRPO 强化微调</span>削减简单场景的冗余推理，性能与效率同升，实现自适应推理。'],
+ dg:[["环视多帧相机 + 指令 + 自车状态","in"],["预训练 VLM（Qwen2.5-VL）","llm"],["CoT（按需）","aux"],["物理动作 token","out"],["解码为轨迹","out"]],
+ expr:{input:"多视角多帧相机流 + 系统提示 + 驾驶指令 + 自车状态",
+   backbone:"Qwen2.5-VL 系预训练 VLM + 扩展动作 token 词表（物理动作码本）",
+   hw:null, batch:null,
+   time:"SFT（双模式数据）+ GRPO 强化微调两阶段；具体时长未说明"},
+ absEn:"Recent advancements in Vision-Language-Action (VLA) models have shown promise for end-to-end autonomous driving by leveraging world knowledge and reasoning capabilities. However, current VLA models often struggle with physically infeasible action outputs, complex model structures, or unnecessarily long reasoning. In this paper, we propose AutoVLA, a novel VLA model that unifies reasoning and action generation within a single autoregressive generation model for end-to-end autonomous driving. AutoVLA performs semantic reasoning and trajectory planning directly from raw visual inputs and language instructions. We tokenize continuous trajectories into discrete, feasible actions, enabling direct integration into the language model. For training, we employ supervised fine-tuning to equip the model with dual thinking modes: fast thinking (trajectory-only) and slow thinking (enhanced with chain-of-thought reasoning). To further enhance planning performance and efficiency, we introduce a reinforcement fine-tuning method based on Group Relative Policy Optimization (GRPO), reducing unnecessary reasoning in straightforward scenarios. Extensive experiments across real-world and simulated datasets and benchmarks, including nuPlan, nuScenes, Waymo, and CARLA, demonstrate the competitive performance of AutoVLA in both open-loop and closed-loop settings. Qualitative results showcase the adaptive reasoning and accurate planning capabilities of AutoVLA in diverse scenarios.",
+ absZh:"视觉-语言-动作（VLA）模型的最新进展借助世界知识与推理能力，为端到端自动驾驶带来希望。但现有 VLA 模型常受困于物理不可行的动作输出、复杂的模型结构或不必要的冗长推理。本文提出 AutoVLA：在单一自回归生成模型中统一推理与动作生成的新型 VLA 模型，直接从原始视觉输入与语言指令进行语义推理和轨迹规划。我们把连续轨迹 token 化为离散的可行动作，使其可直接并入语言模型。训练上，用监督微调赋予模型双思维模式：快思维（仅轨迹）与慢思维（附链式思维推理）；再引入基于组相对策略优化（GRPO）的强化微调，减少简单场景中的不必要推理。在 nuPlan、nuScenes、Waymo、CARLA 等真实与仿真数据集/基准上的大量实验证明了 AutoVLA 在开环与闭环设置下的竞争力；定性结果展示了其在多样场景中的自适应推理与精确规划能力。"},
+
+{key:"AGVNEBXB", gpu:"industrial", fig:"../assets/e2e-ad/AGVNEBXB.png", g:"g2", name:"Alpamayo-R1", title:"Alpamayo-R1: Bridging Reasoning and Action Prediction for Generalizable Autonomous Driving in the Long Tail",
+ authors:"NVIDIA (43人)", year:"2025", venue:"arXiv 2511.00088", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2511.00088",
+ one:"因果链 CoC 数据 + Cosmos-Reason 底座 + 扩散动作头，直指长尾场景",
+ loop:["closed"], loopNote:"闭环仿真：偏出道路 −35%、近距遭遇 −25%；实车 99ms 延迟城市部署",
+ data:["CoC 数据集（自建）","NVIDIA 内部驾驶数据"],
+ innov:[
+  '<span class="hi">Chain of Causation（因果链）数据集</span>：自动标注 + 人在环产出与驾驶行为对齐、因果关联的推理轨迹，替代泛泛的场景描述；',
+  '模块化 VLA：物理 AI 预训练的 <span class="ht">Cosmos-Reason</span> VLM + <span class="hb">扩散/流匹配轨迹解码器</span>，实时生成动力学可行规划；',
+  '多阶段训练：SFT 引出推理 → <span class="ha">RL（大推理模型当裁判）</span>优化推理质量并强制推理-动作一致（+45% 推理质量 / +37% 一致性）；0.5B→7B 规模化一致增益，实车 99ms。'],
+ dg:[["多相机视频 + 遥测","in"],["Cosmos-Reason VLM","llm"],["因果推理链","aux"],["扩散轨迹解码器","out"],["动力学可行轨迹","out"]],
+ expr:{input:"前视为主的多路相机视频 + 遥测增强输入（telemetry-augmented video）",
+   backbone:"Cosmos-Reason（物理 AI VLM，3.7M VQA 后训练）+ 流匹配动作专家解码器；0.5B–7B 规模扫描",
+   hw:"论文未逐项公开（NVIDIA 内部集群；实车推理延迟 99 ms）",
+   batch:null,
+   time:"多阶段：VLA 预训练 → CoC SFT → RL 后训练（GRPO 系），总时长未公开"},
+ absEn:"End-to-end architectures trained via imitation learning have advanced autonomous driving by scaling model size and data, yet performance remains brittle in safety-critical long-tail scenarios where supervision is sparse and causal understanding is limited. To address this, we introduce Alpamayo-R1 (AR1), a vision-language-action model (VLA) that integrates Chain of Causation reasoning with trajectory planning to enhance decision-making in complex driving scenarios. Our approach features three key innovations: (1) the Chain of Causation (CoC) dataset, built through a hybrid auto-labeling and human-in-the-loop pipeline producing decision-grounded, causally linked reasoning traces aligned with driving behaviors; (2) a modular VLA architecture combining Cosmos-Reason, a Vision-Language Model pre-trained for Physical AI applications, with a diffusion-based trajectory decoder that generates dynamically feasible plans in real time; (3) a multi-stage training strategy using supervised fine-tuning to elicit reasoning and reinforcement learning (RL) to optimize reasoning quality via large reasoning model feedback and enforce reasoning-action consistency. Evaluation shows AR1 achieves up to a 12% improvement in planning accuracy on challenging cases compared to a trajectory-only baseline, with a 35% reduction in off-road rate and 25% reduction in close encounter rate in closed-loop simulation. RL post-training improves reasoning quality by 45% as measured by a large reasoning model critic and reasoning-action consistency by 37%. Model scaling from 0.5B to 7B parameters shows consistent improvements. On-vehicle road tests confirm real-time performance (99 ms latency) and successful urban deployment. By bridging interpretable reasoning with precise control, AR1 demonstrates a practical path towards Level 4 autonomous driving. We plan to release AR1 models and a subset of the CoC in a future update.",
+ absZh:"通过模仿学习训练的端到端架构靠扩大模型与数据规模推进了自动驾驶，但在监督稀疏、因果理解有限的安全关键长尾场景中依旧脆弱。为此我们提出 Alpamayo-R1（AR1）：把因果链（Chain of Causation）推理与轨迹规划相结合的视觉-语言-动作模型，以增强复杂场景中的决策能力。三大创新：（1）CoC 数据集——混合自动标注与人在环流水线，产出以决策为锚、因果关联、与驾驶行为对齐的推理轨迹；（2）模块化 VLA 架构——将面向物理 AI 预训练的视觉语言模型 Cosmos-Reason 与基于扩散的轨迹解码器结合，实时生成动力学可行的规划；（3）多阶段训练策略——监督微调引出推理能力，强化学习借助大推理模型反馈优化推理质量并强制推理-动作一致性。评测显示：挑战性案例规划精度最高提升 12%，闭环仿真中偏出道路率降低 35%、近距离遭遇率降低 25%；RL 后训练使推理质量（大模型裁判）提升 45%、推理-动作一致性提升 37%；0.5B 到 7B 的模型缩放带来一致增益。实车路测确认了实时性（99 ms 延迟）与城市部署能力。通过桥接可解释推理与精确控制，AR1 展示了迈向 L4 自动驾驶的现实路径。我们计划在后续开放 AR1 模型与部分 CoC 数据。"},
+
+{key:"5TCZ3YB6", gpu:"consumer", fig:"../assets/e2e-ad/5TCZ3YB6.png", g:"g2", name:"车载本地 LLM × MPC", title:"Enhancing Autonomous Driving Systems with On-Board Deployed Large Language Models",
+ authors:"Baumann et al. (7人, ETH)", year:"2025", venue:"arXiv 2504.11514", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2504.11514",
+ one:"RAG + LoRA + 量化让 LLM 在车端本地跑，动态调 MPC 参数",
+ loop:["closed"], loopNote:"实体机器人平台闭环（含撞墙自恢复实验），Jetson Orin 车载部署",
+ data:["F1TENTH 级机器人平台实测"],
+ innov:[
+  '混合架构分工明确：<span class="hi">MPC 保安全与约束底线</span>，LLM 负责知识驱动的决策评估（DecisionxLLM）与参数自适应（MPCxLLM）；',
+  '全部<span class="hb">本地部署</span>：RAG + LoRA 微调 + 量化（llama.cpp），Jetson Orin AGX 上摆脱云依赖，量化后吞吐最高 ~10×；',
+  '推理准确率 +10.45%、控制适应性 +52.2%，在缩尺机器人上验证撞墙检测-倒车自恢复等闭环行为。'],
+ dg:[["机器人状态 + 人类指令","in"],["DecisionxLLM 评估","llm"],["MPCxLLM 调参","llm"],["MPC 低层控制","out"],["车辆执行","out"]],
+ expr:{input:"机器人状态遥测（文本化）+ 自然语言人类指令（RAG 检索增强）",
+   backbone:"Phi-3-mini-3.8B / Qwen2.5-7B（LoRA + 量化，llama.cpp 引擎）+ 低层 MPC",
+   hw:"RTX 3090 与 Jetson Orin AGX 车载计算平台（部署端）",
+   batch:"不适用（LoRA 微调细节未展开）",
+   time:"论文未说明（重点为部署侧优化：FP16 → Q5_k_m 量化吞吐 ~9.7×）"},
+ absEn:"Neural Networks (NNs) trained through supervised learning struggle with managing edge-case scenarios common in real-world driving due to the intractability of exhaustive datasets covering all edge-cases, making knowledge-driven approaches, akin to how humans intuitively detect unexpected driving behavior, a suitable complement to data-driven methods. This work proposes a hybrid architecture combining low-level Model Predictive Controller (MPC) with locally deployed Large Language Models (LLMs) to enhance decision-making and Human Machine Interaction (HMI). The DecisionxLLM module evaluates robotic state information against natural language instructions to ensure adherence to desired driving behavior. The MPCxLLM module then adjusts MPC parameters based on LLM-generated insights, achieving control adaptability while preserving the safety and constraint guarantees of traditional MPC systems. Further, to enable efficient on-board deployment and to eliminate dependency on cloud connectivity, we shift processing to the on-board computing platform: We propose an approach that exploits Retrieval Augmented Generation (RAG), Low Rank Adaptation (LoRA) fine-tuning, and quantization. Experimental results demonstrate that these enhancements yield significant improvements in reasoning accuracy by up to 10.45%, control adaptability by as much as 52.2%, and up to 10.5x increase in computational efficiency (tokens/s), validating the proposed framework's practicality for real-time deployment even on down-scaled robotic platforms. This work bridges high-level decision-making with low-level control adaptability, offering a synergistic framework for knowledge-driven and adaptive Autonomous Driving Systems (ADS).",
+ absZh:"监督学习训练的神经网络难以覆盖现实驾驶中的边缘场景——穷尽所有边缘案例的数据集不可得，这使得类似人类直觉察觉异常驾驶行为的「知识驱动」方法成为数据驱动方法的合适补充。本文提出一种混合架构：低层模型预测控制（MPC）与本地部署的大语言模型结合，以增强决策与人机交互。DecisionxLLM 模块对照自然语言指令评估机器人状态信息，确保符合期望驾驶行为；MPCxLLM 模块再依据 LLM 洞察调整 MPC 参数，在保留传统 MPC 安全与约束保证的同时获得控制适应性。为实现高效车载部署、消除云连接依赖，我们采用检索增强生成（RAG）、LoRA 微调与量化。实验表明：推理准确率最高提升 10.45%，控制适应性最高提升 52.2%，计算效率（token/s）最高提升 10.5 倍，验证了该框架在缩尺机器人平台上实时部署的实用性。"},
+
+{key:"U5RKKDV2", gpu:"unknown", g:"g2", name:"Triplane Tokenization", title:"Efficient Multi-Camera Tokenization with Triplanes for End-to-End Driving",
+ authors:"Ivanovic et al. (6人, NVIDIA)", year:"2025", venue:"IEEE RA-L", venueShort:"RA-L'25",
+ url:"https://ieeexplore.ieee.org/document/11168172/",
+ one:"三平面几何 token 化：多相机 token −72%，策略推理提速 50%",
+ loop:["open","closed"], loopNote:"开环规划精度持平 + 神经仿真器闭环 offroad 率改善",
+ data:["大规模 AV 数据集","神经仿真器"],
+ innov:[
+  '把 3D 神经重建的<span class="hi">三平面（triplane）表征</span>用于传感 token 化：token 数与相机数量、分辨率解耦，并显式编码自车周围几何；',
+  '相比图像 patch token 化 <span class="hb">token 减少 72%、策略推理提速 50%</span>，为自回归 Transformer 策略上嵌入式硬件铺路；',
+  '开环规划精度不降，闭环仿真 offroad 率反而改善。'],
+ dg:[["N 路相机","in"],["三平面投影编码","enc"],["紧凑传感 token","aux"],["自回归策略 Transformer","llm"],["规划轨迹","out"]],
+ expr:{input:"环视多相机图像（token 化与相机数量/分辨率无关）",
+   backbone:"Triplane 编码器 + 自回归 Transformer 驾驶策略",
+   hw:"论文未获取到 PDF（RA-L 订阅），实验设置待补",
+   batch:null, time:null},
+ absEn:"Autoregressive Transformers are increasingly being deployed as end-to-end robot and autonomous vehicle (AV) policy architectures, owing to their scalability and potential to leverage internet-scale pretraining for generalization. Accordingly, tokenizing sensor data efficiently is paramount to ensuring the real-time feasibility of such architectures on embedded hardware. To this end, we present an efficient triplane-based multi-camera tokenization strategy that leverages recent advances in 3D neural reconstruction and rendering to produce sensor tokens that are agnostic to the number of input cameras and their resolution, while explicitly accounting for their geometry around an AV. Experiments on large-scale AV datasets and a state-of-the-art neural simulator demonstrate that our approach yields significant savings over current image patch-based tokenization strategies, producing up to 72% fewer tokens, resulting in up to 50% faster policy inference while achieving the same open-loop motion planning accuracy and improved offroad rates in closed-loop driving simulations.",
+ absZh:"自回归 Transformer 正越来越多地被用作端到端机器人与自动驾驶策略架构，因为其可扩展、且有望利用互联网级预训练获得泛化。因而高效地 token 化传感数据、确保此类架构在嵌入式硬件上的实时可行性至关重要。为此我们提出基于三平面（triplane）的多相机 token 化策略：借助 3D 神经重建与渲染的最新进展，产出与输入相机数量和分辨率无关、且显式考虑自车周围几何的传感 token。在大规模自动驾驶数据集与最先进神经仿真器上的实验表明：相比现行的图像 patch token 化，我们的方法 token 数最多减少 72%，策略推理最多提速 50%，同时保持相同的开环运动规划精度，并在闭环驾驶仿真中改善了偏出道路率。"},
+
+{key:"4EY6SEM7", gpu:"unknown", fig:"../assets/e2e-ad/4EY6SEM7.png", g:"g3", name:"RAD", title:"RAD: Training an End-to-End Driving Policy via Large-Scale 3DGS-based Reinforcement Learning",
+ authors:"Gao et al. (14人)", year:"2025", venue:"arXiv 2502.13144", venueShort:"arXiv'25",
+ one:"3DGS 数字孪生里大规模 RL 试错，碰撞率较纯模仿学习低 3×",
+ url:"http://arxiv.org/abs/2502.13144",
+ loop:["closed"], loopNote:"自建 3DGS 闭环基准（未见过的重建环境），碰撞率 −3×",
+ data:["2000h 真实驾驶示范","3DGS 重建环境"],
+ innov:[
+  '用 <span class="hi">3DGS 照片级数字孪生</span>复刻真实物理世界，让策略在闭环里大规模试错、探索分布外状态——正面回应模仿学习的因果混淆与开环鸿沟；',
+  '安全导向奖励设计（碰撞 / 越界等安全关键事件）+ <span class="hb">模仿学习作为 RL 正则项</span>，对齐人类驾驶习惯；',
+  '闭环指标全面超越 IL 基线，碰撞率降低 3 倍。'],
+ dg:[["环视图像流","in"],["BEV 编码","enc"],["动作概率分布（横/纵向）","out"],["3DGS 环境闭环反馈","rl"],["RL + IL 混合更新","rl"]],
+ dgNote:"感知预训练（地图/智能体头监督）→ 规划预训练 → 3DGS 闭环 RL 后训练。",
+ expr:{input:"环视多视角图像序列 → 场景 token（BEV 空间）+ 导航与自车状态",
+   backbone:"BEV 编码器 + 价值函数双头（横向/纵向动作分布）规划头",
+   hw:null, batch:null,
+   time:"三阶段（感知预训练 → 规划预训练 → RL 后训练）；2000 小时专家数据自动标注做感知预训练"},
+ absEn:"Existing end-to-end autonomous driving (AD) algorithms typically follow the Imitation Learning (IL) paradigm, which faces challenges such as causal confusion and an open-loop gap. In this work, we propose RAD, a 3DGS-based closed-loop Reinforcement Learning (RL) framework for end-to-end Autonomous Driving. By leveraging 3DGS techniques, we construct a photorealistic digital replica of the real physical world, enabling the AD policy to extensively explore the state space and learn to handle out-of-distribution scenarios through large-scale trial and error. To enhance safety, we design specialized rewards to guide the policy in effectively responding to safety-critical events and understanding real-world causal relationships. To better align with human driving behavior, we incorporate IL into RL training as a regularization term. We introduce a closed-loop evaluation benchmark consisting of diverse, previously unseen 3DGS environments. Compared to IL-based methods, RAD achieves stronger performance in most closed-loop metrics, particularly exhibiting a 3x lower collision rate. Abundant closed-loop results are presented in the supplementary material. Code is available at https://github.com/hustvl/RAD for facilitating future research.",
+ absZh:"现有端到端自动驾驶算法通常遵循模仿学习范式，面临因果混淆与开环鸿沟等挑战。本文提出 RAD——基于 3DGS 的闭环强化学习端到端驾驶框架。借助 3DGS 技术构建真实物理世界的照片级数字孪生，使驾驶策略能够大规模探索状态空间、通过反复试错学会处理分布外场景。为提升安全性，我们设计专门奖励引导策略有效响应安全关键事件、理解真实世界因果关系；为对齐人类驾驶行为，将模仿学习作为正则项纳入 RL 训练。我们还构建了由多样、未见过的 3DGS 环境组成的闭环评测基准。结果显示 RAD 在多数闭环指标上强于基于模仿学习的方法，碰撞率尤其降低了 3 倍。丰富闭环结果见补充材料，代码已开源。"},
+
+{key:"EY7JWA2J", gpu:"unknown", fig:"../assets/e2e-ad/EY7JWA2J.png", g:"g3", name:"IRL-VLA", title:"IRL-VLA: Training a Vision-Language-Action Policy via Reward World Model",
+ authors:"Jiang et al. (14人)", year:"2025", venue:"arXiv 2508.06571", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2508.06571",
+ one:"逆强化学习造轻量「奖励世界模型」，绕开传感器级仿真做闭环 RL",
+ loop:["navsim"], loopNote:"NAVSIM v2 端到端 SOTA；CVPR 2025 自动驾驶挑战赛亚军",
+ data:["NAVSIM v2"],
+ innov:[
+  '看破闭环训练的真瓶颈：高保真传感器仿真又贵又有 domain gap——改用<span class="hi">逆强化学习学一个奖励世界模型（RWM）</span>，轻量地提供闭环奖励信号；',
+  '三阶段范式：IL 预训练 VLA → IRL 构建 RWM → <span class="hb">PPO 在 RWM 指引下强化</span>，平衡安全 / 舒适 / 通行效率；',
+  'NAVSIM v2 端到端基准 SOTA，CVPR 2025 Autonomous Grand Challenge 亚军。'],
+ dg:[["环视相机 + 自车状态","in"],["BEV 视觉编码 + 适配器","enc"],["VLA 策略（扩散式规划头）","llm"],["奖励世界模型（IRL）","rl"],["PPO 强化","rl"]],
+ expr:{input:"多视角相机图像（256×704）+ 自车状态（速度/加速度）",
+   backbone:"V2-99 视觉骨干 + BEV 编码 + 扩散式规划 VLA",
+   hw:null,
+   batch:"IL 阶段 batch 32（AdamW，lr 1×10⁻⁴）",
+   time:"IL 预训练 100 epochs；RWM 训练与 PPO 阶段时长未说明"},
+ absEn:"Vision-Language-Action (VLA) models have demonstrated potential in autonomous driving. However, two critical challenges hinder their development: (1) Existing VLA architectures are typically based on imitation learning in open-loop setup which tends to capture the recorded behaviors in the dataset, leading to suboptimal and constrained performance, (2) Close-loop training relies heavily on high-fidelity sensor simulation, where domain gaps and computational inefficiencies pose significant barriers. In this paper, we introduce IRL-VLA, a novel close-loop Reinforcement Learning via \\textbf{I}nverse \\textbf{R}einforcement \\textbf{L}earning reward world model with a self-built VLA approach. Our framework proceeds in a three-stage paradigm: In the first stage, we propose a VLA architecture and pretrain the VLA policy via imitation learning. In the second stage, we construct a lightweight reward world model via inverse reinforcement learning to enable efficient close-loop reward computation. To further enhance planning performance, finally, we design specialized reward world model guidence reinforcement learning via PPO(Proximal Policy Optimization) to effectively balance the safety incidents, comfortable driving, and traffic efficiency. Our approach achieves state-of-the-art performance in NAVSIM v2 end-to-end driving benchmark, 1st runner up in CVPR2025 Autonomous Grand Challenge. We hope that our framework will accelerate VLA research in close-loop autonomous driving.",
+ absZh:"视觉-语言-动作（VLA）模型在自动驾驶中展现出潜力，但两大关键挑战制约其发展：（1）现有 VLA 架构通常基于开环设置的模仿学习，倾向于复刻数据集中记录的行为，性能次优且受限；（2）闭环训练严重依赖高保真传感器仿真，domain gap 与计算低效构成显著障碍。本文提出 IRL-VLA：一种新颖的闭环强化学习框架，通过逆强化学习（IRL）构建奖励世界模型（Reward World Model），配合自建 VLA 模型。框架分三阶段：第一阶段提出 VLA 架构并以模仿学习预训练策略；第二阶段通过逆强化学习构建轻量奖励世界模型，实现高效的闭环奖励计算；第三阶段设计奖励世界模型引导的 PPO 强化学习，有效平衡安全事件、舒适驾驶与交通效率。方法在 NAVSIM v2 端到端驾驶基准上取得最先进性能，获 CVPR 2025 自动驾驶大挑战赛亚军。我们希望该框架能加速闭环自动驾驶中的 VLA 研究。"},
+
+{key:"SHBNNZJD", gpu:"unknown", fig:"../assets/e2e-ad/SHBNNZJD.png", g:"g3", name:"AdaThinkDrive", title:"AdaThinkDrive: Adaptive Thinking via Reinforcement Learning for Autonomous Driving",
+ authors:"Luo et al. (13人)", year:"2025", venue:"arXiv 2509.13769", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2509.13769",
+ one:"快慢思维 + 自适应思考奖励：该推理才推理，PDMS 90.3",
+ loop:["navsim"], loopNote:"NAVSIM PDMS 90.3（超纯视觉最优基线 +1.7），推理时间 −14%",
+ data:["NAVSIM","大规模驾驶 QA + 轨迹语料"],
+ innov:[
+  '给 VLA 引入<span class="hi">快/慢双模式</span>（受 fast & slow thinking 启发）：简单场景直接出轨迹，复杂场景才走 CoT；',
+  '<span class="hb">Adaptive Think Reward + GRPO</span>：对比不同推理模式下的轨迹质量来奖励「选择性思考」，避免 always-think 的算力浪费与 never-think 的性能损失；',
+  '较 always-think 基线 PDMS +1.4 且推理时间 −14%，证明自适应推理两头兼得。'],
+ dg:[["前视图 + 导航指令 + 自车/历史状态","in"],["VLM（双模式）","llm"],["Think / No-Think 自主切换","aux"],["轨迹","out"],["GRPO + 自适应思考奖励","rl"]],
+ expr:{input:"前视相机图像 + 高层导航命令 + 自车状态 + 历史轨迹",
+   backbone:"预训练 VLM + 双模式 SFT（Think / Non-Think 双版本数据）",
+   hw:null, batch:null,
+   time:"三阶段：大规模 QA+轨迹预训练 → 双模式 SFT → GRPO 强化；时长未说明"},
+ absEn:"While reasoning technology like Chain of Thought (CoT) has been widely adopted in Vision Language Action (VLA) models, it demonstrates promising capabilities in end to end autonomous driving. However, recent efforts to integrate CoT reasoning often fall short in simple scenarios, introducing unnecessary computational overhead without improving decision quality. To address this, we propose AdaThinkDrive, a novel VLA framework with a dual mode reasoning mechanism inspired by fast and slow thinking. First, our framework is pretrained on large scale autonomous driving (AD) scenarios using both question answering (QA) and trajectory datasets to acquire world knowledge and driving commonsense. During supervised fine tuning (SFT), we introduce a two mode dataset, fast answering (w/o CoT) and slow thinking (with CoT), enabling the model to distinguish between scenarios that require reasoning. Furthermore, an Adaptive Think Reward strategy is proposed in conjunction with the Group Relative Policy Optimization (GRPO), which rewards the model for selectively applying CoT by comparing trajectory quality across different reasoning modes. Extensive experiments on the Navsim benchmark show that AdaThinkDrive achieves a PDMS of 90.3, surpassing the best vision only baseline by 1.7 points. Moreover, ablations show that AdaThinkDrive surpasses both the never Think and always Think baselines, improving PDMS by 2.0 and 1.4, respectively. It also reduces inference time by 14% compared to the always Think baseline, demonstrating its ability to balance accuracy and efficiency through adaptive reasoning.",
+ absZh:"链式思维（CoT）等推理技术已在视觉-语言-动作（VLA）模型中广泛采用，并在端到端自动驾驶中展现潜力。然而近期把 CoT 引入驾驶的努力在简单场景中往往失灵：徒增计算开销却不改善决策质量。为此我们提出 AdaThinkDrive——带有「快/慢思维」双模式推理机制的新型 VLA 框架。框架先在大规模驾驶场景上用问答与轨迹数据预训练以获取世界知识与驾驶常识；在监督微调阶段引入双模式数据集（无 CoT 的快答与带 CoT 的慢想），让模型学会区分是否需要推理；进一步提出自适应思考奖励（Adaptive Think Reward）策略，配合组相对策略优化（GRPO），通过比较不同推理模式下的轨迹质量来奖励选择性使用 CoT。在 Navsim 基准上，AdaThinkDrive 取得 90.3 PDMS，超过最优纯视觉基线 1.7 分；消融显示其同时超越「从不思考」与「总是思考」基线（分别 +2.0 / +1.4 PDMS），且比 always-think 基线减少 14% 推理时间，证明其通过自适应推理兼顾精度与效率。"},
+
+{key:"D75ZNRE9", gpu:"unknown", fig:"../assets/e2e-ad/D75ZNRE9.png", g:"g3", name:"AutoDrive-R²", title:"AutoDrive-R²: Incentivizing Reasoning and Self-Reflection Capacity for VLA Model in Autonomous Driving",
+ authors:"Yuan et al. (10人)", year:"2025", venue:"arXiv 2509.01944", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2509.01944",
+ one:"四步 CoT + 自我反思冷启动，物理奖励 GRPO 保轨迹合理性",
+ loop:["open"], loopNote:"nuScenes + Waymo 开环轨迹评测（精度与安全指标）",
+ data:["nuScenesR²-6K（自建 CoT）","nuScenes","Waymo"],
+ innov:[
+  '自建 <span class="hi">nuScenesR²-6K</span> CoT 数据集：四步逻辑链 + 自我反思校验，为「输入信息 → 输出轨迹」搭认知桥，解决 VLA 决策过程不透明；',
+  '<span class="hb">物理接地的奖励框架</span>：空间对齐 + 车辆动力学 + 时间平滑三重标准下跑 GRPO，确保轨迹物理合理；',
+  'Qwen2.5-VL-3B/7B 上验证，nuScenes 与 Waymo 双数据集 SOTA 且泛化稳健。'],
+ dg:[["前视图 + 提示","in"],["Qwen2.5-VL","llm"],["四步 CoT + 自反思","aux"],["3s 轨迹（0.5s 间隔）","out"],["物理奖励 GRPO","rl"]],
+ expr:{input:"前视相机图像 + 文本提示（输出 3 秒轨迹、0.5 秒间隔）",
+   backbone:"Qwen2.5-VL-3B 与 7B 双版本",
+   hw:"论文未说明 GPU 型号（RL 用 TRL 框架）",
+   batch:"累积总 batch 8（lr 5×10⁻⁷；GRPO 最大补全长度 4096 token）",
+   time:"RL 阶段 750 迭代 / 1 epoch ≈ 18 小时（SFT 冷启动时长未说明）"},
+ absEn:"Vision-Language-Action (VLA) models in autonomous driving systems have recently demonstrated transformative potential by integrating multimodal perception with decision-making capabilities. However, the interpretability and coherence of the decision process and the plausibility of action sequences remain largely underexplored. To address these issues, we propose AutoDrive-R$^2$, a novel VLA framework that enhances both reasoning and self-reflection capabilities of autonomous driving systems through chain-of-thought (CoT) processing and reinforcement learning (RL). Specifically, we first propose an innovative CoT dataset named nuScenesR$^2$-6K for supervised fine-tuning, which effectively builds cognitive bridges between input information and output trajectories through a four-step logical chain with self-reflection for validation. Moreover, to maximize both reasoning and self-reflection during the RL stage, we further employ the Group Relative Policy Optimization (GRPO) algorithm within a physics-grounded reward framework that incorporates spatial alignment, vehicle dynamic, and temporal smoothness criteria to ensure reliable and realistic trajectory planning. Extensive evaluation results across both nuScenes and Waymo datasets demonstrates the state-of-the-art performance and robust generalization capacity of our proposed method.",
+ absZh:"自动驾驶中的视觉-语言-动作（VLA）模型通过整合多模态感知与决策能力，展现出变革潜力；但其决策过程的可解释性、连贯性与动作序列的合理性仍缺乏深入研究。本文提出 AutoDrive-R²：通过链式思维（CoT）处理与强化学习（RL）同时增强自动驾驶系统推理与自我反思能力的新型 VLA 框架。我们首先构建面向监督微调的创新 CoT 数据集 nuScenesR²-6K，通过含自我反思校验的四步逻辑链，在输入信息与输出轨迹之间建立认知桥梁。其次，为在 RL 阶段最大化推理与自我反思，我们在物理接地的奖励框架内使用组相对策略优化（GRPO）算法，纳入空间对齐、车辆动力学与时间平滑准则，确保轨迹规划可靠且贴近现实。在 nuScenes 与 Waymo 数据集上的大量评测表明了方法的最先进性能与稳健泛化能力。"},
+
+{key:"KI4S3YZG", gpu:"unknown", fig:"../assets/e2e-ad/KI4S3YZG.png", g:"g3", name:"Poutine", title:"Poutine: Vision-Language-Trajectory Pre-Training and Reinforcement Learning Post-Training Enable Robust End-to-End Autonomous Driving",
+ authors:"Rowe et al. (5人)", year:"2025", venue:"arXiv 2506.11234", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2506.11234",
+ one:"现成 3B VLM + VLT 自监督预训练 + 少量偏好 GRPO = Waymo 挑战赛冠军",
+ loop:["open"], loopNote:"Waymo 视觉 E2E 挑战赛长尾测试集 RFS 7.99，大幅领先夺冠（2025）",
+ data:["CoVLA（83h）","WOD-E2E（11h 长尾）"],
+ innov:[
+  '极简配方证伪「必须加组件」：<span class="hi">现成 3B VLM 零架构改动</span>，视觉-语言-轨迹（VLT）token 自监督 next-token 预训练即学到强驾驶底座；',
+  '第二阶段仅用<span class="hb">少量人类偏好标注跑 GRPO</span>，整条轨迹级（非 token 级）监督对齐长尾偏好；',
+  '2025 Waymo 视觉 E2E 挑战赛以显著优势夺冠（RFS 7.99），表明「可扩展预训练 + 轻量 RL」即可稳健泛化。'],
+ dg:[["历史多视角图像 + 自车轨迹 + 语言","in"],["3B VLM（VLT next-token 预训练）","llm"],["CoT（可选）","aux"],["文本化轨迹","out"],["GRPO 偏好后训练","rl"]],
+ expr:{input:"历史多视角 RGB 图像 + 过去自车轨迹 + 语言标注（轨迹以文本表示）",
+   backbone:"现成 3B 参数 VLM（无任何附加组件）",
+   hw:null, batch:null,
+   time:"两阶段：VLT 语料（CoVLA 83h 日本常规驾驶 + WOD-E2E 11h 长尾）自监督预训练 → 少量偏好样本 GRPO；时长未说明"},
+ absEn:"Maintaining good driving behavior in out-of-distribution scenarios remains a critical challenge in autonomous driving. A promising direction is to leverage the generalist knowledge and reasoning capabilities of large-language models by treating unusual driving scenarios as a logical reasoning task. In this work, we present Poutine, a method that uses an off-the-shelf 3B-parameter vision-language model (VLM) - without any additional components - to achieve robust end-to-end autonomous driving via a simple and scalable training recipe. To learn strong base driving capabilities, we first train Poutine-Base using self-supervised next-token prediction over vision, language, and trajectory (VLT) tokens, leveraging both nominal and long-tail driving data. In the second stage, we fine-tune Poutine-Base using Group Relative Policy Optimization (GRPO) with a small set of human preference-labeled examples. We evaluated our approach on the Waymo end-to-end driving benchmark curated for long-tail scenarios. The final Poutine model achieves an RFS of 7.99 on the test set, placing 1st in the 2025 Waymo Vision-Based End-to-End Driving Challenge by a significant margin. Our results suggest that handcrafted tokenizers or custom architectural components added to base VLMs in prior work are not necessary to achieve strong driving performance. Instead, this work highlights the potential of scalable VLT pretraining combined with lightweight RL fine-tuning to enable robust and generalizable autonomous driving.",
+ absZh:"在分布外场景中保持良好驾驶行为是自动驾驶的关键挑战。一个有前景的方向是借助大语言模型的通才知识与推理能力，把异常驾驶场景当作逻辑推理任务处理。本文提出 Poutine：仅用一个现成 3B 参数视觉-语言模型（不加任何额外组件），通过简单可扩展的训练配方实现稳健的端到端自动驾驶。为学习强驾驶底座，我们先用视觉、语言与轨迹（VLT）token 的自监督 next-token 预测训练 Poutine-Base，语料包括 83 小时 CoVLA 常规驾驶与 11 小时 WOD-E2E 长尾驾驶；第二阶段用少量人类偏好标注样本对 Poutine-Base 做组相对策略优化（GRPO）微调。最终模型在面向长尾的 Waymo 端到端驾驶基准测试集上取得 7.99 RFS，以显著优势获得 2025 Waymo 视觉端到端驾驶挑战赛第一名。结果表明：以往工作中手工设计的 tokenizer 或定制架构组件并非取得强驾驶性能的必要条件——可扩展的 VLT 预训练加轻量 RL 微调即可实现稳健、泛化的自动驾驶。"},
+
+{key:"FSZQLTCQ", gpu:"datacenter", fig:"../assets/e2e-ad/FSZQLTCQ.png", g:"g3", name:"RAP", title:"RAP: 3D Rasterization Augmented End-to-End Planning",
+ authors:"Feng et al. (8人)", year:"2025", venue:"arXiv 2510.04333", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2510.04333",
+ one:"「训练不需要照片级真实」：轻量光栅化造恢复数据，四大榜第一",
+ loop:["navsim","closed"], loopNote:"NAVSIM v1/v2、Waymo 视觉 E2E、Bench2Drive 四榜第一",
+ data:["OpenScene / nuPlan（1200h）","NAVSIM","WOD E2E","Bench2Drive"],
+ innov:[
+  '核心论断：端到端规划靠的是<span class="hi">几何与动力学的语义保真</span>，不是纹理光照——用带标注图元的轻量 3D 光栅化替代昂贵的神经渲染 / 游戏引擎；',
+  '规模化合成<span class="hb">反事实恢复机动与跨智能体视角</span>，正面补上模仿学习「无恢复数据」的缺口；',
+  '<span class="ha">Raster-to-Real 特征空间对齐</span>桥接 sim-to-real gap；50% 合成数据即可超过 100% 真实数据训练，四大基准全部第一。'],
+ dg:[["1200h 日志光栅化","aux"],["反事实恢复 / 跨视角合成","aux"],["多视角输入（2s 历史）","in"],["端到端规划器","enc"],["R2R 特征对齐","aux"],["5s 轨迹 + PDMS 打分头","out"]],
+ expr:{input:"多视角相机 + 2 秒历史 → 5 秒未来轨迹（2Hz）；光栅化图元视图与真实图像混合训练",
+   backbone:"端到端规划器 + 轨迹回归头 + PDMS 打分头（视觉编码器可解冻微调）",
+   hw:"4 × H100",
+   batch:"总 batch 128（NAVSIM）/ 64（WOD & Bench2Drive）；微调阶段 16",
+   time:"约 80 小时（预训练 20 epochs + 微调 20 epochs，lr 1e-4 → 1e-5）"},
+ absEn:"Imitation learning for end-to-end driving trains policies only on expert demonstrations. Once deployed in a closed loop, such policies lack recovery data: small mistakes cannot be corrected and quickly compound into failures. A promising direction is to generate alternative viewpoints and trajectories beyond the logged path. Prior work explores photorealistic digital twins via neural rendering or game engines, but these methods are prohibitively slow and costly, and thus mainly used for evaluation. In this work, we argue that photorealism is unnecessary for training end-to-end planners. What matters is semantic fidelity and scalability: driving depends on geometry and dynamics, not textures or lighting. Motivated by this, we propose 3D Rasterization, which replaces costly rendering with lightweight rasterization of annotated primitives, enabling augmentations such as counterfactual recovery maneuvers and cross-agent view synthesis. To transfer these synthetic views effectively to real-world deployment, we introduce a Raster-to-Real feature-space alignment that bridges the sim-to-real gap. Together, these components form Rasterization Augmented Planning (RAP), a scalable data augmentation pipeline for planning. RAP achieves state-of-the-art closed-loop robustness and long-tail generalization, ranking first on four major benchmarks: NAVSIM v1/v2, Waymo Open Dataset Vision-based E2E Driving, and Bench2Drive. Our results show that lightweight rasterization with feature alignment suffices to scale E2E training, offering a practical alternative to photorealistic rendering. Project page: https://alan-lanfeng.github.io/RAP/.",
+ absZh:"端到端驾驶的模仿学习只在专家示范上训练策略，一旦部署到闭环，这些策略缺乏「恢复数据」：小错误无法纠正、迅速累积成失败。一个有前景的方向是生成记录路径之外的替代视角与轨迹。已有工作探索了神经渲染或游戏引擎的照片级数字孪生，但过慢过贵，主要只用于评测。本文提出：训练端到端规划器并不需要照片级真实感，关键是语义保真与可扩展性——驾驶取决于几何与动力学，而非纹理与光照。据此我们提出 3D 光栅化，用带标注图元的轻量光栅化替代昂贵渲染，实现反事实恢复机动、跨智能体视角合成等增强；并引入 Raster-to-Real 特征空间对齐来弥合 sim-to-real 差距。二者共同构成 RAP——可扩展的规划数据增强流水线。RAP 取得最先进的闭环鲁棒性与长尾泛化，在 NAVSIM v1/v2、Waymo 视觉端到端驾驶、Bench2Drive 四大基准上均排名第一。结果表明轻量光栅化加特征对齐足以支撑端到端训练的规模化，为照片级渲染提供了务实替代。"},
+
+//__G4a__
+{key:"PSQLC2NZ", gpu:"unknown", g:"g4", name:"OffEMMA", title:"A Vision–Language–Action Model with Visual Prompt for Off-Road Trajectory Prediction",
+ authors:"Zhang et al. (9人)", year:"2026", venue:"ICAUS 2025", venueShort:"ICAUS'25",
+ url:"",
+ one:"分割掩码当视觉提示 + CoT 自洽推理，补 VLA 的越野空间感知",
+ loop:["open"], loopNote:"RELLIS-3D 开环轨迹：L2 −13.3%，失败率 16.52% → 6.56%",
+ data:["RELLIS-3D"],
+ innov:[
+  '针对 VLA 在越野场景「空间感知不足、推理不稳」两大缺陷：<span class="hi">语义分割掩码作视觉提示</span>显式标注输入图像，增强预训练 VLM 对复杂地形的空间理解；',
+  '<span class="hb">链式思维 + 自洽性（CoT-SC）</span>多路径推理投票，抑制离群推理对规划的干扰；',
+  'RELLIS-3D 上较 Qwen 骨干基线 L2 误差降 13.3%、失败率从 16.52% 降至 6.56%。'],
+ dg:[["越野图像","in"],["分割掩码视觉提示","aux"],["VLM（Qwen 系）","llm"],["CoT-SC 多路径推理","aux"],["轨迹","out"]],
+ expr:{input:"越野场景图像 + 语义分割掩码视觉提示（显式标注可行驶区域）",
+   backbone:"Qwen 系视觉-语言骨干 + 视觉提示模块 + CoT-SC 推理策略",
+   hw:"未获取到 PDF（会议论文集），实验设置待补",
+   batch:null, time:null},
+ absEn:"Efficient trajectory planning in off-road terrains presents a formidable challenge for autonomous vehicles, often necessitating complex multi-step pipelines. However, traditional approaches exhibit limited adaptability in dynamic environments. To address these limitations, this paper proposes OffEMMA, a novel end-to-end multimodal framework designed to overcome the deficiencies of insufficient spatial perception and unstable reasoning in visual-language-action (VLA) models for off-road autonomous driving scenarios. The framework explicitly annotates input images through the design of a visual prompt block and introduces a chain-of-thought with self-consistency (COT-SC) reasoning strategy to enhance the accuracy and robustness of trajectory planning. The visual prompt block utilizes semantic segmentation masks as visual prompts, enhancing the spatial understanding ability of pre-trained visual-language models for complex terrains. The COT-SC strategy effectively mitigates the error impact of outliers on planning performance through a multi-path reasoning mechanism. Experimental results on the RELLIS-3D off-road dataset demonstrate that OffEMMA significantly outperforms existing methods, reducing the average L2 error of the Qwen backbone model by 13.3% and decreasing the failure rate from 16.52% to 6.56%.",
+ absZh:"越野地形中的高效轨迹规划对自动驾驶车辆是严峻挑战，往往需要复杂的多步流水线，而传统方法在动态环境中的适应性有限。为此本文提出 OffEMMA——新颖的端到端多模态框架，旨在克服视觉-语言-动作（VLA）模型在越野自动驾驶场景中空间感知不足与推理不稳定的缺陷。框架通过视觉提示模块显式标注输入图像，并引入带自洽性的链式思维（CoT-SC）推理策略以提升轨迹规划的准确性与鲁棒性：视觉提示模块以语义分割掩码作为视觉提示，增强预训练视觉-语言模型对复杂地形的空间理解能力；CoT-SC 策略通过多路径推理机制有效缓解离群值对规划性能的误差影响。在 RELLIS-3D 越野数据集上的实验表明，OffEMMA 显著优于现有方法：将 Qwen 骨干模型的平均 L2 误差降低 13.3%，失败率从 16.52% 降至 6.56%。"},
+
+{key:"UF84MBEY", gpu:"none", fig:"../assets/e2e-ad/UF84MBEY.png", g:"g4", name:"越野 VLM 建图", title:"Visual Prompt Based Reasoning for Offroad Mapping using Multimodal LLMs",
+ authors:"Nasser et al. (6人)", year:"2026", venue:"arXiv 2604.04564", venueShort:"arXiv'26",
+ url:"http://arxiv.org/abs/2604.04564",
+ one:"SAM2 编号掩码 + VLM 推理可行驶区域，零样本替代整套地形模型",
+ loop:["closed"], loopNote:"Isaac Sim 越野环境全栈导航（含实时闭环仿真测试）",
+ data:["高分辨率越野分割数据集","Isaac Sim 自建环境"],
+ innov:[
+  '零样本流水线取代「地形分类 + 高度估计 + 打滑/坡度量化」多模型套件：<span class="hi">SAM2 分割 + 数字编号掩码拼图</span>喂给 VLM，直接问「哪些编号可行驶」；',
+  '原图 + 标注图<span class="hb">双图输入</span>的视觉提示设计，让 VLM 的常识推理落到具体区域；',
+  '零训练即超越 SOTA 可训练模型的高分辨率分割表现，接入 Stanley + PID 后在 Isaac Sim 实现全栈导航。'],
+ dg:[["越野图像","in"],["SAM2 分割 + 编号标注","enc"],["VLM 推理可行驶编号","llm"],["二值可行驶掩码","aux"],["规划 + Stanley/PID 控制","out"]],
+ expr:{input:"原始越野图像 + SAM2 编号掩码拼贴图（双图并送）+ 类别文本提示",
+   backbone:"SAM2（分割）+ 多款 VLM 对比（GPT-4o / Aquila / Ivy-VL / MiniCPM），零样本无训练",
+   hw:"评测端：RTX 4070 16GB（纯分割）/ RTX 3090 24GB（实时仿真联跑），i9-9900K",
+   batch:"不适用（零样本）",
+   time:"不适用（零样本）"},
+ absEn:"Traditional approaches to off-road autonomy rely on separate models for terrain classification, height estimation, and quantifying slip or slope conditions. Utilizing several models requires training each component separately, having task specific datasets, and fine-tuning. In this work, we present a zero-shot approach leveraging SAM2 for environment segmentation and a vision-language model (VLM) to reason about drivable areas. Our approach involves passing to the VLM both the original image and the segmented image annotated with numeric labels for each mask. The VLM is then prompted to identify which regions, represented by these numeric labels, are drivable. Combined with planning and control modules, this unified framework eliminates the need for explicit terrain-specific models and relies instead on the inherent reasoning capabilities of the VLM. Our approach surpasses state-of-the-art trainable models on high resolution segmentation datasets and enables full stack navigation in our Isaac Sim offroad environment.",
+ absZh:"传统越野自主方案依赖彼此独立的地形分类、高度估计与打滑/坡度量化模型：多模型意味着各自训练、任务专属数据集与微调。本文提出零样本方案：用 SAM2 做环境分割、用视觉-语言模型（VLM）推理可行驶区域。我们把原始图像与带数字编号掩码标注的分割图一起输入 VLM，提示其指出哪些编号区域可行驶。结合规划与控制模块，该统一框架无需显式的地形专用模型，转而依靠 VLM 固有的推理能力。方法在高分辨率分割数据集上超越了最先进的可训练模型，并在我们的 Isaac Sim 越野环境中实现了全栈导航。"},
+
+{key:"5TM3P9CI", gpu:"consumer", fig:"../assets/e2e-ad/5TM3P9CI.png", g:"g4", name:"ROD", title:"ROD: RGB-Only Fast and Efficient Off-Road Freespace Detection",
+ authors:"Sun et al. (7人)", year:"2025", venue:"arXiv 2508.08697", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2508.08697",
+ one:"纯 RGB 甩掉 LiDAR 法线图：ViT + 轻量解码器，50 FPS 双榜 SOTA",
+ loop:[], loopNote:"感知任务（分割基准），无开/闭环规划评测",
+ data:["ORFD","RELLIS-3D"],
+ innov:[
+  '指出多模态（RGB + LiDAR 法线图）方案的<span class="hi">实时性死穴</span>——法线图计算拖慢推理，高速越野导航等不起；',
+  '<span class="hb">预训练 ViT</span> 提取 RGB 富特征 + 轻量高效解码器（12 层特征融合），精度与速度双赢；',
+  'ORFD 与 RELLIS-3D 双数据集新 SOTA，推理达 50 FPS。'],
+ dg:[["单目 RGB","in"],["预训练 ViT 编码","enc"],["12 层特征融合","aux"],["轻量解码器","aux"],["可行驶区域掩码","out"]],
+ expr:{input:"单目 RGB 图像（无 LiDAR、无法线图）",
+   backbone:"预训练 ViT（T/S/B/L/H 多规格，C=192–1280）+ 自设计轻量解码器",
+   hw:"单卡 NVIDIA RTX A6000",
+   batch:"batch size 8",
+   time:"AdamW，lr 1e-3，poly 衰减（power 0.9）；epochs 未明说"},
+ absEn:"Off-road freespace detection is more challenging than on-road scenarios because of the blurred boundaries of traversable areas. Previous state-of-the-art (SOTA) methods employ multi-modal fusion of RGB images and LiDAR data. However, due to the significant increase in inference time when calculating surface normal maps from LiDAR data, multi-modal methods are not suitable for real-time applications, particularly in real-world scenarios where higher FPS is required compared to slow navigation. This paper presents a novel RGB-only approach for off-road freespace detection, named ROD, eliminating the reliance on LiDAR data and its computational demands. Specifically, we utilize a pre-trained Vision Transformer (ViT) to extract rich features from RGB images. Additionally, we design a lightweight yet efficient decoder, which together improve both precision and inference speed. ROD establishes a new SOTA on ORFD and RELLIS-3D datasets, as well as an inference speed of 50 FPS, significantly outperforming prior models.",
+ absZh:"越野可行驶区域检测比公路场景更具挑战，因为可通行区域边界模糊。以往最先进方法采用 RGB 图像与 LiDAR 数据的多模态融合；然而由 LiDAR 数据计算表面法线图会显著增加推理时间，使多模态方法难以满足实时应用，尤其是现实中比慢速导航要求更高帧率的场景。本文提出纯 RGB 的越野可行驶区域检测方法 ROD，消除对 LiDAR 及其计算开销的依赖：用预训练视觉 Transformer（ViT）提取 RGB 图像的丰富特征，并设计轻量而高效的解码器，同时提升精度与推理速度。ROD 在 ORFD 与 RELLIS-3D 数据集上建立新 SOTA，推理速度达 50 FPS，显著超越先前模型。"},
+
+{key:"JJRGEFJ2", gpu:"na", g:"g5", name:"GE2E 综述", title:"Survey of General End-to-End Autonomous Driving: A Unified Perspective",
+ authors:"Yang et al. (10人, SJTU)", year:"2025", venue:"TechRxiv", venueShort:"TechRxiv",
+ url:"https://www.techrxiv.org/doi/full/10.36227/techrxiv.176523315.56439138/v1",
+ one:"200+ 篇统一视角：视觉中心 / VLM 中心 / 混合，同一 GE2E 问题的三种方言",
+ loop:[], loopNote:"综述（含主流评测基准与性能对比整理）",
+ data:["200+ 篇文献"],
+ innov:[
+  '提出「<span class="hi">通用端到端（GE2E）</span>」统一框架：视觉中心、VLM 中心与混合范式并非分岔路，而是同一问题的三种方言；',
+  '系统对比三范式的架构、设计哲学与学习策略，并汇总主流评测基准与横向性能；',
+  '正好覆盖本页 Route 1（视觉中心）与 Route 2（VLM/VLA）的划分——可作为本知识页的「上位地图」。'],
+ dg:null,
+ expr:null,
+ absEn:"The quest for autonomous driving converges on the fundamental challenge of creating an integrated system that seamlessly maps raw sensory inputs directly to driving decisions. This ambition has catalyzed a paradigm shift from classic modular pipelines toward data-driven, end-to-end (E2E) approaches, aiming to overcome inherent limitations like information loss and error accumulation. In recent years, the E2E landscape has rapidly diversified into three prominent yet seemingly disparate paradigms. These include vision-centric methods that jointly optimize specialized modules, VLM-centric approaches that harness the world knowledge of large foundation models, and hybrid models that synergize the complementary strengths of the former two. While architecturally distinct, we posit that these are not divergent paths but rather different dialects of a common language. At their core, all three paradigms strive to solve the same General End-to-End (GE2E) problem. However, the literature lacks a unified survey that systematically analyzes and contrasts them from this holistic viewpoint. This paper bridges that critical gap. Through a comprehensive review of over 200 papers, we first dissect the architectures, design philosophies, and learning strategies that characterize each paradigm. Subsequently, we present a consolidated overview of mainstream evaluation benchmarks and a comparative performance analysis. By synthesizing their commonalities, we distill the field's core challenges and chart a course for future research. Our work aims to provide a foundational resource and a guiding compass for researchers navigating the dynamic landscape of end-to-end autonomous driving. Our project page is available at https://github.com/AutoLab-SAI-SJTU/GE2EAD.",
+ absZh:"自动驾驶的探索收敛于一个根本挑战：构建能把原始传感输入无缝映射为驾驶决策的一体化系统。这一雄心催化了从经典模块化流水线向数据驱动端到端（E2E）方法的范式转移，以克服信息损失与误差累积等固有局限。近年来 E2E 版图迅速分化为三个突出却看似互异的范式：联合优化专用模块的视觉中心方法、借助大基座模型世界知识的 VLM 中心方法、以及融合两者之长的混合模型。虽然架构不同，我们主张它们并非分岔的道路，而是同一语言的不同方言——三者的内核都在求解同一个「通用端到端（GE2E）」问题。然而文献中缺少从这一整体视角系统分析对比它们的统一综述，本文填补了这一关键空白：通过对 200 余篇论文的全面回顾，我们先剖析各范式的架构、设计哲学与学习策略；随后给出主流评测基准的汇总与对比性能分析；通过综合其共性，提炼领域核心挑战并规划未来研究方向。"},
+
+{key:"32YWYGGD", gpu:"na", g:"g5", name:"VLM-AD 综述", title:"Vision Language Models in Autonomous Driving: A Survey and Outlook",
+ authors:"Zhou et al. (7人)", year:"2024", venue:"IEEE T-IV", venueShort:"T-IV'24",
+ url:"https://ieeexplore.ieee.org/document/10531702/",
+ one:"VLM × 自动驾驶全景：感知 / 导航规划 / 决策控制 / E2E / 数据生成",
+ loop:[], loopNote:"综述（含语言增强数据集汇总）",
+ data:["Awesome-VLM-AD-ITS 文献库"],
+ innov:[
+  '按<span class="hi">感知理解、导航规划、决策控制、端到端、数据生成</span>五大应用域组织 VLM-AD 文献，并整理主流任务与指标；',
+  '系统汇总<span class="hb">语言增强的自动驾驶数据集</span>，指出研究空白与未来趋势；',
+  '附持续维护的 GitHub 文献仓库，适合当領域跟踪入口。'],
+ dg:null,
+ expr:null,
+ absEn:"The applications of Vision-Language Models (VLMs) in the field of Autonomous Driving (AD) have attracted widespread attention due to their outstanding performance and the ability to leverage Large Language Models (LLMs). By integrating language data, the driving systems can be able to deeply understand real-world environments, improving driving safety and efficiency. In this work, we present a comprehensive and systematic survey of the advances in language models in this domain, encompassing perception and understanding, navigation and planning, decision-making and control, end-to-end autonomous driving, and data generation. We introduce the mainstream VLM tasks and the commonly utilized metrics. Additionally, we review current studies and applications in various areas and summarize the existing language-enhanced autonomous driving dataset thoroughly. At last, we discuss the benefits and challenges of VLMs in AD, and provide researchers with the current research gaps and future trends. https://github.com/ge25nab/Awesome-VLM-AD-ITS",
+ absZh:"视觉-语言模型（VLM）凭借出色性能与利用大语言模型的能力，在自动驾驶（AD）领域的应用受到广泛关注。通过整合语言数据，驾驶系统能够深入理解真实环境，提升驾驶安全与效率。本文对该领域语言模型的进展进行了全面系统的综述，涵盖感知与理解、导航与规划、决策与控制、端到端自动驾驶以及数据生成五个方向；介绍了主流的 VLM 任务与常用评测指标，回顾了各领域的研究与应用现状，并翔实汇总了现有的语言增强自动驾驶数据集。最后讨论了 VLM 在自动驾驶中的收益与挑战，为研究者指出当前研究空白与未来趋势。"},
+
+{key:"US2EBTVT", gpu:"na", g:"g5", name:"LLM 类人驾驶综述", title:"Large Language Models for Human-Like Autonomous Driving: A Survey",
+ authors:"Li et al. (4人)", year:"2024", venue:"IEEE ITSC 2024", venueShort:"ITSC'24",
+ url:"https://ieeexplore.ieee.org/document/10919629/",
+ one:"从规则 → 优化 → 学习 → 知识驱动：LLM 领衔第三代 AD 的批判性回顾",
+ loop:[], loopNote:"综述",
+ data:["模块化与 E2E 两条线文献"],
+ innov:[
+  '把 AD 演进梳理为「规则/优化 → 学习 → <span class="hi">知识驱动（LLM 赋能）</span>」三代叙事，锚定「类人驾驶」目标；',
+  '分别审视 LLM 在<span class="hb">模块化流水线与端到端系统</span>中的应用，批判性讨论实时推理、安全保障与部署成本三大拦路虎。'],
+ dg:null,
+ expr:null,
+ absEn:"Large Language Models (LLMs), AI models trained on massive text corpora with remarkable language understanding and generation capabilities, are transforming the field of Autonomous Driving (AD). As AD systems evolve from rule-based and optimization-based methods to learning-based techniques like deep reinforcement learning, they are now poised to embrace a third and more advanced category: knowledge-based AD empowered by LLMs. This shift promises to bring AD closer to human-like AD. However, integrating LLMs into AD systems poses challenges in real-time inference, safety assurance, and deployment costs. This survey provides a comprehensive and critical review of recent progress in leveraging LLMs for AD, focusing on their applications in modular AD pipelines and end-to-end AD systems. We highlight key advancements, identify pressing challenges, and propose promising research directions to bridge the gap between LLMs and AD, thereby facilitating the development of more human-like AD systems. The survey first introduces LLMs' key features and common training schemes, then delves into their applications in modular AD pipelines and end-to-end AD, respectively, followed by discussions on open challenges and future directions. Through this in-depth analysis, we aim to provide insights and inspiration for researchers and practitioners working at the intersection of AI and autonomous vehicles, ultimately contributing to safer, smarter, and more human-centric AD technologies.",
+ absZh:"大语言模型（LLM）——在海量文本语料上训练、具备卓越语言理解与生成能力的 AI 模型——正在改变自动驾驶领域。随着 AD 系统从基于规则和优化的方法演进到深度强化学习等基于学习的技术，如今它们即将拥抱第三个更高级的类别：由 LLM 赋能的知识驱动自动驾驶。这一转变有望使自动驾驶更接近类人驾驶。然而把 LLM 融入 AD 系统在实时推理、安全保障与部署成本上均有挑战。本综述对近期 LLM 用于 AD 的进展做了全面而批判的回顾，聚焦其在模块化 AD 流水线与端到端 AD 系统中的应用，强调关键进展、识别紧迫挑战，并提出弥合 LLM 与 AD 差距的研究方向，以促进更安全、更智能、更以人为中心的自动驾驶技术。"},
+
+{key:"FSZMLU6S", gpu:"workstation", fig:"../assets/e2e-ad/FSZMLU6S.png", g:"g5", name:"TAD-E2E", title:"TAD-E2E: A Large-scale End-to-end Autonomous Driving Dataset",
+ authors:"Liu et al. (9人)", year:"2025", venue:"ICCV 2025", venueShort:"ICCV'25",
+ url:"https://openaccess.thecvf.com/content/ICCV2025/html/Liu_TAD-E2E_A_Large-scale_End-to-end_Autonomous_Driving_Dataset_ICCV_2025_paper.html",
+ one:"大规模 E2E 数据集：2×128 线 + 3×64 线 LiDAR + 6 相机，专家轨迹对标",
+ loop:["open"], loopNote:"以真实专家轨迹为参照的开环评测协议",
+ data:["TAD-E2E（自建）"],
+ innov:[
+  '传感器阵容豪华：<span class="hi">2 × 128 线 + 3 × 64 线 LiDAR + 6 × FOV100° 相机</span>的环视布局（PDF 图 2）；',
+  '以真实场景采集的专家轨迹为参照评测端到端模型输出；',
+  '附 SparseFusion-E2E 基线：仅对超过阈值的目标回传梯度的稀疏化训练策略。'],
+ dg:[["6 相机 + 5 LiDAR","in"],["大规模真实采集","aux"],["专家轨迹标注","aux"],["E2E 评测协议","out"]],
+ expr:{input:"环视 6 相机（FOV 100°）+ 2×LiDAR-128 + 3×LiDAR-64（数据集传感配置）",
+   backbone:"基线模型 SparseFusion-E2E（稀疏融合端到端）",
+   hw:"8 × NVIDIA L40 48GB（基线训练）",
+   batch:"batch size 64",
+   time:"约 10 天（基线模型）"},
+ absEn:null,
+ absZh:"（Zotero 条目未存摘要；以上信息摘自 PDF 正文。ICCV 2025 数据集论文：面向端到端自动驾驶的大规模数据集，以真实专家轨迹为参照评测模型输出。可在 Zotero 桌面端补录摘要后重新生成本页。）"},
+
+{key:"SMV6HV3W", gpu:"industrial", fig:"../assets/e2e-ad/SMV6HV3W.png", g:"g5", name:"Data Scaling Laws", title:"Data Scaling Laws for End-to-End Autonomous Driving",
+ authors:"Naumann et al. (10人, NVIDIA)", year:"2025", venue:"arXiv 2504.04338", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2504.04338",
+ one:"16 → 8192 小时内部数据扫描：E2E 驾驶的数据缩放曲线",
+ loop:["open","closed"], loopNote:"开环指标 + 闭环仿真双轨评测缩放趋势",
+ data:["内部数据 16–8192h（>40 万 km）"],
+ innov:[
+  '首个工业规模的 E2E 驾驶<span class="hi">数据缩放律</span>研究：数据量按 2 的幂从 16 到 8192 小时扫描（40 余万公里）；',
+  '刻意选用<span class="hb">简单 E2E 架构</span>（相机 → 感知模块 → 轨迹预测），让「数据量 vs 性能」关系不被模型花样干扰；',
+  '回答工程决策问题：「运动预测精度再涨 5%，还要喂多少数据？」——开环与闭环双轨给出趋势。'],
+ dg:[["多路修正相机（f/l/r）","in"],["感知编码模块","enc"],["轨迹预测模块","out"],["16h → 8192h 数据扫描","aux"]],
+ expr:{input:"校正后的多视角相机图像（前/左/右）+ 导航输入命令（消歧动作）",
+   backbone:"简单两段式：感知模块（图像编码）+ 预测模块（轨迹生成），模仿学习",
+   hw:null, batch:null,
+   time:"论文未说明（重点为数据规模扫描：16/32/…/8192 小时逐档训练）"},
+ absEn:"Autonomous vehicle (AV) stacks have traditionally relied on decomposed approaches, with separate modules handling perception, prediction, and planning. However, this design introduces information loss during inter-module communication, increases computational overhead, and can lead to compounding errors. To address these challenges, recent works have proposed architectures that integrate all components into an end-to-end differentiable model, enabling holistic system optimization. This shift emphasizes data engineering over software integration, offering the potential to enhance system performance by simply scaling up training resources. In this work, we evaluate the performance of a simple end-to-end driving architecture on internal driving datasets ranging in size from 16 to 8192 hours with both open-loop metrics and closed-loop simulations. Specifically, we investigate how much additional training data is needed to achieve a target performance gain, e.g., a 5% improvement in motion prediction accuracy. By understanding the relationship between model performance and training dataset size, we aim to provide insights for data-driven decision-making in autonomous driving development.",
+ absZh:"自动驾驶栈传统上采用分解式设计，由独立模块处理感知、预测与规划；但这种设计在模块间通信时引入信息损失、增加计算开销并可能导致误差复合。为此，近期工作提出把所有组件整合进一个端到端可微模型，实现整体优化。这一转变把重心从软件集成转向数据工程——有望仅靠扩大训练资源来提升系统性能。本文在规模从 16 到 8192 小时不等的内部驾驶数据集上，用开环指标与闭环仿真评估了一个简单端到端驾驶架构的性能，并具体研究「达成目标性能增益（如运动预测精度提升 5%）还需要多少训练数据」。通过理解模型性能与训练数据规模的关系，我们旨在为自动驾驶研发中的数据驱动决策提供洞见。"},
+
+{key:"NFRCJULC", gpu:"consumer", fig:"../assets/e2e-ad/NFRCJULC.png", g:"g5", name:"AutoDrive-QA", title:"AutoDrive-QA: Automated Generation of Multiple-Choice Questions for Autonomous Driving Datasets Using Large Vision-Language Models",
+ authors:"Khalili & Smyth", year:"2025", venue:"arXiv 2503.15778", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2503.15778",
+ one:"开放问答 → 单选题：领域错误模式造干扰项，评测从此可复现",
+ loop:[], loopNote:"评测基准（感知 / 预测 / 规划三任务 MCQ）",
+ data:["DriveLM","NuScenes-QA","LingoQA"],
+ innov:[
+  '把 DriveLM / NuScenes-QA / LingoQA 的开放式问答<span class="hi">自动转为多选题（MCQ）</span>，消除自由文本评测的主观性与指标漂移；',
+  '干扰项不是随机的：LLM 依据自动驾驶<span class="hb">领域特有错误模式</span>生成高质量、有迷惑性的选项；',
+  '零样本横评揭示：各模型感知尚可（GPT-4V 74.94%），<span class="ha">预测最弱</span>（65.33%）——给 VLM-AD 研究指出短板。'],
+ dg:[["开放式驾驶 QA 数据集","in"],["LLM 干扰项生成","llm"],["结构化 MCQ 基准","out"],["感知/预测/规划三轨评测","aux"]],
+ expr:{input:"三个驾驶 QA 数据集的问答对（转换流水线输入），零样本评测再加一个未见数据集",
+   backbone:"LLM 自动出题流水线 + 多款 VLM 被试（GPT-4V 等）",
+   hw:"2 × RTX A6000 48GB（PyTorch 2.2.1，CUDA 12.1）",
+   batch:"不适用（评测基准构建）",
+   time:"不适用（评测基准构建）"},
+ absEn:"In autonomous driving, open-ended question answering often suffers from unreliable evaluations because freeform responses require either complex metrics or subjective human judgment. To address this challenge, we introduce AutoDrive-QA, an automatic pipeline that converts existing driving QA datasets (including DriveLM, NuScenes-QA, and LingoQA) into a structured multiple-choice question (MCQ) format. This benchmark systematically assesses perception, prediction, and planning tasks, providing a standardized and objective evaluation framework. AutoDrive-QA employs an automated pipeline that leverages large language models (LLMs) to generate high-quality, contextually relevant distractors based on domain-specific error patterns commonly found in autonomous driving scenarios. To evaluate both general capabilities and generalization performance, we test the benchmark on three public datasets and conduct zero-shot experiments on an unseen dataset. The zero-shot evaluations reveal that GPT-4V leads with 69.57% accuracy -- achieving 74.94% in Perception, 65.33% in Prediction, and 68.45% in Planning -- demonstrating that while all models excel in Perception, they struggle in Prediction. Consequently, AutoDrive-QA establishes a rigorous, unbiased standard for integrating and evaluating different vision-language models across various autonomous driving datasets, thereby improving generalization in this field. We release all the codes in the AutoDrive-QA GitHub Repository.",
+ absZh:"在自动驾驶中，开放式问答的评测往往不可靠：自由文本回答要么需要复杂指标、要么依赖主观人工评判。为此我们提出 AutoDrive-QA——把现有驾驶问答数据集（DriveLM、NuScenes-QA、LingoQA）自动转换为结构化多选题（MCQ）格式的流水线。该基准系统评估感知、预测与规划任务，提供标准化、客观的评测框架。AutoDrive-QA 利用大语言模型，依据自动驾驶场景中常见的领域特定错误模式生成高质量、语境相关的干扰项。为评估通用能力与泛化性能，我们在三个公开数据集上测试基准，并在一个未见数据集上做零样本实验。零样本评测中 GPT-4V 以 69.57% 准确率领先（感知 74.94%、预测 65.33%、规划 68.45%）——表明各模型长于感知而困于预测。AutoDrive-QA 为跨数据集集成与评估各类视觉-语言模型建立了严格、无偏的标准，促进该领域的泛化能力。"},
+
+{key:"4AYHFG9D", gpu:"industrial", fig:"../assets/e2e-ad/4AYHFG9D.png", g:"g5", name:"Cosmos-Reason1", title:"Cosmos-Reason1: From Physical Common Sense to Embodied Reasoning",
+ authors:"NVIDIA (45人)", year:"2025", venue:"arXiv 2503.15558", venueShort:"arXiv'25",
+ url:"http://arxiv.org/abs/2503.15558",
+ one:"物理 AI 基座模型：物理常识本体 + 具身推理，四阶段训练 8B/56B",
+ loop:[], loopNote:"物理常识与具身推理基准评测（非驾驶闭环；是 Alpamayo-R1 的底座）",
+ data:["HoloAssist","专有具身/AV 数据","自建物理常识基准"],
+ innov:[
+  '为「物理 AI」定义能力坐标系：<span class="hi">空间-时间-物理层级本体</span>（物理常识）× 跨具身二维本体（具身推理）；',
+  '<span class="hb">四阶段训练</span>：视觉预训练 → 通用 SFT → 物理 AI SFT → 物理 AI RL 后训练，8B 与 56B（混合 Mamba-MLP-Transformer）两个规模；',
+  '在本页语境下的意义：它是 <span class="ht">Alpamayo-R1 的 VLM 底座</span>——「物理推理基座 + 驾驶动作头」的分层路线代表。'],
+ dg:[["视频 + 文本","in"],["视觉编码 + 投影","enc"],["LLM（Mamba-MLP-Transformer 混合）","llm"],["长链物理推理 / 具身决策","out"]],
+ expr:{input:"视频（token 化后与文本 token 拼接）+ 文本指令",
+   backbone:"Cosmos-Reason1-8B 与 56B（稠密 Transformer / 混合 Mamba-MLP-Transformer）",
+   hw:"论文未逐项公开（NVIDIA 集群）",
+   batch:"SFT：全局 batch 256（8B）/ 32（56B）；RL：全局 batch 128 问 × 每问采样 9 答",
+   time:"四阶段；56B 的物理 AI SFT 为 30K 迭代（lr 1e-5）+ 20K 迭代（lr 1e-6）"},
+ absEn:"Physical AI systems need to perceive, understand, and perform complex actions in the physical world. In this paper, we present the Cosmos-Reason1 models that can understand the physical world and generate appropriate embodied decisions (e.g., next step action) in natural language through long chain-of-thought reasoning processes. We begin by defining key capabilities for Physical AI reasoning, with a focus on physical common sense and embodied reasoning. To represent physical common sense, we use a hierarchical ontology that captures fundamental knowledge about space, time, and physics. For embodied reasoning, we rely on a two-dimensional ontology that generalizes across different physical embodiments. Building on these capabilities, we develop two multimodal large language models, Cosmos-Reason1-8B and Cosmos-Reason1-56B. We curate data and train our models in four stages: vision pre-training, general supervised fine-tuning (SFT), Physical AI SFT, and Physical AI reinforcement learning (RL) as the post-training. To evaluate our models, we build comprehensive benchmarks for physical common sense and embodied reasoning according to our ontologies. Evaluation results show that Physical AI SFT and reinforcement learning bring significant improvements. To facilitate the development of Physical AI, we will make our code and pre-trained models available under the NVIDIA Open Model License at https://github.com/nvidia-cosmos/cosmos-reason1.",
+ absZh:"物理 AI 系统需要在物理世界中感知、理解并执行复杂动作。本文提出 Cosmos-Reason1 系列模型：能理解物理世界、并通过长链式思维推理以自然语言生成恰当具身决策（如下一步动作）。我们首先定义物理 AI 推理的关键能力，聚焦物理常识与具身推理两方面：用「空间-时间-物理」层级本体表示物理常识，用跨不同物理载体泛化的二维本体表示具身推理。基于这些能力我们开发了 Cosmos-Reason1-8B 与 56B 两个多模态大模型，数据整理与训练分四阶段：视觉预训练、通用监督微调（SFT）、物理 AI SFT、以及作为后训练的物理 AI 强化学习；并依据本体构建了物理常识与具身推理的综合基准。评测显示物理 AI SFT 与强化学习均带来显著提升。模型与代码将在 NVIDIA 开放模型许可下开源。"},
+
+{key:"ZRQAX229", gpu:"consumer", g:"g5", name:"3DGUT", title:"3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting",
+ authors:"Wu et al. (5人, NVIDIA)", year:"2025", venue:"CVPR 2025", venueShort:"CVPR'25",
+ url:"http://arxiv.org/abs/2412.12507",
+ one:"无迹变换替代 EWA 投影：3DGS 支持畸变相机与二次光线，仍保光栅化速度",
+ loop:[], loopNote:"渲染基础设施（服务于闭环仿真 / 数字孪生，非驾驶方法）",
+ data:["标准 3DGS 重建基准"],
+ innov:[
+  '用<span class="hi">无迹变换（UT）的 sigma 点</span>替代 EWA splatting 的线性化投影：任意非线性投影（鱼眼、卷帘快门等真实车载相机）都能精确处理；',
+  '渲染公式与 tracing 系方法对齐，<span class="hb">同一 3D 表征内支持反射/折射等二次光线</span>，同时保持光栅化效率；',
+  '对自动驾驶的意义：车载畸变相机 + 时间相关效应正是 <span class="ht">3DGS 闭环仿真（如 RAD）</span>落地的关键基建。'],
+ dg:[["3D 高斯场景","in"],["UT sigma 点投影","enc"],["畸变相机 / 卷帘快门","aux"],["光栅化 + 二次光线","out"]],
+ expr:{input:"多视角图像重建的 3D 高斯场景（渲染方法，与驾驶数据集无关）",
+   backbone:"3DGS 管线中以 Unscented Transform 替换 EWA splatting",
+   hw:"FPS 在单卡 RTX 6000 Ada 上测量（训练设置未详列）",
+   batch:null, time:null},
+ absEn:"3D Gaussian Splatting (3DGS) enables efficient reconstruction and high-fidelity real-time rendering of complex scenes on consumer hardware. However, due to its rasterization-based formulation, 3DGS is constrained to ideal pinhole cameras and lacks support for secondary lighting effects. Recent methods address these limitations by tracing the particles instead, but, this comes at the cost of significantly slower rendering. In this work, we propose 3D Gaussian Unscented Transform (3DGUT), replacing the EWA splatting formulation with the Unscented Transform that approximates the particles through sigma points, which can be projected exactly under any nonlinear projection function. This modification enables trivial support of distorted cameras with time dependent effects such as rolling shutter, while retaining the efficiency of rasterization. Additionally, we align our rendering formulation with that of tracing-based methods, enabling secondary ray tracing required to represent phenomena such as reflections and refraction within the same 3D representation. The source code is available at: https://github.com/nv-tlabs/3dgrut.",
+ absZh:"3D 高斯泼溅（3DGS）能在消费级硬件上高效重建并实时高保真渲染复杂场景。但由于其基于光栅化的公式化，3DGS 被限制在理想针孔相机内，且不支持二次光照效果。近期方法改用粒子追踪来解决这些限制，却付出了显著变慢的渲染代价。本文提出 3D 高斯无迹变换（3DGUT）：在光栅化公式中用无迹变换替代 EWA splatting——通过 sigma 点近似粒子，使其可以在任意非线性投影函数下被精确投影。这一修改让畸变相机（含卷帘快门等时间相关效应）的支持变得轻而易举，同时保留光栅化的效率；此外我们把渲染公式与 tracing 系方法对齐，使同一 3D 表征内可以进行二次光线追踪，以表现反射、折射等现象。源代码已开源。"},
+
+];
+
+/* ---------- 渲染 ---------- */
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const loopCell = p => {
+  const m = {open:'<span class="ok">✓</span>', navsim:'<span class="half">○</span>', no:'<span class="no">—</span>'};
+  return [p.loop.includes("open")?m.open:m.no,
+          p.loop.includes("closed")?'<span class="ok">✓</span>':(p.loop.includes("navsim")?m.navsim:m.no)];
+};
+const loopBadges = p => {
+  const b = [];
+  if (p.loop.includes("open"))   b.push('<span class="badge open">开环</span>');
+  if (p.loop.includes("navsim")) b.push('<span class="badge open">NAVSIM ○</span>');
+  if (p.loop.includes("closed")) b.push('<span class="badge closed">闭环</span>');
+  if (!b.length) b.push('<span class="badge na">不适用</span>');
+  return b.join(" ");
+};
+
+/* ---------- 筛选 ---------- */
+const DATA_FILTERS = [
+  {label:"nuScenes",            re:/nuscenes/i},
+  {label:"NAVSIM",              re:/navsim/i},
+  {label:"CARLA / Bench2Drive", re:/carla|bench2drive|town05|langauto/i},
+  {label:"Waymo (WOD/WOMD)",    re:/waymo|wod|womd/i},
+  {label:"nuPlan / OpenScene",  re:/nuplan|openscene/i},
+  {label:"越野 (RELLIS/ORFD)",  re:/rellis|orfd|isaac/i},
+  {label:"自建 / 内部数据",      re:/自建|内部|CoC|DriveX|CoVLA|2000h|3DGS 重建|TAD-E2E/i},
+];
+const LOOP_FILTERS = [
+  {label:"开环 ✓",   test:p => p.loop.includes("open")},
+  {label:"闭环 ✓",   test:p => p.loop.includes("closed")},
+  {label:"NAVSIM ○", test:p => p.loop.includes("navsim")},
+  {label:"不适用（综述/感知/基建）", test:p => p.loop.length === 0},
+];
+/* GPU 需求分级：依据论文披露的训练硬件归档（unknown = 论文未公开） */
+const GPU_TIERS = {
+  none:        {label:"零训练",     dot:"#46d7cc", desc:"提示词 / 零样本，无需训练"},
+  consumer:    {label:"单卡可及",   dot:"#9bce6b", desc:"1–2 张消费级 / 工作站卡"},
+  workstation: {label:"多卡工作站", dot:"#6aa6ff", desc:"4–8 张消费级卡（3090 / 4090 / L40）"},
+  datacenter:  {label:"数据中心",   dot:"#f0bf4c", desc:"多卡 A100 / H100"},
+  industrial:  {label:"工业集群",   dot:"#ff8a8a", desc:"TPU / 内部大规模集群"},
+  unknown:     {label:"未公开",     dot:"#6b768f", desc:"论文未说明训练硬件"},
+  na:          {label:"不适用",     dot:"#6b768f", desc:"综述类"},
+};
+const GPU_ORDER = ["none","consumer","workstation","datacenter","industrial","unknown","na"];
+
+function fillSelect(id, first, opts){
+  document.getElementById(id).innerHTML =
+    `<option value="">${first}</option>` + opts.map((o,i)=>`<option value="${i}">${esc(o)}</option>`).join("");
+}
+const YEARS = [...new Set(PAPERS.map(p=>p.year))].sort().reverse();
+fillSelect("f-year", "全部年份", YEARS);
+fillSelect("f-data", "全部数据集", DATA_FILTERS.map(d=>d.label));
+fillSelect("f-loop", "全部评测形态", LOOP_FILTERS.map(l=>l.label));
+fillSelect("f-gpu", "全部 GPU 需求", GPU_ORDER.map(t=>GPU_TIERS[t].label));
+
+function matches(p){
+  const y = document.getElementById("f-year").value;
+  const d = document.getElementById("f-data").value;
+  const l = document.getElementById("f-loop").value;
+  const g = document.getElementById("f-gpu").value;
+  if (y !== "" && p.year !== YEARS[+y]) return false;
+  if (d !== "" && !p.data.some(x => DATA_FILTERS[+d].re.test(x))) return false;
+  if (l !== "" && !LOOP_FILTERS[+l].test(p)) return false;
+  if (g !== "" && (p.gpu || "unknown") !== GPU_ORDER[+g]) return false;
+  return true;
+}
+const gpuBadge = p => {
+  const t = GPU_TIERS[p.gpu || "unknown"];
+  return `<span class="badge gpu-${p.gpu || "unknown"}" title="${t.desc}">GPU · ${t.label}</span>`;
+};
+const gpuCell = p => {
+  const t = GPU_TIERS[p.gpu || "unknown"];
+  return `<span class="gdot" style="background:${t.dot}"></span>${t.label}`;
+};
+
+function applyFilters(){
+  const vis = new Set(PAPERS.filter(matches).map(p=>p.key));
+  /* 纵览表 */
+  let rows = "";
+  for (const g of GROUPS) {
+    const ps = PAPERS.filter(p => p.g === g.id && vis.has(p.key));
+    if (!ps.length) continue;
+    rows += `<tr><td colspan="8" style="background:var(--panel-2);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--dim);">${g.tag} · ${esc(g.name)}</td></tr>`;
+    for (const p of ps) {
+      const [o,c] = loopCell(p);
+      rows += `<tr>
+        <td><b><a href="#p-${p.key}">${esc(p.name)}</a></b></td>
+        <td>${p.year}</td>
+        <td>${esc(p.one)}</td>
+        <td>${p.data.map(d=>esc(d)).join(" · ")}</td>
+        <td class="c">${o}</td><td class="c">${c}</td>
+        <td style="white-space:nowrap;">${gpuCell(p)}</td>
+        <td>${esc(p.venueShort||p.venue||"")}</td>
+      </tr>`;
+    }
+  }
+  document.getElementById("ov-table").innerHTML = rows
+    ? `<table><thead><tr><th>方法</th><th>年份</th><th>一句话创新</th><th>数据集 / 基准</th><th>开环</th><th>闭环</th><th>GPU 需求</th><th>发表</th></tr></thead><tbody>${rows}</tbody></table>`
+    : `<p style="padding:18px;color:var(--dim);margin:0;">没有符合条件的论文，换个筛选组合试试。</p>`;
+  /* 联动详解卡片与分组 */
+  for (const p of PAPERS) {
+    const el = document.getElementById("p-" + p.key);
+    if (el) el.style.display = vis.has(p.key) ? "" : "none";
+  }
+  for (const g of GROUPS) {
+    const mount = document.getElementById("m-" + g.id);
+    if (mount && mount.parentElement) mount.parentElement.style.display = PAPERS.some(p => p.g === g.id && vis.has(p.key)) ? "" : "none";
+  }
+  document.getElementById("f-count").textContent = `${vis.size} / ${PAPERS.length} 篇`;
+}
+["f-year","f-data","f-loop","f-gpu"].forEach(id =>
+  document.getElementById(id).addEventListener("change", applyFilters));
+document.getElementById("f-reset").addEventListener("click", () => {
+  ["f-year","f-data","f-loop","f-gpu"].forEach(id => document.getElementById(id).value = "");
+  applyFilters();
+});
+
+/* 详解区 */
+(function(){
+  for (const g of GROUPS) {
+    const ps = PAPERS.filter(p => p.g === g.id);
+    const mount = document.getElementById("m-" + g.id);
+    if (!mount || !ps.length) continue;
+    let html = `<p class="grpdesc">${esc(g.desc)}</p>`;
+    for (const p of ps) {
+      const figHtml = p.fig
+        ? `<figure class="pfig"><div class="frame"><img loading="lazy" src="${p.fig}" alt="${esc(p.name)} 模型框图（原论文）"></div>
+             <figcaption>框图截自原论文（<a href="${p.url||'#'}" target="_blank" rel="noopener">${esc(p.venueShort||p.venue||"原文")}</a>），版权归原作者所有</figcaption></figure>`
+        : "";
+      const pipe = (!p.fig && p.dg) ? `<div class="pipe">${p.dg.map(([t,c],i)=>
+          (i? '<span class="arrow">→</span>':'') + `<div class="box ${c}">${t}</div>`).join("")}</div>` +
+          (p.dgNote? `<p class="pipenote">${p.dgNote}</p>` : '<div style="height:10px"></div>') : "";
+      const absBlock = p.absEn
+        ? `<details class="absfold"><summary>▸ 摘要对照（英文原文 · 中文翻译）</summary>
+             <div class="absgrid">
+               <div class="abscol en"><div class="albl">Abstract</div>${esc(p.absEn)}</div>
+               <div class="abscol zh"><div class="albl">中文翻译</div>${esc(p.absZh)}</div>
+             </div></details>`
+        : `<div class="absmissing">该 Zotero 条目未存摘要（可在桌面端补录后重新生成本页）。</div>`;
+      const EXPR_LBL = {input:"输入构成", backbone:"骨干 / 规模", hw:"训练设备", batch:"Batch Size", time:"训练时长"};
+      const exprBlock = p.expr
+        ? `<table class="expr"><tbody>${Object.entries(EXPR_LBL).map(([f,lbl])=>{
+             const v = p.expr[f];
+             return `<tr><td class="k">${lbl}</td><td>${v? v : '<span class="unk">论文未说明</span>'}</td></tr>`;
+           }).join("")}</tbody></table>` : "";
+      html += `<article class="paper" id="p-${p.key}">
+        <h3>${esc(p.name)}<span class="en">${esc(p.title)}</span></h3>
+        <div class="pmeta"><span>${esc(p.authors)}</span><span>${p.year}</span><span>${esc(p.venue)}</span>${p.url? `<a href="${p.url}" target="_blank" rel="noopener">原文 ↗</a>`:""}</div>
+        ${figHtml}${pipe}
+        <ul class="innov">${p.innov.map(x=>`<li>${x}</li>`).join("")}</ul>
+        ${exprBlock}
+        <div class="factrow">
+          <span class="lbl">数据集 / 基准</span>${p.data.map(d=>`<span class="chip">${esc(d)}</span>`).join("")}
+          <span class="sep"></span>
+          <span class="lbl">评测形态</span>${loopBadges(p)}
+          <span class="sep"></span>
+          <span class="lbl">GPU 需求</span>${gpuBadge(p)}
+          ${p.loopNote? `<span style="font-size:13px;color:var(--dim);">${esc(p.loopNote)}</span>`:""}
+        </div>
+        ${absBlock}
+      </article>`;
+    }
+    mount.innerHTML = html;
+  }
+})();
+
+/* 详解渲染完成后应用一次筛选（初始 = 全部） */
+applyFilters();
+
+/* 阅读进度条 + 浮动导航滚动高亮 */
+const bar = document.getElementById('progress');
+const spyLinks = [...document.querySelectorAll('#floatnav a[data-spy]')];
+const onScroll = () => {
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  let cur = null;
+  for (const a of spyLinks) {
+    const sec = document.querySelector(a.getAttribute('href'));
+    if (sec && sec.style.display !== 'none' && sec.getBoundingClientRect().top <= 90) cur = a;
+  }
+  spyLinks.forEach(a => a.classList.toggle('on', a === cur));
+};
+document.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+</script>
+
+<script>
+(function(){
+const LAYOUT = {"W":1232,"H":1924,"main_w":932,"lane_x":966,"band_h":320,"nodes":{"IKR946PP":{"x":466.0,"y":386,"row":0,"month":24276,"iso":false,"name":"UniAD","title":"Planning-oriented Autonomous Driving","year":"2023","date":"2022-12-20","g":"g1","indeg":17,"pr":1.0,"kind":"focus"},"RK2HT2U4":{"x":366.0,"y":478,"row":1,"month":24290,"iso":false,"name":"VADv2","title":"VADv2: End-to-End Vectorized Autonomous Driving via Probabilistic Planning","year":"2024","date":"2024-02-20","g":"g1","indeg":6,"pr":0.323,"kind":"focus"},"9KCXQJZU":{"x":566.0,"y":478,"row":1,"month":24290,"iso":false,"name":"GenAD","title":"GenAD: Generative End-to-End Autonomous Driving","year":"2024","date":"2024-02-18","g":"g1","indeg":6,"pr":0.272,"kind":"focus"},"32YWYGGD":{"x":366.0,"y":570,"row":2,"month":24294,"iso":false,"name":"VLM-AD 综述","title":"Vision language models in autonomous driving: a survey and outlook","year":"2024","date":null,"g":"g5","indeg":2,"pr":0.115,"kind":"focus"},"RE7QZKBZ":{"x":566.0,"y":570,"row":2,"month":24294,"iso":false,"name":"PARA-Drive","title":"PARA-drive: parallelized architecture for real-time autonomous driving","year":"2024","date":"2024-06-16","g":"g1","indeg":12,"pr":0.422,"kind":"focus"},"QIAPYMJL":{"x":366.0,"y":662,"row":3,"month":24298,"iso":false,"name":"Senna","title":"Senna: bridging large vision-language models and end-to-end autonomous driving","year":"2024","date":"2024-10-29","g":"g2","indeg":6,"pr":0.154,"kind":"focus"},"TZBW6RXZ":{"x":566.0,"y":662,"row":3,"month":24298,"iso":false,"name":"EMMA","title":"EMMA: end-to-end multimodal model for autonomous driving","year":"2024","date":"2024-10-30","g":"g2","indeg":10,"pr":0.379,"kind":"focus"},"VKQV6UA6":{"x":466.0,"y":754,"row":4,"month":24299,"iso":false,"name":"DiffusionDrive","title":"DiffusionDrive: Truncated Diffusion Model for End-to-End Autonomous Driving","year":"2025","date":"2024-11-22","g":"g1","indeg":6,"pr":0.172,"kind":"focus"},"ZRQAX229":{"x":266.0,"y":846,"row":5,"month":24300,"iso":false,"name":"3DGUT","title":"3DGUT: enabling distorted cameras and secondary rays in gaussian splatting","year":"2025","date":"2024-12-17","g":"g5","indeg":1,"pr":0.093,"kind":"focus"},"RXLWJCWQ":{"x":466.0,"y":846,"row":5,"month":24300,"iso":false,"name":"OpenEMMA","title":"OpenEMMA: open-source multimodal model for end-to-end autonomous driving","year":"2025","date":"2024-12-19","g":"g2","indeg":4,"pr":0.136,"kind":"focus"},"6ZGMAL9Z":{"x":666.0,"y":846,"row":5,"month":24300,"iso":false,"name":"VLM-AD","title":"VLM-AD: End-to-End Autonomous Driving through Vision-Language Model Supervision","year":"2025","date":"2024-12-19","g":"g2","indeg":3,"pr":0.111,"kind":"focus"},"4EY6SEM7":{"x":466.0,"y":938,"row":6,"month":24302,"iso":false,"name":"RAD","title":"RAD: Training an End-to-End Driving Policy via Large-Scale 3DGS-based Reinforcement Learning","year":"2025","date":"2025-02-18","g":"g3","indeg":3,"pr":0.124,"kind":"focus"},"25HST56S":{"x":266.0,"y":1030,"row":7,"month":24303,"iso":false,"name":"OpenDriveVLA","title":"OpenDriveVLA: towards end-to-end autonomous driving with large vision language action model","year":"2025","date":"2025-03-30","g":"g2","indeg":5,"pr":0.137,"kind":"focus"},"99FI9HQC":{"x":466.0,"y":1030,"row":7,"month":24303,"iso":false,"name":"SimLingo","title":"SimLingo: vision-only closed-loop autonomous driving with language-action alignment","year":"2025","date":"2025-03-12","g":"g2","indeg":4,"pr":0.124,"kind":"focus"},"XRUHACJ6":{"x":666.0,"y":1030,"row":7,"month":24303,"iso":false,"name":"BEVDriver","title":"BEVDriver: Leveraging BEV Maps in LLMs for Robust Closed-Loop Driving","year":"2025","date":"2025-03-05","g":"g2","indeg":1,"pr":0.096,"kind":"focus"},"SMV6HV3W":{"x":466.0,"y":1122,"row":8,"month":24304,"iso":false,"name":"Data Scaling Laws","title":"Data Scaling Laws for End-to-End Autonomous Driving","year":"2025","date":"2025-04-06","g":"g5","indeg":0,"pr":0.088,"kind":"focus"},"LVYK5YWL":{"x":166.0,"y":1306,"row":10,"month":24306,"iso":false,"name":"LightEMMA","title":"LightEMMA: Lightweight End-to-End Multimodal Model for Autonomous Driving","year":"2025","date":null,"g":"g2","indeg":4,"pr":0.126,"kind":"focus"},"U5RKKDV2":{"x":366.0,"y":1306,"row":10,"month":24306,"iso":false,"name":"Triplane Tokenization","title":"Efficient multi-camera tokenization with triplanes for end-to-end driving","year":"2025","date":null,"g":"g2","indeg":1,"pr":0.093,"kind":"focus"},"9E2WUYQY":{"x":566.0,"y":1306,"row":10,"month":24306,"iso":false,"name":"AutoVLA","title":"AutoVLA: A Vision-Language-Action Model for End-to-End Autonomous Driving with Adaptive Reasoning and Reinforcement Fine-Tuning","year":"2025","date":"2025-06-16","g":"g2","indeg":4,"pr":0.13,"kind":"focus"},"KI4S3YZG":{"x":766.0,"y":1306,"row":10,"month":24306,"iso":false,"name":"Poutine","title":"Poutine: Vision-Language-Trajectory Pre-Training and Reinforcement Learning Post-Training Enable Robust End-to-End Autonomous Driving","year":"2025","date":"2025-06-12","g":"g3","indeg":0,"pr":0.088,"kind":"focus"},"EY7JWA2J":{"x":466.0,"y":1398,"row":11,"month":24308,"iso":false,"name":"IRL-VLA","title":"IRL-VLA: Training an Vision-Language-Action Policy via Reward World Model","year":"2025","date":"2025-08-07","g":"g3","indeg":1,"pr":0.093,"kind":"focus"},"SHBNNZJD":{"x":366.0,"y":1490,"row":12,"month":24309,"iso":false,"name":"AdaThinkDrive","title":"AdaThinkDrive: Adaptive Thinking via Reinforcement Learning for Autonomous Driving","year":"2025","date":"2025-09-17","g":"g3","indeg":1,"pr":0.093,"kind":"focus"},"D75ZNRE9":{"x":566.0,"y":1490,"row":12,"month":24309,"iso":false,"name":"AutoDrive-R²","title":"AutoDrive-R$^2$: Incentivizing Reasoning and Self-Reflection Capacity for VLA Model in Autonomous Driving","year":"2025","date":"2025-09-02","g":"g3","indeg":1,"pr":0.093,"kind":"focus"},"AGVNEBXB":{"x":366.0,"y":1582,"row":13,"month":24310,"iso":false,"name":"Alpamayo-R1","title":"Alpamayo-R1: Bridging Reasoning and Action Prediction for Generalizable Autonomous Driving in the Long Tail","year":"2025","date":"2025-10-30","g":"g2","indeg":0,"pr":0.088,"kind":"focus"},"FSZQLTCQ":{"x":566.0,"y":1582,"row":13,"month":24310,"iso":false,"name":"RAP","title":"RAP: 3D Rasterization Augmented End-to-End Planning","year":"2025","date":"2025-10-05","g":"g3","indeg":0,"pr":0.088,"kind":"focus"},"US2EBTVT":{"x":966,"y":570,"row":2,"month":24294,"iso":true,"name":"LLM 类人驾驶综述","title":"Large language models for human-like autonomous driving: a survey","year":"2024","date":null,"g":"g5","indeg":0,"pr":0.088,"kind":"focus"},"NFRCJULC":{"x":966,"y":1030,"row":7,"month":24303,"iso":true,"name":"AutoDrive-QA","title":"AutoDrive-QA- automated generation of multiple-choice questions for autonomous driving datasets using large vision-language models","year":"2025","date":"2025-03-20","g":"g5","indeg":0,"pr":0.088,"kind":"focus"},"4AYHFG9D":{"x":966,"y":1056,"row":7,"month":24303,"iso":true,"name":"Cosmos-Reason1","title":"Cosmos-Reason1: From Physical Common Sense To Embodied Reasoning","year":"2025","date":"2025-03-18","g":"g5","indeg":0,"pr":0.088,"kind":"focus"},"5TCZ3YB6":{"x":966,"y":1122,"row":8,"month":24304,"iso":true,"name":"车载本地 LLM × MPC","title":"Enhancing Autonomous Driving Systems with On-Board Deployed Large Language Models","year":"2025","date":"2025-04-15","g":"g2","indeg":0,"pr":0.088,"kind":"focus"},"5TM3P9CI":{"x":966,"y":1214,"row":9,"month":24305,"iso":true,"name":"ROD","title":"ROD: RGB-only fast and efficient off-road freespace detection","year":"2025","date":"2025-05-19","g":"g4","indeg":0,"pr":0.088,"kind":"focus"},"FSZMLU6S":{"x":966,"y":1306,"row":10,"month":24306,"iso":true,"name":"TAD-E2E","title":"TAD-E2E: A Large-scale End-to-end Autonomous Driving Dataset","year":"2025","date":null,"g":"g5","indeg":0,"pr":0.088,"kind":"focus"},"JJRGEFJ2":{"x":966,"y":1674,"row":14,"month":24311,"iso":true,"name":"GE2E 综述","title":"Survey of general end-to-end autonomous driving: a unified perspective","year":"","date":"2025-11","g":"g5","indeg":0,"pr":0.088,"kind":"focus"},"UF84MBEY":{"x":966,"y":1766,"row":15,"month":24316,"iso":true,"name":"越野 VLM 建图","title":"Visual Prompt Based Reasoning for Offroad Mapping using Multimodal LLMs","year":"2026","date":"2026-04-06","g":"g4","indeg":0,"pr":0.088,"kind":"focus"},"PSQLC2NZ":{"x":966,"y":1858,"row":16,"month":24318,"iso":true,"name":"OffEMMA","title":"A vision–language–action model with visual prompt for off-road trajectory prediction","year":"2026","date":null,"g":"g4","indeg":0,"pr":0.088,"kind":"focus"}},"roots":{"R0":{"x":127.7,"y":74,"kind":"root","name":"VAD","title":"VAD: Vectorized Scene Representation for Efficient Autonomous Driving","year":2023,"n_by":17,"gc":729,"in_lib":false,"drive":true,"arxiv":"2303.12077","doi":"10.1109/ICCV51070.2023.00766"},"R1":{"x":263.0,"y":74,"kind":"root","name":"nuScenes","title":"nuScenes: A Multimodal Dataset for Autonomous Driving","year":2019,"n_by":14,"gc":8536,"in_lib":true,"drive":true,"arxiv":"1903.11027","doi":"10.1109/cvpr42600.2020.01164"},"R2":{"x":398.3,"y":74,"kind":"root","name":"DriveLM","title":"DriveLM: Driving with Graph Visual Question Answering","year":2023,"n_by":13,"gc":601,"in_lib":true,"drive":true,"arxiv":"2312.14150","doi":"10.48550/arXiv.2312.14150"},"R3":{"x":533.7,"y":74,"kind":"root","name":"DriveGPT4","title":"DriveGPT4: Interpretable End-to-End Autonomous Driving Via Large Language Model","year":2023,"n_by":12,"gc":704,"in_lib":true,"drive":true,"arxiv":"2310.01412","doi":"10.1109/LRA.2024.3440097"},"R4":{"x":669.0,"y":74,"kind":"root","name":"CARLA","title":"CARLA: An Open Urban Driving Simulator","year":2017,"n_by":11,"gc":6952,"in_lib":false,"drive":true,"arxiv":"1711.03938","doi":null},"R5":{"x":804.3,"y":74,"kind":"root","name":"TransFuser","title":"TransFuser: Imitation With Transformer-Based Sensor Fusion for Autonomous Driving","year":2022,"n_by":11,"gc":755,"in_lib":true,"drive":true,"arxiv":"2205.15997","doi":"10.1109/TPAMI.2022.3200245"},"R6":{"x":127.7,"y":154,"kind":"root","name":"DriveVLM","title":"DriveVLM: The Convergence of Autonomous Driving and Large Vision-Language Models","year":2024,"n_by":11,"gc":536,"in_lib":true,"drive":true,"arxiv":"2402.12289","doi":"10.48550/arXiv.2402.12289"},"R7":{"x":263.0,"y":154,"kind":"root","name":"GPT-4 Technical ","title":"GPT-4 Technical Report","year":2023,"n_by":10,"gc":26122,"in_lib":false,"drive":false,"arxiv":"2303.08774","doi":null},"R8":{"x":398.3,"y":154,"kind":"root","name":"BEVFormer","title":"BEVFormer: Learning Bird's-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers","year":2022,"n_by":10,"gc":1985,"in_lib":true,"drive":true,"arxiv":"2203.17270","doi":"10.48550/arXiv.2203.17270"},"R9":{"x":533.7,"y":154,"kind":"root","name":"ST-P3","title":"ST-P3: End-to-end Vision-based Autonomous Driving via Spatial-Temporal Feature Learning","year":2022,"n_by":10,"gc":499,"in_lib":false,"drive":true,"arxiv":"2207.07601","doi":"10.48550/arXiv.2207.07601"},"R10":{"x":669.0,"y":154,"kind":"root","name":"DriveMLM","title":"DriveMLM: aligning multi-modal large language models with behavioral planning states for autonomous driving","year":2023,"n_by":10,"gc":286,"in_lib":false,"drive":true,"arxiv":"2312.09245","doi":"10.1007/s44267-025-00095-w"},"R11":{"x":804.3,"y":154,"kind":"root","name":"Is Ego Status Al","title":"Is Ego Status All You Need for Open-Loop End-to-End Autonomous Driving?","year":2023,"n_by":9,"gc":262,"in_lib":false,"drive":true,"arxiv":"2312.03031","doi":"10.1109/CVPR52733.2024.01408"},"R12":{"x":127.7,"y":234,"kind":"root","name":"Rethinking the O","title":"Rethinking the Open-Loop Evaluation of End-to-End Autonomous Driving in nuScenes","year":2023,"n_by":9,"gc":194,"in_lib":false,"drive":true,"arxiv":"2305.10430","doi":"10.48550/arXiv.2305.10430"},"R13":{"x":263.0,"y":234,"kind":"root","name":"DeepSeek-R1 ince","title":"DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning","year":2025,"n_by":8,"gc":5477,"in_lib":true,"drive":false,"arxiv":"2501.12948","doi":"10.1038/s41586-025-09422-z"},"R14":{"x":398.3,"y":234,"kind":"root","name":"GPT-Driver","title":"GPT-Driver: Learning to Drive with GPT","year":2023,"n_by":8,"gc":449,"in_lib":false,"drive":true,"arxiv":"2310.01415","doi":"10.48550/arXiv.2310.01415"},"R15":{"x":533.7,"y":234,"kind":"root","name":"NuScenes-QA","title":"NuScenes-QA: A Multi-modal Visual Question Answering Benchmark for Autonomous Driving Scenario","year":2023,"n_by":8,"gc":355,"in_lib":false,"drive":true,"arxiv":"2305.14836","doi":"10.48550/arXiv.2305.14836"},"R16":{"x":669.0,"y":234,"kind":"root","name":"NAVSIM","title":"NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking","year":2024,"n_by":8,"gc":347,"in_lib":true,"drive":true,"arxiv":"2406.15349","doi":"10.48550/arXiv.2406.15349"},"R17":{"x":804.3,"y":234,"kind":"root","name":"OmniDrive","title":"OmniDrive: A Holistic LLM-Agent Framework for Autonomous Driving with 3D Perception, Reasoning and Planning","year":2024,"n_by":8,"gc":137,"in_lib":false,"drive":true,"arxiv":null,"doi":"10.48550/arXiv.2405.01533"}},"edges_tr":[["AGVNEBXB","EY7JWA2J"],["AGVNEBXB","D75ZNRE9"],["AGVNEBXB","SHBNNZJD"],["AGVNEBXB","U5RKKDV2"],["AGVNEBXB","ZRQAX229"],["TZBW6RXZ","RE7QZKBZ"],["TZBW6RXZ","9KCXQJZU"],["TZBW6RXZ","RK2HT2U4"],["XRUHACJ6","TZBW6RXZ"],["RXLWJCWQ","TZBW6RXZ"],["QIAPYMJL","RK2HT2U4"],["4EY6SEM7","VKQV6UA6"],["VKQV6UA6","RE7QZKBZ"],["VKQV6UA6","9KCXQJZU"],["VKQV6UA6","RK2HT2U4"],["6ZGMAL9Z","TZBW6RXZ"],["RK2HT2U4","IKR946PP"],["SMV6HV3W","TZBW6RXZ"],["9KCXQJZU","IKR946PP"],["25HST56S","RXLWJCWQ"],["25HST56S","QIAPYMJL"],["25HST56S","VKQV6UA6"],["25HST56S","32YWYGGD"],["99FI9HQC","TZBW6RXZ"],["9E2WUYQY","25HST56S"],["9E2WUYQY","XRUHACJ6"],["9E2WUYQY","99FI9HQC"],["9E2WUYQY","LVYK5YWL"],["9E2WUYQY","6ZGMAL9Z"],["9E2WUYQY","4EY6SEM7"],["EY7JWA2J","25HST56S"],["EY7JWA2J","99FI9HQC"],["EY7JWA2J","4EY6SEM7"],["SHBNNZJD","RXLWJCWQ"],["SHBNNZJD","QIAPYMJL"],["SHBNNZJD","VKQV6UA6"],["SHBNNZJD","LVYK5YWL"],["D75ZNRE9","9E2WUYQY"],["KI4S3YZG","9E2WUYQY"],["FSZQLTCQ","9E2WUYQY"],["U5RKKDV2","RE7QZKBZ"]],"edges_all":[["AGVNEBXB","25HST56S"],["AGVNEBXB","6ZGMAL9Z"],["AGVNEBXB","99FI9HQC"],["AGVNEBXB","9E2WUYQY"],["AGVNEBXB","D75ZNRE9"],["AGVNEBXB","EY7JWA2J"],["AGVNEBXB","IKR946PP"],["AGVNEBXB","LVYK5YWL"],["AGVNEBXB","QIAPYMJL"],["AGVNEBXB","RE7QZKBZ"],["AGVNEBXB","SHBNNZJD"],["AGVNEBXB","TZBW6RXZ"],["AGVNEBXB","U5RKKDV2"],["AGVNEBXB","ZRQAX229"],["TZBW6RXZ","9KCXQJZU"],["TZBW6RXZ","IKR946PP"],["TZBW6RXZ","RE7QZKBZ"],["TZBW6RXZ","RK2HT2U4"],["XRUHACJ6","IKR946PP"],["XRUHACJ6","RE7QZKBZ"],["XRUHACJ6","TZBW6RXZ"],["RXLWJCWQ","TZBW6RXZ"],["QIAPYMJL","IKR946PP"],["QIAPYMJL","RK2HT2U4"],["4EY6SEM7","9KCXQJZU"],["4EY6SEM7","IKR946PP"],["4EY6SEM7","RE7QZKBZ"],["4EY6SEM7","RK2HT2U4"],["4EY6SEM7","VKQV6UA6"],["VKQV6UA6","9KCXQJZU"],["VKQV6UA6","IKR946PP"],["VKQV6UA6","RE7QZKBZ"],["VKQV6UA6","RK2HT2U4"],["6ZGMAL9Z","9KCXQJZU"],["6ZGMAL9Z","IKR946PP"],["6ZGMAL9Z","RE7QZKBZ"],["6ZGMAL9Z","RK2HT2U4"],["6ZGMAL9Z","TZBW6RXZ"],["RK2HT2U4","IKR946PP"],["SMV6HV3W","9KCXQJZU"],["SMV6HV3W","IKR946PP"],["SMV6HV3W","RE7QZKBZ"],["SMV6HV3W","TZBW6RXZ"],["9KCXQJZU","IKR946PP"],["25HST56S","32YWYGGD"],["25HST56S","IKR946PP"],["25HST56S","QIAPYMJL"],["25HST56S","RXLWJCWQ"],["25HST56S","TZBW6RXZ"],["25HST56S","VKQV6UA6"],["99FI9HQC","IKR946PP"],["99FI9HQC","TZBW6RXZ"],["9E2WUYQY","25HST56S"],["9E2WUYQY","32YWYGGD"],["9E2WUYQY","4EY6SEM7"],["9E2WUYQY","6ZGMAL9Z"],["9E2WUYQY","99FI9HQC"],["9E2WUYQY","9KCXQJZU"],["9E2WUYQY","IKR946PP"],["9E2WUYQY","LVYK5YWL"],["9E2WUYQY","QIAPYMJL"],["9E2WUYQY","RE7QZKBZ"],["9E2WUYQY","RXLWJCWQ"],["9E2WUYQY","VKQV6UA6"],["9E2WUYQY","XRUHACJ6"],["EY7JWA2J","25HST56S"],["EY7JWA2J","4EY6SEM7"],["EY7JWA2J","99FI9HQC"],["EY7JWA2J","IKR946PP"],["EY7JWA2J","QIAPYMJL"],["EY7JWA2J","TZBW6RXZ"],["SHBNNZJD","IKR946PP"],["SHBNNZJD","LVYK5YWL"],["SHBNNZJD","QIAPYMJL"],["SHBNNZJD","RE7QZKBZ"],["SHBNNZJD","RXLWJCWQ"],["SHBNNZJD","TZBW6RXZ"],["SHBNNZJD","VKQV6UA6"],["D75ZNRE9","25HST56S"],["D75ZNRE9","9E2WUYQY"],["D75ZNRE9","IKR946PP"],["D75ZNRE9","LVYK5YWL"],["D75ZNRE9","RE7QZKBZ"],["D75ZNRE9","RK2HT2U4"],["KI4S3YZG","25HST56S"],["KI4S3YZG","6ZGMAL9Z"],["KI4S3YZG","99FI9HQC"],["KI4S3YZG","9E2WUYQY"],["KI4S3YZG","QIAPYMJL"],["KI4S3YZG","RXLWJCWQ"],["KI4S3YZG","TZBW6RXZ"],["KI4S3YZG","VKQV6UA6"],["FSZQLTCQ","4EY6SEM7"],["FSZQLTCQ","9E2WUYQY"],["FSZQLTCQ","IKR946PP"],["FSZQLTCQ","RE7QZKBZ"],["FSZQLTCQ","VKQV6UA6"],["U5RKKDV2","RE7QZKBZ"]],"edges_back":[["RK2HT2U4","4EY6SEM7"],["RK2HT2U4","RE7QZKBZ"],["RK2HT2U4","VKQV6UA6"]],"edges_root":[["25HST56S","R0"],["4EY6SEM7","R0"],["6ZGMAL9Z","R0"],["99FI9HQC","R0"],["9E2WUYQY","R0"],["9KCXQJZU","R0"],["AGVNEBXB","R0"],["D75ZNRE9","R0"],["EY7JWA2J","R0"],["FSZQLTCQ","R0"],["QIAPYMJL","R0"],["RK2HT2U4","R0"],["RXLWJCWQ","R0"],["SHBNNZJD","R0"],["SMV6HV3W","R0"],["TZBW6RXZ","R0"],["VKQV6UA6","R0"],["25HST56S","R1"],["5TCZ3YB6","R1"],["6ZGMAL9Z","R1"],["9E2WUYQY","R1"],["9KCXQJZU","R1"],["AGVNEBXB","R1"],["IKR946PP","R1"],["KI4S3YZG","R1"],["NFRCJULC","R1"],["QIAPYMJL","R1"],["RXLWJCWQ","R1"],["SMV6HV3W","R1"],["TZBW6RXZ","R1"],["VKQV6UA6","R1"],["25HST56S","R2"],["6ZGMAL9Z","R2"],["99FI9HQC","R2"],["9E2WUYQY","R2"],["AGVNEBXB","R2"],["KI4S3YZG","R2"],["NFRCJULC","R2"],["QIAPYMJL","R2"],["RK2HT2U4","R2"],["RXLWJCWQ","R2"],["SHBNNZJD","R2"],["TZBW6RXZ","R2"],["XRUHACJ6","R2"],["25HST56S","R3"],["6ZGMAL9Z","R3"],["99FI9HQC","R3"],["9E2WUYQY","R3"],["AGVNEBXB","R3"],["D75ZNRE9","R3"],["KI4S3YZG","R3"],["QIAPYMJL","R3"],["RK2HT2U4","R3"],["TZBW6RXZ","R3"],["UF84MBEY","R3"],["XRUHACJ6","R3"],["4EY6SEM7","R4"],["6ZGMAL9Z","R4"],["99FI9HQC","R4"],["AGVNEBXB","R4"],["FSZQLTCQ","R4"],["IKR946PP","R4"],["NFRCJULC","R4"],["QIAPYMJL","R4"],["RK2HT2U4","R4"],["VKQV6UA6","R4"],["XRUHACJ6","R4"],["6ZGMAL9Z","R5"],["99FI9HQC","R5"],["9E2WUYQY","R5"],["D75ZNRE9","R5"],["EY7JWA2J","R5"],["FSZQLTCQ","R5"],["IKR946PP","R5"],["SHBNNZJD","R5"],["SMV6HV3W","R5"],["TZBW6RXZ","R5"],["VKQV6UA6","R5"],["25HST56S","R6"],["6ZGMAL9Z","R6"],["99FI9HQC","R6"],["9E2WUYQY","R6"],["KI4S3YZG","R6"],["NFRCJULC","R6"],["QIAPYMJL","R6"],["RXLWJCWQ","R6"],["SHBNNZJD","R6"],["TZBW6RXZ","R6"],["XRUHACJ6","R6"],["25HST56S","R7"],["5TCZ3YB6","R7"],["6ZGMAL9Z","R7"],["AGVNEBXB","R7"],["EY7JWA2J","R7"],["KI4S3YZG","R7"],["NFRCJULC","R7"],["QIAPYMJL","R7"],["RK2HT2U4","R7"],["TZBW6RXZ","R7"],["25HST56S","R8"],["4EY6SEM7","R8"],["6ZGMAL9Z","R8"],["9KCXQJZU","R8"],["IKR946PP","R8"],["QIAPYMJL","R8"],["RK2HT2U4","R8"],["SMV6HV3W","R8"],["TZBW6RXZ","R8"],["VKQV6UA6","R8"],["25HST56S","R9"],["6ZGMAL9Z","R9"],["99FI9HQC","R9"],["9E2WUYQY","R9"],["9KCXQJZU","R9"],["IKR946PP","R9"],["QIAPYMJL","R9"],["RK2HT2U4","R9"],["VKQV6UA6","R9"],["XRUHACJ6","R9"],["25HST56S","R10"],["6ZGMAL9Z","R10"],["99FI9HQC","R10"],["9E2WUYQY","R10"],["D75ZNRE9","R10"],["KI4S3YZG","R10"],["NFRCJULC","R10"],["QIAPYMJL","R10"],["RK2HT2U4","R10"],["XRUHACJ6","R10"],["25HST56S","R11"],["4EY6SEM7","R11"],["6ZGMAL9Z","R11"],["9E2WUYQY","R11"],["D75ZNRE9","R11"],["RXLWJCWQ","R11"],["SMV6HV3W","R11"],["TZBW6RXZ","R11"],["VKQV6UA6","R11"],["25HST56S","R12"],["4EY6SEM7","R12"],["6ZGMAL9Z","R12"],["99FI9HQC","R12"],["9E2WUYQY","R12"],["D75ZNRE9","R12"],["FSZQLTCQ","R12"],["RXLWJCWQ","R12"],["TZBW6RXZ","R12"],["4AYHFG9D","R13"],["4EY6SEM7","R13"],["5TCZ3YB6","R13"],["9E2WUYQY","R13"],["AGVNEBXB","R13"],["EY7JWA2J","R13"],["KI4S3YZG","R13"],["SHBNNZJD","R13"],["25HST56S","R14"],["6ZGMAL9Z","R14"],["99FI9HQC","R14"],["9E2WUYQY","R14"],["AGVNEBXB","R14"],["KI4S3YZG","R14"],["RK2HT2U4","R14"],["RXLWJCWQ","R14"],["25HST56S","R15"],["6ZGMAL9Z","R15"],["99FI9HQC","R15"],["9E2WUYQY","R15"],["AGVNEBXB","R15"],["NFRCJULC","R15"],["QIAPYMJL","R15"],["SHBNNZJD","R15"],["25HST56S","R16"],["9E2WUYQY","R16"],["EY7JWA2J","R16"],["FSZQLTCQ","R16"],["RK2HT2U4","R16"],["SHBNNZJD","R16"],["TZBW6RXZ","R16"],["VKQV6UA6","R16"],["25HST56S","R17"],["6ZGMAL9Z","R17"],["9E2WUYQY","R17"],["D75ZNRE9","R17"],["KI4S3YZG","R17"],["NFRCJULC","R17"],["TZBW6RXZ","R17"],["XRUHACJ6","R17"]],"ticks":[{"year":2023,"y":386},{"year":2024,"y":478},{"year":2025,"y":846},{"year":2026,"y":1766}],"stats":{"nodes":34,"edges_all":98,"edges_tr":41,"backward":3,"isolated":9,"roots":18,"roots_missing":10}};
+const GROUP_COLOR = {g1:"#6aa6ff", g2:"#46d7cc", g3:"#f0bf4c", g4:"#9bce6b", g5:"#b49bff"};
+const GROUP_NAME  = {g1:"模块化端到端", g2:"VLM · VLA", g3:"RL 后训练", g4:"越野", g5:"综述 · 基建"};
+const SURVEY = "e2e-autonomous-driving-vla.html";
+const N = LAYOUT.nodes, R = LAYOUT.roots, E_TR = LAYOUT.edges_tr, E_ALL = LAYOUT.edges_all,
+      E_BACK = LAYOUT.edges_back, E_ROOT = LAYOUT.edges_root;
+const svg = document.getElementById("graph"), SVGNS = "http://www.w3.org/2000/svg";
+const el = (t,a={}) => { const e=document.createElementNS(SVGNS,t); for(const k in a) e.setAttribute(k,a[k]); return e; };
+const rad = v => 5 + Math.sqrt(Math.max(0,v)) * 3.2;
+
+svg.setAttribute("width", LAYOUT.W); svg.setAttribute("height", LAYOUT.H);
+svg.setAttribute("viewBox", `0 0 ${LAYOUT.W} ${LAYOUT.H}`);
+
+const defs = el("defs");
+for (const [id,c] of [["a","#9aa6bf"],["au","#6aa6ff"],["ad","#9bce6b"],["ar","#f0bf4c"]]){
+  const m = el("marker",{id:"arw-"+id, markerWidth:8, markerHeight:8, refX:7, refY:4, orient:"auto", markerUnits:"userSpaceOnUse"});
+  m.appendChild(el("path",{d:"M0 0 L8 4 L0 8 z", fill:c})); defs.appendChild(m);
+}
+svg.appendChild(defs);
+
+/* 根带标题 + 分隔 */
+if (Object.keys(R).length){
+  svg.appendChild(el("text",{class:"band-hd", x:16, y:30})).textContent =
+    `根 · 奠基与前作(被本领域 ≥8 篇引用;虚线灰点 = 尚未入库)`;
+  svg.appendChild(el("line",{class:"band-div", x1:0, y1:LAYOUT.band_h-16, x2:LAYOUT.main_w, y2:LAYOUT.band_h-16}));
+}
+/* 年份 gridline */
+for (const t of LAYOUT.ticks){
+  svg.appendChild(el("line",{class:"ax-line", x1:0, y1:t.y-22, x2:LAYOUT.main_w, y2:t.y-22}));
+  svg.appendChild(el("text",{class:"ax-lbl", x:12, y:t.y-27})).textContent = t.year;
+}
+/* 右侧未连接车道 */
+if (LAYOUT.stats.isolated > 0){
+  const lx = LAYOUT.main_w + 6;
+  svg.appendChild(el("line",{class:"lane-div", x1:lx, y1:LAYOUT.band_h, x2:lx, y2:LAYOUT.H-10}));
+  svg.appendChild(el("text",{class:"lane-hd", x:LAYOUT.main_w+18, y:LAYOUT.band_h+18, "text-anchor":"start"}))
+     .textContent = "未连接 · 索引未覆盖其集合内引用";
+}
+
+const edgeLayer=el("g"); svg.appendChild(edgeLayer);
+const rootEdgeLayer=el("g"); svg.appendChild(rootEdgeLayer);
+const nodeLayer=el("g"); svg.appendChild(nodeLayer);
+const rootLayer=el("g"); svg.appendChild(rootLayer);
+
+/* 焦点-焦点边 */
+const focusEdgePath = (a,b) => {           // a=更新(下), b=更早(上);画 b→a
+  const A=N[a], B=N[b], x1=B.x, y1=B.y+rad(B.indeg)+3, x2=A.x, y2=A.y-rad(A.indeg)-3, my=(y1+y2)/2;
+  return `M${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`;
+};
+const edgeEls=[]; const trSet=new Set(E_TR.map(e=>e[0]+">"+e[1]));
+function renderEdges(mode, showBack){
+  edgeLayer.innerHTML=""; edgeEls.length=0;
+  const list = mode==="tr" ? E_TR : E_ALL;
+  for(const [a,b] of list){
+    if(!N[a]||!N[b]) continue;
+    const isTr=trSet.has(a+">"+b);
+    const p=el("path",{class:"edge"+((mode==="tr"||(mode==="both"&&isTr))?" tr":""), d:focusEdgePath(a,b), "marker-end":"url(#arw-a)"});
+    p.__a=a; p.__b=b; edgeLayer.appendChild(p); edgeEls.push(p);
+  }
+  if(showBack) for(const [a,b] of E_BACK){ if(!N[a]||!N[b])continue;
+    const p=el("path",{class:"edge back", d:focusEdgePath(a,b), "marker-end":"url(#arw-a)"}); p.__a=a;p.__b=b; edgeLayer.appendChild(p); edgeEls.push(p); }
+}
+
+/* 焦点节点(PR 红环 + 主圆) */
+const nodeEls={};
+for(const k in N){
+  const n=N[k], r=rad(n.indeg);
+  const g=el("g",{class:"node"+(n.iso?" iso":"")}); g.__k=k;
+  if(n.pr>0.02) g.appendChild(el("circle",{class:"prring", cx:n.x, cy:n.y, r:r+2.5, "stroke-width":(0.6+n.pr*6).toFixed(2), "stroke-opacity":(0.3+n.pr*0.7).toFixed(2)}));
+  g.appendChild(el("circle",{class:"core", cx:n.x, cy:n.y, r:r, fill:GROUP_COLOR[n.g]||"#888"}));
+  if(n.iso){ g.appendChild(el("text",{class:"nl", x:n.x+r+5, y:n.y+4, "text-anchor":"start"})).textContent=n.name; }
+  else{
+    g.appendChild(el("text",{class:"nl", x:n.x, y:n.y-r-6, "text-anchor":"middle"})).textContent=n.name;
+    g.appendChild(el("text",{class:"nl", x:n.x, y:n.y+r+15, "text-anchor":"middle", style:"font-size:10px;fill:var(--dim);font-weight:500"}))
+      .textContent=(n.date||n.year||"").slice(0,7);
+  }
+  nodeLayer.appendChild(g); nodeEls[k]=g;
+}
+/* 根节点 */
+const rootEls={};
+for(const rid in R){
+  const n=R[rid], r=rad(n.n_by);
+  const g=el("g",{class:"rnode"+(n.in_lib?"":" missing")}); g.__r=rid;
+  const fill = n.in_lib ? (n.drive?"rgba(70,215,204,.5)":"rgba(180,155,255,.5)") : "rgba(155,165,191,.10)";
+  g.appendChild(el("circle",{class:"core", cx:n.x, cy:n.y, r:r, fill:fill, stroke:(n.in_lib?(n.drive?"#46d7cc":"#b49bff"):"var(--dim)")}));
+  g.appendChild(el("text",{class:"rl", x:n.x, y:n.y-r-5, "text-anchor":"middle"})).textContent=n.name;
+  g.appendChild(el("text",{class:"rby", x:n.x, y:n.y+3, "text-anchor":"middle"})).textContent=n.n_by;
+  rootLayer.appendChild(g); rootEls[rid]=g;
+}
+
+/* 祖先/后代 + 根依赖 */
+const up={}, dn={}; for(const k in N){up[k]=[];dn[k]=[];}
+for(const [a,b] of E_ALL){ if(N[a]&&N[b]){ up[a].push(b); dn[b].push(a); } }
+function reach(s,adj){ const seen=new Set(),st=[s]; while(st.length){const x=st.pop(); for(const y of adj[x]||[]) if(!seen.has(y)){seen.add(y);st.push(y);}} return seen; }
+const citesRoots={}, rootBy={};
+for(const [fk,rid] of E_ROOT){ (citesRoots[fk]=citesRoots[fk]||[]).push(rid); (rootBy[rid]=rootBy[rid]||[]).push(fk); }
+
+const tip=document.getElementById("tip");
+let mode="tr", showBack=false;
+function draw(){ renderEdges(mode, showBack); }
+draw();
+
+function clearHi(){
+  for(const k in nodeEls) nodeEls[k].classList.remove("dim","hl","root0");
+  for(const rid in rootEls) rootEls[rid].classList.remove("dim","hl");
+  for(const p of edgeEls) p.classList.remove("dim");
+  rootEdgeLayer.innerHTML="";
+}
+function drawRootEdge(fk, rid){
+  const A=N[fk], B=R[rid];
+  const x1=A.x, y1=A.y-rad(A.indeg)-3, x2=B.x, y2=B.y+rad(B.n_by)+3, my=(y1+y2)/2;
+  rootEdgeLayer.appendChild(el("path",{class:"redge", d:`M${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`, "marker-end":"url(#arw-ar)"}));
+}
+function hoverFocus(k){
+  const anc=reach(k,up), des=reach(k,dn), myRoots=new Set(citesRoots[k]||[]);
+  const keep=new Set([k,...anc,...des]);
+  for(const j in nodeEls){ nodeEls[j].classList.toggle("dim", !keep.has(j)); nodeEls[j].classList.toggle("hl", keep.has(j)&&j!==k); }
+  nodeEls[k].classList.add("root0");
+  for(const rid in rootEls) rootEls[rid].classList.toggle("dim", !myRoots.has(rid));
+  for(const p of edgeEls){
+    const on=(keep.has(p.__a)&&keep.has(p.__b));
+    p.classList.toggle("dim", !on);
+    p.setAttribute("marker-end", (p.__a===k&&anc.has(p.__b))?"url(#arw-au)":(p.__b===k&&des.has(p.__a))?"url(#arw-ad)":"url(#arw-a)");
+  }
+  for(const rid of myRoots) drawRootEdge(k, rid);
+}
+function hoverRoot(rid){
+  const cites=new Set(rootBy[rid]||[]);
+  for(const j in nodeEls) nodeEls[j].classList.toggle("dim", !cites.has(j));
+  for(const rr in rootEls) rootEls[rr].classList.toggle("dim", rr!==rid);
+  for(const p of edgeEls) p.classList.add("dim");
+  for(const fk of cites) drawRootEdge(fk, rid);
+}
+function tipHTML(html,e){ tip.innerHTML=html; tip.style.opacity=1; }
+function moveTip(e){ tip.style.left=Math.min(e.clientX+14, innerWidth-346)+"px"; tip.style.top=(e.clientY+14)+"px"; }
+
+for(const k in nodeEls){
+  const g=nodeEls[k], n=N[k];
+  g.addEventListener("mouseenter", ()=>{ hoverFocus(k);
+    tipHTML(`<div class="tt">${n.name}</div><div class="tm">${(n.date||n.year||"")} · ${GROUP_NAME[n.g]}</div>`+
+      `<div class="tc">${n.title}</div><div class="tc" style="color:var(--dim)">被引 <b>${n.indeg}</b> · PageRank <b>${n.pr}</b> · 依赖根 <b>${(citesRoots[k]||[]).length}</b></div>`); });
+  g.addEventListener("mousemove", moveTip);
+  g.addEventListener("mouseleave", ()=>{ clearHi(); tip.style.opacity=0; });
+  g.addEventListener("click", ()=> location.href=SURVEY+"#p-"+k);
+}
+for(const rid in rootEls){
+  const g=rootEls[rid], n=R[rid];
+  g.addEventListener("mouseenter", ()=>{ hoverRoot(rid);
+    tipHTML(`<div class="tt">${n.name}${n.in_lib?"":' <span style="color:var(--dim);font-size:11px">· 尚未入库</span>'}</div>`+
+      `<div class="tm">${n.year||""} · 全局被引 ${n.gc}</div><div class="tc">${n.title}</div>`+
+      `<div class="tc" style="color:var(--dim)">被本领域 <b>${n.n_by}</b> 篇引用${n.in_lib?"":" · 建议补录到 Zotero"}</div>`); });
+  g.addEventListener("mousemove", moveTip);
+  g.addEventListener("mouseleave", ()=>{ clearHi(); tip.style.opacity=0; });
+  if(n.arxiv) g.addEventListener("click", ()=> window.open("https://arxiv.org/abs/"+n.arxiv,"_blank"));
+}
+
+/* 控制栏 */
+document.getElementById("seg-edge").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b)return;
+  mode=b.dataset.mode; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); clearHi(); draw(); });
+document.getElementById("ck-back").addEventListener("change", e=>{ showBack=e.target.checked; clearHi(); draw(); });
+document.getElementById("ck-roots").addEventListener("change", e=>{ rootLayer.style.display=e.target.checked?"":"none"; if(!e.target.checked) rootEdgeLayer.innerHTML=""; });
+
+/* 图例 */
+const lg=document.getElementById("legend"); const disabledG=new Set();
+function el2(t,c){ const e=document.createElement(t); e.className=c; return e; }
+for(const g of ["g1","g2","g3","g4","g5"]){
+  const it=el2("span","it"); it.innerHTML=`<span class="sw" style="background:${GROUP_COLOR[g]}"></span>${GROUP_NAME[g]}`;
+  it.addEventListener("click", ()=>{ disabledG.has(g)?(disabledG.delete(g),it.classList.remove("off")):(disabledG.add(g),it.classList.add("off"));
+    for(const k in N) if(N[k].g===g) nodeEls[k].style.display=disabledG.has(g)?"none":"";
+    for(const p of edgeEls) p.style.display=(disabledG.has(N[p.__a].g)||disabledG.has(N[p.__b].g))?"none":""; });
+  lg.appendChild(it);
+}
+lg.appendChild(el2("span","sep"));
+lg.appendChild(el2("span","it")).innerHTML='<svg width="46" height="18"><circle cx="8" cy="9" r="4" fill="#9aa6bf"/><circle cx="34" cy="9" r="8" fill="#9aa6bf"/></svg>大小=被引入度';
+lg.appendChild(el2("span","it")).innerHTML='<svg width="20" height="18"><circle cx="9" cy="9" r="5" fill="#46d7cc"/><circle cx="9" cy="9" r="7.5" fill="none" stroke="#ff8a8a" stroke-width="2.5"/></svg>红环=PageRank';
+lg.appendChild(el2("span","sep"));
+lg.appendChild(el2("span","it")).innerHTML='<svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="rgba(70,215,204,.5)" stroke="#46d7cc" stroke-width="2"/></svg>根·已在库';
+lg.appendChild(el2("span","it")).innerHTML='<svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="rgba(155,165,191,.1)" stroke="#6b768f" stroke-width="2" stroke-dasharray="3 3"/></svg>根·缺失待补';
+lg.appendChild(el2("span","sep"));
+lg.appendChild(el2("span","it")).innerHTML='<span class="ln" style="border-color:var(--blue)"></span>祖先链';
+lg.appendChild(el2("span","it")).innerHTML='<span class="ln" style="border-color:var(--olive)"></span>后代链';
+lg.appendChild(el2("span","it")).innerHTML='<span class="ln" style="border-color:var(--amber);border-top-style:dashed"></span>引用的根';
+
+document.getElementById("stat").textContent =
+  `${LAYOUT.stats.nodes} 篇 · 主干 ${LAYOUT.stats.edges_tr}/全部 ${LAYOUT.stats.edges_all} 边 · ${LAYOUT.stats.roots} 根(缺 ${LAYOUT.stats.roots_missing})`;
+})();
+</script>
+
+<script>
+(function(){
+  document.querySelectorAll('#floatnav a[data-spy], nav.topnav a[href^="#"]').forEach(a=>{
+    a.addEventListener('click', ()=>{ const t=document.querySelector(a.getAttribute('href')); if(t&&t.tagName==='DETAILS'){ t.open=true; let p=t.parentElement; while(p){ if(p.tagName==='DETAILS') p.open=true; p=p.parentElement; } } });
+  });
+  const btn=document.getElementById('toggle-all');
+  if(btn) btn.addEventListener('click', ()=>{
+    const expand = btn.textContent.includes('展开');
+    document.querySelectorAll('details.blk, details.sub, details.sub2').forEach(d=>d.open=expand);
+    btn.textContent = expand ? '全部折叠' : '全部展开';
+  });
+})();
+</script>
+</body>
+</html>
