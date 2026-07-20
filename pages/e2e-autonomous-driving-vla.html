@@ -332,6 +332,27 @@ ul.skel .lb.lib{color:var(--olive); background:var(--soft-olive);}
 ul.skel .lb.gap{color:var(--dim); background:var(--panel-2);}
 #floatnav .fn-btn{font-family:var(--mono); font-size:12px; color:var(--muted); background:transparent; border:0; padding:9px 11px; cursor:pointer; margin-left:auto;}
 #floatnav .fn-btn:hover{color:var(--terra);}
+
+/* —— 合作网络图 —— */
+#coa-graph{display:block;}
+#coa-graph text{font-family:var(--sans); pointer-events:none;}
+.cedge{stroke:var(--teal); stroke-opacity:.35; fill:none;}
+.cedge.hl{stroke:var(--terra); stroke-opacity:.95;}
+.cedge.dim{stroke-opacity:.05;}
+.cnode{cursor:pointer;}
+.cnode .cc{stroke:var(--bg); stroke-width:2;}
+.cnode .cl{fill:var(--ink); font-size:11.5px; font-weight:600;}
+.cnode.dim{opacity:.15;}
+.cnode.hl .cc{stroke:var(--ink);}
+.cnode.root0 .cc{stroke:var(--terra); stroke-width:3;}
+.cnode.iso .cc{opacity:.6;} .cnode.iso .cl{fill:var(--muted); font-weight:500; font-size:11px;}
+.coa-div{stroke:var(--line-2); stroke-width:1; stroke-dasharray:2 4;}
+.coa-hd{fill:var(--dim); font-family:var(--mono); font-size:11px; letter-spacing:.1em;}
+.grp{border:1px solid var(--line); border-radius:12px; padding:12px 15px; background:var(--bg-soft);}
+.grp .gt{font-family:var(--serif); font-weight:600; color:var(--ink); font-size:15px; margin-bottom:4px;}
+.grp .gp{font-size:13px; color:var(--muted); margin:2px 0;}
+.grp .ga{font-size:12px; color:var(--dim); font-family:var(--mono); margin-top:5px;}
+.grpwrap{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; margin:4px 0 8px;}
 </style>
 </head>
 
@@ -341,6 +362,7 @@ ul.skel .lb.gap{color:var(--dim); background:var(--panel-2);}
 <nav id="floatnav"><div class="fnin">
   <a class="home" href="../index.html">⌂ 门户</a>
   <a href="#citegraph" data-spy>谱系总览</a>
+  <a href="#coauthor" data-spy>合作网络</a>
   <a href="#sec0" data-spy>0 基石</a>
   <a href="#sec1" data-spy>1 城区</a>
   <a href="#sec2" data-spy>2 越野</a>
@@ -394,6 +416,15 @@ ul.skel .lb.gap{color:var(--dim); background:var(--panel-2);}
 
 <div id="tip"></div>
     </details>
+
+    <details class="blk" id="coauthor"><summary><span class="stt">合作网络 · 作者共著图</span><span class="scount">34 篇 · 谁和谁在同一团队</span></summary>
+      <p class="blkdesc">与「引用时间轴」互补:那张看<b>思想传承</b>(谁引用谁),这张看<b>团队合作</b>——节点=论文,连线=两篇<b>共享作者</b>(线越粗共享越多),力导向聚成研究团队簇。悬停高亮同团队论文。底部是与集合内无共著的独立论文。</p>
+      <div class="stage" style="max-height:none;"><svg id="coa-graph"></svg></div>
+      <div style="margin:14px 0 4px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--terra);">主要研究团队(集合内)</div>
+      <div class="grpwrap" id="coa-panel"></div>
+      <div class="note"><div class="ic">🔗</div><div class="ct"><b>怎么读</b>:两大团队最醒目——<b>Horizon/华科系</b>(Wang Xinggang · Jiang Bo 等 → VADv2·DiffusionDrive·Senna·RAD 一脉)与 <b>NVIDIA 系</b>(Ivanovic·Pavone 等 → PARA-Drive·Alpamayo-R1·Triplane·Cosmos)。同一团队的论文往往在引用图里也彼此承接。作者数据来自 Zotero,机构名(NVIDIA 等)不计为作者。</div></div>
+    </details>
+
 
     <details class="blk" id="sec0"><summary><span class="stt">0 · 公用基石</span><span class="scount">Shared Foundations · 两线共同的根</span></summary>
       <p class="blkdesc">视觉骨干 / 语言模型 / 多模态基座 / 生成模型 / 学习范式——城区与越野都建立在其上，故单列一处、不并列。</p>
@@ -1477,6 +1508,89 @@ document.getElementById("stat").textContent =
     const expand = btn.textContent.includes('展开');
     document.querySelectorAll('details.blk, details.sub, details.sub2').forEach(d=>d.open=expand);
     btn.textContent = expand ? '全部折叠' : '全部展开';
+  });
+})();
+</script>
+
+<script>
+(function(){
+  const CO = {"W":1170,"H":820,"toph":530,"nodes":{"AGVNEBXB":{"x":280.2,"y":136.7,"g":"g2","name":"Alpamayo-R1","year":"2025","na":43,"deg":4,"iso":false},"U5RKKDV2":{"x":378.9,"y":198.0,"g":"g2","name":"Triplane Tokenization","year":"2025","na":6,"deg":3,"iso":false},"RE7QZKBZ":{"x":486.0,"y":157.6,"g":"g1","name":"PARA-Drive","year":"2024","na":5,"deg":3,"iso":false},"SMV6HV3W":{"x":458.4,"y":76.0,"g":"g5","name":"Data Scaling Laws","year":"2025","na":10,"deg":3,"iso":false},"4AYHFG9D":{"x":108.0,"y":121.9,"g":"g5","name":"Cosmos-Reason1","year":"2025","na":45,"deg":1,"iso":false},"4EY6SEM7":{"x":684.0,"y":138.6,"g":"g3","name":"RAD","year":"2025","na":14,"deg":3,"iso":false},"QIAPYMJL":{"x":868.2,"y":198.0,"g":"g2","name":"Senna","year":"2024","na":9,"deg":3,"iso":false},"VKQV6UA6":{"x":1062.0,"y":132.1,"g":"g1","name":"DiffusionDrive","year":"2025","na":11,"deg":3,"iso":false},"RK2HT2U4":{"x":836.7,"y":76.0,"g":"g1","name":"VADv2","year":"2024","na":9,"deg":3,"iso":false},"99FI9HQC":{"x":108.0,"y":364.3,"g":"g2","name":"SimLingo","year":"2025","na":4,"deg":2,"iso":false},"9KCXQJZU":{"x":486.0,"y":332.0,"g":"g1","name":"GenAD","year":"2024","na":5,"deg":2,"iso":false},"SHBNNZJD":{"x":383.6,"y":454.0,"g":"g3","name":"AdaThinkDrive","year":"2025","na":13,"deg":2,"iso":false},"32YWYGGD":{"x":684.0,"y":454.0,"g":"g5","name":"VLM-AD 综述","year":"2024","na":7,"deg":1,"iso":false},"25HST56S":{"x":1062.0,"y":332.0,"g":"g2","name":"OpenDriveVLA","year":"2025","na":6,"deg":1,"iso":false},"PSQLC2NZ":{"x":105.0,"y":586,"g":"g4","name":"OffEMMA","year":"2026","na":9,"deg":0,"iso":true},"UF84MBEY":{"x":225.0,"y":586,"g":"g4","name":"越野 VLM 建图","year":"2026","na":6,"deg":0,"iso":true},"TZBW6RXZ":{"x":345.0,"y":586,"g":"g2","name":"EMMA","year":"2024","na":13,"deg":0,"iso":true},"XRUHACJ6":{"x":465.0,"y":586,"g":"g2","name":"BEVDriver","year":"2025","na":3,"deg":0,"iso":true},"5TCZ3YB6":{"x":585.0,"y":586,"g":"g2","name":"车载本地 LLM × MPC","year":"2025","na":7,"deg":0,"iso":true},"RXLWJCWQ":{"x":705.0,"y":586,"g":"g2","name":"OpenEMMA","year":"2025","na":7,"deg":0,"iso":true},"LVYK5YWL":{"x":825.0,"y":586,"g":"g2","name":"LightEMMA","year":"2025","na":4,"deg":0,"iso":true},"6ZGMAL9Z":{"x":945.0,"y":586,"g":"g2","name":"VLM-AD","year":"2025","na":8,"deg":0,"iso":true},"IKR946PP":{"x":1065.0,"y":586,"g":"g1","name":"UniAD","year":"2023","na":16,"deg":0,"iso":true},"9E2WUYQY":{"x":105.0,"y":656,"g":"g2","name":"AutoVLA","year":"2025","na":7,"deg":0,"iso":true},"EY7JWA2J":{"x":225.0,"y":656,"g":"g3","name":"IRL-VLA","year":"2025","na":14,"deg":0,"iso":true},"D75ZNRE9":{"x":345.0,"y":656,"g":"g3","name":"AutoDrive-R²","year":"2025","na":10,"deg":0,"iso":true},"KI4S3YZG":{"x":465.0,"y":656,"g":"g3","name":"Poutine","year":"2025","na":5,"deg":0,"iso":true},"FSZQLTCQ":{"x":585.0,"y":656,"g":"g3","name":"RAP","year":"2025","na":8,"deg":0,"iso":true},"JJRGEFJ2":{"x":705.0,"y":656,"g":"g5","name":"GE2E 综述","year":"","na":10,"deg":0,"iso":true},"US2EBTVT":{"x":825.0,"y":656,"g":"g5","name":"LLM 类人驾驶综述","year":"2024","na":4,"deg":0,"iso":true},"FSZMLU6S":{"x":945.0,"y":656,"g":"g5","name":"TAD-E2E","year":"2025","na":9,"deg":0,"iso":true},"ZRQAX229":{"x":1065.0,"y":656,"g":"g5","name":"3DGUT","year":"2025","na":5,"deg":0,"iso":true},"5TM3P9CI":{"x":525.0,"y":726,"g":"g4","name":"ROD","year":"2025","na":7,"deg":0,"iso":true},"NFRCJULC":{"x":645.0,"y":726,"g":"g5","name":"AutoDrive-QA","year":"2025","na":2,"deg":0,"iso":true}},"edges":[["AGVNEBXB","RE7QZKBZ",["Ivanovic, Boris","Pavone, Marco","Wang, Yan","Weng, Xinshuo"]],["AGVNEBXB","U5RKKDV2",["Ivanovic, Boris","Luo, Wenjie","Pavone, Marco","Wang, Yan","You, Yurong"]],["AGVNEBXB","SMV6HV3W",["Ivanovic, Boris","Pavone, Marco"]],["AGVNEBXB","4AYHFG9D",["Diamond, Jenna","Ding, Yifan","Lin, Tsung-Yi","Liu, Ming-Yu","Pavao, Lindsey","Yang, Xiaodong","Zeng, Xiaohui"]],["QIAPYMJL","4EY6SEM7",["Chen, Shaoyu","Jiang, Bo","Liao, Bencheng","Liu, Wenyu","Wang, Xinggang","Zhang, Qian"]],["QIAPYMJL","VKQV6UA6",["Chen, Shaoyu","Jiang, Bo","Liao, Bencheng","Wang, Xinggang","Zhang, Qian"]],["QIAPYMJL","RK2HT2U4",["Chen, Shaoyu","Huang, Chang","Jiang, Bo","Liao, Bencheng","Liu, Wenyu","Wang, Xinggang","Zhang, Qian"]],["4EY6SEM7","VKQV6UA6",["Chen, Shaoyu","Jiang, Bo","Li, Xiangyu","Liao, Bencheng","Wang, Xinggang","Yin, Haoran","Zhang, Qian","Zhang, Xinbang","Zhang, Ying"]],["4EY6SEM7","RK2HT2U4",["Chen, Shaoyu","Gao, Hao","Jiang, Bo","Liao, Bencheng","Liu, Wenyu","Wang, Xinggang","Zhang, Qian"]],["VKQV6UA6","RK2HT2U4",["Chen, Shaoyu","Jiang, Bo","Liao, Bencheng","Wang, Xinggang","Zhang, Qian"]],["9KCXQJZU","99FI9HQC",["Chen, Long"]],["9KCXQJZU","SHBNNZJD",["Chen, Long"]],["RE7QZKBZ","U5RKKDV2",["Ivanovic, Boris","Pavone, Marco","Wang, Yan"]],["RE7QZKBZ","SMV6HV3W",["Ivanovic, Boris","Pavone, Marco"]],["25HST56S","32YWYGGD",["Zhou, Xingcheng"]],["99FI9HQC","SHBNNZJD",["Chen, Long"]],["U5RKKDV2","SMV6HV3W",["Ivanovic, Boris","Pavone, Marco"]]],"tiles":[{"x":18,"y":18,"w":558,"h":238,"team":1,"n":5,"core":["Ivanovic","Pavone","Wang"]},{"x":594,"y":18,"w":558,"h":238,"team":2,"n":4,"core":["Chen","Jiang","Liao"]},{"x":18,"y":274,"w":558,"h":238,"team":3,"n":3,"core":["Chen"]},{"x":594,"y":274,"w":558,"h":238,"team":4,"n":2,"core":["Zhou"]}],"recur":[{"author":"Ivanovic, Boris","papers":["Alpamayo-R1","PARA-Drive","Triplane Tokenization","Data Scaling Laws"],"keys":["AGVNEBXB","RE7QZKBZ","U5RKKDV2","SMV6HV3W"]},{"author":"Pavone, Marco","papers":["Alpamayo-R1","PARA-Drive","Triplane Tokenization","Data Scaling Laws"],"keys":["AGVNEBXB","RE7QZKBZ","U5RKKDV2","SMV6HV3W"]},{"author":"Jiang, Bo","papers":["Senna","RAD","DiffusionDrive","VADv2"],"keys":["QIAPYMJL","4EY6SEM7","VKQV6UA6","RK2HT2U4"]},{"author":"Chen, Shaoyu","papers":["Senna","RAD","DiffusionDrive","VADv2"],"keys":["QIAPYMJL","4EY6SEM7","VKQV6UA6","RK2HT2U4"]},{"author":"Liao, Bencheng","papers":["Senna","RAD","DiffusionDrive","VADv2"],"keys":["QIAPYMJL","4EY6SEM7","VKQV6UA6","RK2HT2U4"]},{"author":"Zhang, Qian","papers":["Senna","RAD","DiffusionDrive","VADv2"],"keys":["QIAPYMJL","4EY6SEM7","VKQV6UA6","RK2HT2U4"]},{"author":"Wang, Xinggang","papers":["Senna","RAD","DiffusionDrive","VADv2"],"keys":["QIAPYMJL","4EY6SEM7","VKQV6UA6","RK2HT2U4"]},{"author":"Wang, Yan","papers":["Alpamayo-R1","PARA-Drive","Triplane Tokenization"],"keys":["AGVNEBXB","RE7QZKBZ","U5RKKDV2"]},{"author":"Liu, Wenyu","papers":["Senna","RAD","VADv2"],"keys":["QIAPYMJL","4EY6SEM7","RK2HT2U4"]},{"author":"Chen, Long","papers":["GenAD","SimLingo","AdaThinkDrive"],"keys":["9KCXQJZU","99FI9HQC","SHBNNZJD"]},{"author":"Luo, Wenjie","papers":["Alpamayo-R1","Triplane Tokenization"],"keys":["AGVNEBXB","U5RKKDV2"]},{"author":"Diamond, Jenna","papers":["Alpamayo-R1","Cosmos-Reason1"],"keys":["AGVNEBXB","4AYHFG9D"]},{"author":"Ding, Yifan","papers":["Alpamayo-R1","Cosmos-Reason1"],"keys":["AGVNEBXB","4AYHFG9D"]},{"author":"Lin, Tsung-Yi","papers":["Alpamayo-R1","Cosmos-Reason1"],"keys":["AGVNEBXB","4AYHFG9D"]},{"author":"Liu, Ming-Yu","papers":["Alpamayo-R1","Cosmos-Reason1"],"keys":["AGVNEBXB","4AYHFG9D"]},{"author":"Pavao, Lindsey","papers":["Alpamayo-R1","Cosmos-Reason1"],"keys":["AGVNEBXB","4AYHFG9D"]},{"author":"Weng, Xinshuo","papers":["Alpamayo-R1","PARA-Drive"],"keys":["AGVNEBXB","RE7QZKBZ"]},{"author":"Yang, Xiaodong","papers":["Alpamayo-R1","Cosmos-Reason1"],"keys":["AGVNEBXB","4AYHFG9D"]},{"author":"You, Yurong","papers":["Alpamayo-R1","Triplane Tokenization"],"keys":["AGVNEBXB","U5RKKDV2"]},{"author":"Zeng, Xiaohui","papers":["Alpamayo-R1","Cosmos-Reason1"],"keys":["AGVNEBXB","4AYHFG9D"]},{"author":"Huang, Chang","papers":["Senna","VADv2"],"keys":["QIAPYMJL","RK2HT2U4"]},{"author":"Gao, Hao","papers":["RAD","VADv2"],"keys":["4EY6SEM7","RK2HT2U4"]},{"author":"Yin, Haoran","papers":["RAD","DiffusionDrive"],"keys":["4EY6SEM7","VKQV6UA6"]},{"author":"Li, Xiangyu","papers":["RAD","DiffusionDrive"],"keys":["4EY6SEM7","VKQV6UA6"]},{"author":"Zhang, Xinbang","papers":["RAD","DiffusionDrive"],"keys":["4EY6SEM7","VKQV6UA6"]},{"author":"Zhang, Ying","papers":["RAD","DiffusionDrive"],"keys":["4EY6SEM7","VKQV6UA6"]},{"author":"Zhou, Xingcheng","papers":["OpenDriveVLA","VLM-AD 综述"],"keys":["25HST56S","32YWYGGD"]}],"clusters":[["Alpamayo-R1","Triplane Tokenization","PARA-Drive","Data Scaling Laws","Cosmos-Reason1"],["RAD","Senna","DiffusionDrive","VADv2"],["SimLingo","GenAD","AdaThinkDrive"],["VLM-AD 综述","OpenDriveVLA"]],"stats":{"papers":34,"authors":295,"recur":27,"edges":17,"isolated":20}};
+  const AU = {"PSQLC2NZ":["Zhang, Liangdong","Nie, Yiming","Li, Haoyang","Kong, Fanjie","Zhang, Baobao","Huang, Shunxin","Fu, Kai","Chen, Min","Xiao, Liang"],"UF84MBEY":["Nasser, Abdelmoamen","Baba'a, Yousef","Mebrahtu, Murad","Madjid, Nadya Abdel","Dias, Jorge","Khonji, Majid"],"AGVNEBXB":["NVIDIA","Wang, Yan","Luo, Wenjie","Bai, Junjie","Cao, Yulong","Che, Tong","Chen, Ke","Chen, Yuxiao","Diamond, Jenna","Ding, Yifan","Ding, Wenhao","Feng, Liang","Heinrich, Greg","Huang, Jack","Karkus, Peter","Li, Boyi","Li, Pinyi","Lin, Tsung-Yi","Liu, Dongran","Liu, Ming-Yu","Liu, Langechuan","Liu, Zhijian","Lu, Jason","Mao, Yunxiang","Molchanov, Pavlo","Pavao, Lindsey","Peng, Zhenghao","Ranzinger, Mike","Schmerling, Ed","Shen, Shida","Shi, Yunfei","Tariq, Sarah","Tian, Ran","Wekel, Tilman","Weng, Xinshuo","Xiao, Tianjun","Yang, Eric","Yang, Xiaodong","You, Yurong","Zeng, Xiaohui","Zhang, Wenyuan","Ivanovic, Boris","Pavone, Marco"],"TZBW6RXZ":["Hwang, Jyh-Jing","Xu, Runsheng","Lin, Hubert","Hung, Wei-Chih","Ji, Jingwei","Choi, Kristy","Huang, Di","He, Tong","Covington, Paul","Sapp, Benjamin","Guo, James","Anguelov, Dragomir","Tan, Mingxing"],"XRUHACJ6":["Winter, Katharina","Azer, Mark","Flohr, Fabian B."],"5TCZ3YB6":["Baumann, Nicolas","Hu, Cheng","Sivasothilingam, Paviththiren","Qin, Haotong","Xie, Lei","Magno, Michele","Benini, Luca"],"RXLWJCWQ":["Xing, Shuo","Qian, Chengyuan","Wang, Yuping","Hua, Hongyuan","Tian, Kexin","Zhou, Yang","Tu, Zhengzhong"],"LVYK5YWL":["Qiao, Zhijie","Li, Haowei","Cao, Zhong","Liu, Henry X."],"QIAPYMJL":["Jiang, Bo","Chen, Shaoyu","Liao, Bencheng","Zhang, Xingyu","Yin, Wei","Zhang, Qian","Huang, Chang","Liu, Wenyu","Wang, Xinggang"],"4EY6SEM7":["Gao, Hao","Chen, Shaoyu","Jiang, Bo","Liao, Bencheng","Shi, Yiang","Guo, Xiaoyang","Pu, Yuechuan","Yin, Haoran","Li, Xiangyu","Zhang, Xinbang","Zhang, Ying","Liu, Wenyu","Zhang, Qian","Wang, Xinggang"],"VKQV6UA6":["Liao, Bencheng","Chen, Shaoyu","Yin, Haoran","Jiang, Bo","Wang, Cheng","Yan, Sixu","Zhang, Xinbang","Li, Xiangyu","Zhang, Ying","Zhang, Qian","Wang, Xinggang"],"6ZGMAL9Z":["Xu, Yi","Hu, Yuxin","Zhang, Zaiwei","Meyer, Gregory P.","Mustikovela, Siva Karthik","Srinivasa, Siddhartha","Wolff, Eric M.","Huang, Xin"],"RK2HT2U4":["Chen, Shaoyu","Jiang, Bo","Gao, Hao","Liao, Bencheng","Xu, Qing","Zhang, Qian","Huang, Chang","Liu, Wenyu","Wang, Xinggang"],"9KCXQJZU":["Zheng, Wenzhao","Song, Ruiqi","Guo, Xianda","Zhang, Chenming","Chen, Long"],"IKR946PP":["Hu, Yihan","Yang, Jiazhi","Chen, Li","Li, Keyu","Sima, Chonghao","Zhu, Xizhou","Chai, Siqi","Du, Senyao","Lin, Tianwei","Wang, Wenhai","Lu, Lewei","Jia, Xiaosong","Liu, Qiang","Dai, Jifeng","Qiao, Yu","Li, Hongyang"],"RE7QZKBZ":["Weng, Xinshuo","Ivanovic, Boris","Wang, Yan","Wang, Yue","Pavone, Marco"],"25HST56S":["Zhou, Xingcheng","Han, Xuyuan","Yang, Feng","Ma, Yunpu","Tresp, Volker","Knoll, Alois"],"99FI9HQC":["Renz, Katrin","Chen, Long","Arani, Elahe","Sinavski, Oleg"],"9E2WUYQY":["Zhou, Zewei","Cai, Tianhui","Zhao, Seth Z.","Zhang, Yun","Huang, Zhiyu","Zhou, Bolei","Ma, Jiaqi"],"EY7JWA2J":["Jiang, Anqing","Gao, Yu","Wang, Yiru","Sun, Zhigang","Wang, Shuo","Heng, Yuwen","Sun, Hao","Tang, Shichen","Zhu, Lijuan","Chai, Jinhao","Wang, Jijun","Gu, Zichong","Jiang, Hao","Sun, Li"],"SHBNNZJD":["Luo, Yuechen","Li, Fang","Xu, Shaoqing","Lai, Zhiyi","Yang, Lei","Chen, Qimao","Luo, Ziang","Xie, Zixun","Jiang, Shengyin","Liu, Jiaxin","Chen, Long","Wang, Bing","Yang, Zhi-xin"],"D75ZNRE9":["Yuan, Zhenlong","Qian, Chengxuan","Tang, Jing","Chen, Rui","Song, Zijian","Sun, Lei","Chu, Xiangxiang","Cai, Yujun","Zhang, Dapeng","Li, Shuo"],"KI4S3YZG":["Rowe, Luke","Schaetzen, Rodrigue de","Girgis, Roger","Pal, Christopher","Paull, Liam"],"FSZQLTCQ":["Feng, Lan","Gao, Yang","Zablocki, Eloi","Li, Quanyi","Li, Wuyang","Liu, Sichao","Cord, Matthieu","Alahi, Alexandre"],"U5RKKDV2":["Ivanovic, Boris","Saltori, Cristiano","You, Yurong","Wang, Yan","Luo, Wenjie","Pavone, Marco"],"32YWYGGD":["Zhou, Xingcheng","Liu, Mingyu","Yurtsever, Ekim","Zagar, Bare Luka","Zimmer, Walter","Cao, Hu","Knoll, Alois C."],"JJRGEFJ2":["Yang, Yixiang","Han, Chuanrong","Mao, Runhao","Wang, Hanshi","Chen, Zhiwen","Yang, Yantai","Ma, Qianli","Chen, Xuesong","Shi, Shaoshuai","Zhang, Zhipeng"],"US2EBTVT":["Li, Yun","Katsumata, Kai","Javanmardi, Ehsan","Tsukada, Manabu"],"SMV6HV3W":["Naumann, Alexander","Gu, Xunjiang","Dimlioglu, Tolga","Bojarski, Mariusz","Degirmenci, Alperen","Popov, Alexander","Bisla, Devansh","Pavone, Marco","Müller, Urs","Ivanovic, Boris"],"FSZMLU6S":["Liu, Chang","Zhu, Mingxu","Zhang, Zheyuan","Song, Linna","Zhao, Xiao","Luo, Qingliang","Wang, Qi","Guo, Chufan","Su, Kuifeng"],"4AYHFG9D":["NVIDIA","Azzolini, Alisson","Brandon, Hannah","Chattopadhyay, Prithvijit","Chen, Huayu","Chu, Jinju","Cui, Yin","Diamond, Jenna","Ding, Yifan","Ferroni, Francesco","Govindaraju, Rama","Gu, Jinwei","Gururani, Siddharth","Hanafi, Imad El","Hao, Zekun","Huffman, Jacob","Jin, Jingyi","Johnson, Brendan","Khan, Rizwan","Kurian, George","Lantz, Elena","Lee, Nayeon","Li, Zhaoshuo","Li, Xuan","Lin, Tsung-Yi","Lin, Yen-Chen","Liu, Ming-Yu","Mathau, Andrew","Ni, Yun","Pavao, Lindsey","Ping, Wei","Romero, David W.","Smelyanskiy, Misha","Song, Shuran","Tchapmi, Lyne","Wang, Andrew Z.","Wang, Boxin","Wang, Haoxiang","Wei, Fangyin","Xu, Jiashu","Xu, Yao","Yang, Xiaodong","Yang, Zhuolin","Zeng, Xiaohui","Zhang, Zhe"],"ZRQAX229":["Wu, Qi","Esturo, Janick Martinez","Mirzaei, Ashkan","Moenne-Loccoz, Nicolas","Gojcic, Zan"],"5TM3P9CI":["Sun, Tong","Ye, Hongliang","Mei, Jilin","Chen, Liang","Zhao, Fangzhou","Zong, Leiqiang","Hu, Yu"],"NFRCJULC":["Khalili, Boshra","Smyth, Andrew W."]};
+  const GC = {g1:"#6aa6ff",g2:"#46d7cc",g3:"#f0bf4c",g4:"#9bce6b",g5:"#b49bff"};
+  const GN = {g1:"模块化端到端",g2:"VLM·VLA",g3:"RL后训练",g4:"越野",g5:"综述·基建"};
+  const NS="http://www.w3.org/2000/svg";
+  const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const svg=document.getElementById("coa-graph");
+  svg.setAttribute("width",CO.W); svg.setAttribute("height",CO.H);
+  svg.setAttribute("viewBox",`0 0 ${CO.W} ${CO.H}`);
+  const N=CO.nodes;
+  for(const t of (CO.tiles||[])){
+    svg.appendChild(el("rect",{x:t.x,y:t.y,width:t.w,height:t.h,rx:12,fill:"rgba(70,215,204,.045)",stroke:"var(--line)","stroke-dasharray":"3 4"}));
+    svg.appendChild(el("text",{class:"coa-hd",x:t.x+14,y:t.y+22,fill:"var(--teal)"})).textContent=`团队 ${t.team} · ${t.n} 篇 · ${(t.core||[]).join("·")}`;
+  }
+  // 复现作者集合(用于加粗)
+  const recurSet=new Set(CO.recur.map(r=>r.author));
+  // 分隔线
+  svg.appendChild(el("line",{class:"coa-div",x1:20,y1:CO.toph+20,x2:CO.W-20,y2:CO.toph+20}));
+  svg.appendChild(el("text",{class:"coa-hd",x:24,y:CO.toph+14})).textContent="独立 · 与集合内无共享作者";
+  const eLayer=el("g"); svg.appendChild(eLayer);
+  const nLayer=el("g"); svg.appendChild(nLayer);
+  const rad=d=>6+Math.sqrt(d)*2.6;
+  // 边
+  const eEls=[]; const adj={};
+  for(const [a,b,sh] of CO.edges){
+    if(!N[a]||!N[b])continue;
+    const A=N[a],B=N[b];
+    const p=el("line",{class:"cedge",x1:A.x,y1:A.y,x2:B.x,y2:B.y,"stroke-width":(1+sh.length*1.4).toFixed(1)});
+    p.__a=a;p.__b=b;p.__sh=sh; eLayer.appendChild(p); eEls.push(p);
+    (adj[a]=adj[a]||[]).push(b); (adj[b]=adj[b]||[]).push(a);
+  }
+  // 节点
+  const nEls={};
+  for(const k in N){
+    const n=N[k];
+    const g=el("g",{class:"cnode"+(n.iso?" iso":"")}); g.__k=k;
+    g.appendChild(el("circle",{class:"cc",cx:n.x,cy:n.y,r:rad(n.deg),fill:GC[n.g]||"#888"}));
+    g.appendChild(el("text",{class:"cl",x:n.x,y:n.y-rad(n.deg)-5,"text-anchor":"middle"})).textContent=n.name;
+    nLayer.appendChild(g); nEls[k]=g;
+  }
+  const tip=document.getElementById("tip");
+  function clear(){ for(const k in nEls)nEls[k].classList.remove("dim","hl","root0"); for(const p of eEls)p.classList.remove("hl","dim"); }
+  for(const k in nEls){
+    const g=nEls[k],n=N[k];
+    g.addEventListener("mouseenter",()=>{
+      const nb=new Set(adj[k]||[]); nb.add(k);
+      for(const j in nEls){nEls[j].classList.toggle("dim",!nb.has(j)); nEls[j].classList.toggle("hl",nb.has(j)&&j!==k);}
+      nEls[k].classList.add("root0");
+      for(const p of eEls){ const on=(p.__a===k||p.__b===k); p.classList.toggle("hl",on); p.classList.toggle("dim",!on); }
+      const au=(AU[k]||[]).map(a=>recurSet.has(a)?`<b>${a.split(",")[0]}</b>`:a.split(",")[0]).join("、");
+      tip.innerHTML=`<div class="tt">${n.name}</div><div class="tm">${n.year} · ${GN[n.g]} · ${n.na} 位作者</div>`+
+        `<div class="tc">${au}</div>`+(nb.size>1?`<div class="tc" style="color:var(--dim)">同团队 <b>${nb.size-1}</b> 篇(加粗=复现作者)</div>`:`<div class="tc" style="color:var(--dim)">集合内无共著</div>`);
+      tip.style.opacity=1;
+    });
+    g.addEventListener("mousemove",e=>{tip.style.left=Math.min(e.clientX+14,innerWidth-346)+"px";tip.style.top=(e.clientY+14)+"px";});
+    g.addEventListener("mouseleave",()=>{clear();tip.style.opacity=0;});
+    g.addEventListener("click",()=>location.href="#p-"+k);
+  }
+  eEls.forEach(p=>{
+    p.addEventListener("mouseenter",()=>{ tip.innerHTML=`<div class="tt">${N[p.__a].name} ↔ ${N[p.__b].name}</div><div class="tc">共享作者:${p.__sh.map(a=>a.split(",")[0]).join("、")}</div>`; tip.style.opacity=1; });
+    p.addEventListener("mousemove",e=>{tip.style.left=Math.min(e.clientX+14,innerWidth-346)+"px";tip.style.top=(e.clientY+14)+"px";});
+    p.addEventListener("mouseleave",()=>{tip.style.opacity=0;});
+  });
+  // 团队面板
+  const NAMES2={};  // 论文名->key(反查作者)
+  for(const k in N) NAMES2[N[k].name]=k;
+  const panel=document.getElementById("coa-panel");
+  CO.clusters.forEach((papers,i)=>{
+    const keys=papers.map(nm=>NAMES2[nm]).filter(Boolean);
+    const cnt={};
+    keys.forEach(k=>(AU[k]||[]).forEach(a=>{cnt[a]=(cnt[a]||0)+1;}));
+    const shared=Object.entries(cnt).filter(([a,c])=>c>=2).sort((x,y)=>y[1]-x[1]).map(([a])=>a.split(",")[0]);
+    const d=document.createElement("div"); d.className="grp";
+    d.innerHTML=`<div class="gt">团队 ${i+1} · ${papers.length} 篇</div>`+
+      `<div class="gp">${papers.join(" · ")}</div>`+
+      `<div class="ga">核心作者:${shared.slice(0,8).join("、")||"—"}</div>`;
+    panel.appendChild(d);
   });
 })();
 </script>
