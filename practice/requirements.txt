@@ -1,0 +1,24 @@
+# PyTRIO 实践环境依赖（Python >= 3.10）
+pytrio>=0.2.3
+
+# get_tokenizer() 需要：从 HF / ModelScope 拉取与基模匹配的 tokenizer
+transformers>=4.44
+modelscope
+
+# 数据处理与示例数据集
+numpy
+datasets
+tqdm
+
+# OpenAI 兼容接口调用（第 12 章）
+openai
+
+# notebook 运行环境
+jupyterlab
+ipykernel
+
+# 可选：forward_backward_custom 自定义损失需要本地 torch（体积大，按需装）
+# torch
+
+# 可选：训练曲线记录
+# swanlab
