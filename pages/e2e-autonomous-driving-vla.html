@@ -1366,7 +1366,7 @@ onScroll();
     const g=el("g",{class:"sknode"}); g.__k=k;
     if(n.pr>0.03) g.appendChild(el("circle",{cx:n.x,cy:n.y,r:n.r+2.4,fill:"none",stroke:"var(--rust)","stroke-width":(0.5+n.pr*5.5).toFixed(2),"stroke-opacity":(0.3+n.pr*0.7).toFixed(2)}));
     g.appendChild(el("circle",{class:"skc",cx:n.x,cy:n.y,r:n.r,fill:n.col,stroke:"var(--bg)","stroke-width":"1.6"}));
-    if(n.showl!==false) g.appendChild(el("text",{class:"skl",x:n.x,y:n.y+(n.ldy||-n.r-4),"text-anchor":"middle","font-size":"10","fill":"var(--muted)"})).textContent=n.name;
+    if(n.showl!==false){ const edge=n.x>L.W-150; g.appendChild(el("text",{class:"skl",x:edge?(n.x-n.r-4):n.x,y:n.y+(n.ldy||-n.r-4),"text-anchor":edge?"end":"middle","font-size":"10","fill":"var(--muted)"})).textContent=n.name; }
     nLayer.appendChild(g); nEls[k]=g; }
   const tip=document.getElementById("tip");
   const PARA={foundation:"公用基石",modular:"模块化",e2e:"端到端",dataset:"数据集"};
