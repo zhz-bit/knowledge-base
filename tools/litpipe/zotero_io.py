@@ -76,14 +76,20 @@ class Zot:
 
     def subcollections(self, root_key=ROOT_COLLECTION) -> dict:
         """递归取 root 下所有子分类 {key: 名称}(自发现,不依赖过期清单)。"""
+        return {k: v["name"] for k, v in self.collection_tree(root_key).items()}
+
+    def collection_tree(self, root_key=ROOT_COLLECTION) -> dict:
+        """递归取 root 下所有子分类 {key: {"name":叶名, "path":"a / b / c"}}。
+        path 供 derive() 判定 track/para(要看到 '1 城区结构化'、'1.2' 这类层级)。"""
         out = {}
 
-        def walk(k, prefix=""):
+        def walk(k, prefix):
             for c in self._get(f"/collections/{k}/collections?limit=100") or []:
                 name = c["data"]["name"]
-                out[c["key"]] = name
-                walk(c["key"], name)
-        walk(root_key)
+                path = f"{prefix} / {name}" if prefix else name
+                out[c["key"]] = {"name": name, "path": path}
+                walk(c["key"], path)
+        walk(root_key, "")
         return out
 
     def items_in_collection(self, coll_key) -> list:
@@ -97,18 +103,23 @@ class Zot:
         return out
 
     def scan_tree(self, root_key=ROOT_COLLECTION) -> dict:
-        """扫整棵树,返回 {itemKey: {"data":..., "version":..., "leaf": 所属叶子名}}。
+        """扫整棵树,返回 {itemKey: {"data","version","leaf","path"}}。
+        一篇可挂多个分类时取**最深**的那个(路径最长)作为它的归属。
         自发现子分类,因此树长大了也不用改代码。"""
-        cols = self.subcollections(root_key)
-        cols[root_key] = "(根)"
+        tree = self.collection_tree(root_key)
+        tree[root_key] = {"name": "(根)", "path": ""}
         items = {}
-        for ck, name in cols.items():
+        for ck, meta in tree.items():
             for it in self.items_in_collection(ck):
                 d = it["data"]
                 if d.get("itemType") in ("attachment", "note"):
                     continue
-                if it["key"] not in items:
-                    items[it["key"]] = {"data": d, "version": it["version"], "leaf": name}
+                k = it["key"]
+                prev = items.get(k)
+                # 取最深叶(路径最长),保证 derive 拿到最具体的层级
+                if prev is None or len(meta["path"]) > len(prev["path"]):
+                    items[k] = {"data": d, "version": it["version"],
+                                "leaf": meta["name"], "path": meta["path"]}
         return items
 
     def get_item(self, key):
