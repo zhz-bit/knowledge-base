@@ -1420,15 +1420,24 @@ onScroll();
   }
   // 卡片
   const card=document.getElementById("skcard");
-  function showCard(k,ev){ const n=N[k];
+  const CARDKEYS=(typeof PAPERS!=="undefined")?new Set(PAPERS.map(p=>p.key)):new Set();
+  function jumpToCard(key){
+    const el=document.getElementById("p-"+key); if(!el) return;
+    let p=el; while(p){ if(p.tagName==="DETAILS") p.open=true; p=p.parentElement; }
+    el.scrollIntoView({behavior:"smooth",block:"center"});
+    const ob=el.style.boxShadow; el.style.transition="box-shadow .35s"; el.style.boxShadow="0 0 0 3px var(--blue)";
+    setTimeout(()=>{el.style.boxShadow=ob;},1500);
+  }
+  function showCard(k,ev){ const n=N[k]; const hasCard=n.key&&CARDKEYS.has(n.key);
     card.innerHTML=`<span class="cx">✕</span><div class="ct">${n.name}</div>`+
       `<div class="cm">${n.year||""} · ${PARA[n.para]} · ${n.track==="offroad"?"越野":n.track==="shared"?"共用":"城区"} · 被引 ${n.indeg} · PR ${n.pr}</div>`+
       `<div class="cab">${n.title}${n.abstract?"<br><br>"+n.abstract.slice(0,560)+(n.abstract.length>560?"…":""):""}</div>`+
-      `<div style="margin-top:9px">${n.key?`<a href="#p-${n.key}">→ 详解卡</a>　`:""}${n.arxiv?`<a href="https://arxiv.org/abs/${n.arxiv}" target="_blank" rel="noopener">arXiv ↗</a>`:""}</div>`;
+      `<div style="margin-top:9px">${hasCard?`<a href="#p-${n.key}" class="tocard">→ 详解卡</a>　`:""}${n.arxiv?`<a href="https://arxiv.org/abs/${n.arxiv}" target="_blank" rel="noopener">arXiv ↗</a>`:""}</div>`;
     card.style.display="block";
     card.style.left=Math.min(ev.clientX+16,innerWidth-360)+"px";
     card.style.top=Math.min(Math.max(12,ev.clientY-40),innerHeight-260)+"px";
     card.querySelector(".cx").onclick=()=>card.style.display="none";
+    const tc=card.querySelector(".tocard"); if(tc) tc.onclick=e=>{e.preventDefault(); jumpToCard(n.key); card.style.display="none";};
   }
   document.addEventListener("click",ev=>{ if(!card.contains(ev.target)&&!ev.target.closest(".sknode")) card.style.display="none"; });
   // 图例范式筛选
