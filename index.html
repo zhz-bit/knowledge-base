@@ -223,6 +223,12 @@ const CATEGORIES = {
 
 const PAGES = [
   {
+    file:"pages/zotero-library-atlas.html",
+    title:"Zotero 全库文献地图",
+    sub:"整个 Zotero 库 1183 篇文献的一张图。泳道不是人为划的，而是从 Zotero 目录结构自动生成：公用基石坐第一层横带（内部按视觉骨干/语言模型/多模态基座/生成模型/学习范式分 5 条并列细道），其余领域在下方并列成河——自动驾驶 452、时空序列预测 306、计算机视觉 180、NLP 53、深度学习 32、数据集 21，每个领域内部再按二级分类分道。纵轴是时间，点大小＝库内被引次数，8208 条引用边显示思想传承。支持按领域/评级/引用边筛选，点节点看详情与 arXiv 链接。在 Zotero 里新增一个二级分类，重跑一次页面就自动多一条道。",
+    cat:"科研方法", tags:["Zotero","文献地图","引用网络","泳道图","知识管理"], icon:"🗺️", date:"2026-07-23"
+  },
+  {
     file:"pages/e2e-autonomous-driving-vla.html",
     title:"端到端自动驾驶 × VLA：方法全景",
     sub:"基于 Zotero「端到端自动驾驶」分类 34 篇文献的全景梳理：开篇是内部引用关系的时间轴 DAG（节点大小=被引入度、红环=PageRank、顶部奠基根节点含未入库缺口），随后按路线逐篇详解：模块化端到端（UniAD/VADv2/DiffusionDrive）→ VLM/VLA（EMMA 系/AutoVLA/Alpamayo-R1）→ RL 后训练（RAD/RAP/Poutine）→ 越野 → 综述基准。每篇含模型框图、创新点、数据集、实验设置（batch/设备/时长）、开闭环评测与中英摘要对照。",
