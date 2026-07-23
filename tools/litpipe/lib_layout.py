@@ -187,6 +187,7 @@ def main():
         nodes[k] = {"nm": nm, "x": xx, "y": yy, "r": radius(n["indeg"], n["cc"]),
                     "lane": lid, "band": n["band"], "col": lanes.get(lid, flanes.get(lid, {})).get("col", "#999"),
                     "t": n["title"][:110], "zh": n.get("zh", ""), "y4": n["year"],
+                    "pubyear": n.get("pubyear", ""),
                     "tier": n["tier"], "ccf": n["ccf"], "indeg": n["indeg"], "cc": n["cc"],
                     "ax": n.get("arxiv", ""), "leaf": n["leaf"], "venue": (n.get("venue") or "")[:46]}
 
@@ -310,10 +311,11 @@ def main():
     }
 
     # 年份刻度:两区各一套(横向独立 = 各有各的时间尺度)
-    ticks = [{"y": round(yof2(y * 12), 1), "year": y}
-             for y in range(CUT // 12, m1 // 12 + 1)]
-    ticksF = [{"y": round(yofF(y * 12), 1), "year": y}
-              for y in range(CUT_F // 12, fm1 // 12 + 1, 2)]
+    # 年份 y 的起点是 m = y*12+1(编码为 y*12+mm, mm∈1..12)
+    ticks = [{"y": round(yof2(y * 12 + 1), 1), "year": y}
+             for y in range(CUT // 12, (m1 - 1) // 12 + 1)]
+    ticksF = [{"y": round(yofF(y * 12 + 1), 1), "year": y}
+              for y in range(CUT_F // 12, (fm1 - 1) // 12 + 1, 2)]
     L = {
         "nodes": nodes, "edges": edges, "edges_tr": edges_tr,
         "ribbons": ribbons, "ticks": ticks, "ticksF": ticksF,

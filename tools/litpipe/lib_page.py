@@ -555,7 +555,9 @@ function paint(k){
   return {anc,des};
 }
 function meta(n){
-  return `${n.y4} · ${n.venue||"预印本"}${n.ccf?` <span class="badge ccf">CCF-${n.ccf}</span>`:""}`;}
+  /* 首发年 ≠ 发表年时并列显示 —— 图上的纵坐标用的是首发年,不标出来会让人以为图错了 */
+  const yr = (n.pubyear && n.pubyear!==n.y4) ? `${n.y4} 首发 · ${n.pubyear} 发表` : n.y4;
+  return `${yr} · ${n.venue||"预印本"}${n.ccf?` <span class="badge ccf">CCF-${n.ccf}</span>`:""}`;}
 for(const k in nEls){
   const g=nEls[k], n=L.nodes[k];
   g.addEventListener("mouseenter",()=>{

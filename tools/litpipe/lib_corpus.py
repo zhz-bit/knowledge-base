@@ -97,6 +97,18 @@ def all_items(z):
     return out
 
 
+def arxiv_month(ax):
+    """arXiv 号 YYMM.NNNNN 的前缀自带 **v1 首发年月**(2007-04 起启用该编号)。
+    零成本,不用调 API。"""
+    m = re.match(r"^(\d{2})(\d{2})\.\d{4,5}", str(ax or ""))
+    if not m:
+        return None
+    yy, mm = int(m.group(1)), int(m.group(2))
+    if not 1 <= mm <= 12:
+        return None
+    return (2000 + yy) * 12 + mm
+
+
 def month_of(date):
     m = re.match(r"(\d{4})-(\d{2})", date or "")
     if m:
@@ -133,10 +145,17 @@ def main():
         if deep["band"] in SKIP_BANDS:
             stats["跳过·事务目录"] += 1
             continue
-        m = month_of(d.get("date", ""))
+        m_pub = month_of(d.get("date", ""))          # 书目日期(发表年)
+        m_ax = arxiv_month(arxiv_of(d))                # arXiv v1 首发
+        # 时间轴取**最早公开日**:一篇 2022 年挂上 arXiv、2024 年才进会议的论文,
+        # 从 2022 年起就已经在被引用了,按 2024 摆会让引用边逆着时间走。
+        # 书目日期原样保留在 Zotero,这里只影响图上的纵坐标。
+        m = min(x for x in (m_pub, m_ax) if x) if (m_pub or m_ax) else None
         if not m:
             stats["无日期"] += 1
             continue
+        if m_pub and m_ax and m_pub - m_ax >= 6:
+            stats["按arXiv首发提前"] += 1
         k = it["key"]
         tags = [t.get("tag", "") for t in d.get("tags", [])]
         stars = max([len(t) for t in tags if t and set(t) == {"⭐"}] or [0])
@@ -148,7 +167,8 @@ def main():
         title = d.get("title", "") or ""
         nodes[k] = {
             "id": k, "key": k, "title": title, "name": (title.split(":")[0][:26] or k),
-            "month": m, "year": (d.get("date", "") or "")[:4],
+            "month": m, "year": f"{(m - 1) // 12}" if m else (d.get("date", "") or "")[:4],
+            "pubyear": (d.get("date", "") or "")[:4],   # 书目发表年,tip 里与首发年并列
             "band": deep["band"], "lane": deep["lane"], "leaf": deep["name"], "path": deep["path"],
             # 泳道下沉到**最深**一级:基石两棵树的叶子按 0.x 前缀合并回同一条道
             "sub": deep["name"],

@@ -43,6 +43,14 @@ def month_of(date: str):
     return int(m.group(1)) * 12 + 6 if m else None
 
 
+def arxiv_month(ax):
+    """arXiv 号前缀 YYMM 自带 v1 首发年月,零成本。"""
+    m = re.match(r"^(\d{2})(\d{2})\.\d{4,5}", str(ax or ""))
+    if not m: return None
+    yy, mm = int(m.group(1)), int(m.group(2))
+    return (2000 + yy) * 12 + mm if 1 <= mm <= 12 else None
+
+
 def build_corpus():
     z = Zot()
     print("扫描 Zotero 综述树(取最深分类路径)...")
@@ -55,7 +63,10 @@ def build_corpus():
         # derive() 会把它们全推成默认 urban/e2e,污染泳道
         if any(x in (v.get("leaf") or "") for x in ("_收件箱", "待分类")):
             in_inbox += 1; continue
-        m = month_of(d.get("date", ""))
+        # 时间轴取**最早公开日**(书目发表年 vs arXiv v1 取小):
+        # 否则「2022 挂 arXiv、2024 进会议」的论文会被摆到 2024,引用边逆着时间走
+        mp, ma = month_of(d.get("date", "")), arxiv_month(arxiv_of(d))
+        m = min(x for x in (mp, ma) if x) if (mp or ma) else None
         if not m:
             no_month += 1; continue
         track, para = derive(v["path"])
@@ -68,7 +79,7 @@ def build_corpus():
         if mm: zh = mm.group(1).strip()
         nodes[k] = {
             "id": k, "key": k, "name": (title.split(":")[0][:22] or k), "title": title,
-            "month": m, "year": (d.get("date", "") or "")[:4],
+            "month": m, "year": f"{(m - 1) // 12}", "pubyear": (d.get("date", "") or "")[:4],
             "track": track, "para": para, "col": v["leaf"], "src": "lib",
             "arxiv": arxiv_of(d),
             # —— 单一真源:以下全来自 Zotero ——
