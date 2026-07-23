@@ -5,7 +5,8 @@
   ① maintain     venue 规范 + CCF 标签(确定性,离线)
   ② build_edges  增量抓新论文的完整参考列表 → 全量重算引用边 + indeg + 收割 cc
   ③ enrich       Haiku 评级⭐ + 标题翻译(**必须在 ② 之后**,评级要用 indeg/cc 当锚)
-  ④ generate     从 Zotero 重建页面数据并注入(纯渲染)
+  ④ classify     收件箱待分类条目 → Haiku 建议叶子(高置信自动归档,其余打建议标签)
+  ⑤ generate     从 Zotero 重建页面数据并注入(纯渲染;收件箱条目不进图)
   ⑤ publish      check.py → git commit → push(GitHub Pages)
 
 并发保护:全程持 state/.pipeline.lock。**同一时刻只允许一个写库流程**——
@@ -24,7 +25,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 LOCK = HERE / "state" / ".pipeline.lock"
-STEPS_ALL = ["maintain", "edges", "enrich", "generate"]
+STEPS_ALL = ["maintain", "edges", "enrich", "classify", "generate"]
 
 APPLY = "--apply" in sys.argv
 PUBLISH = "--publish" in sys.argv
@@ -33,7 +34,7 @@ for i, a in enumerate(sys.argv):
     if a == "--steps": steps = [s.strip() for s in sys.argv[i + 1].split(",")]
 
 SCRIPT = {"maintain": "maintain.py", "edges": "build_edges.py",
-          "enrich": "enrich.py", "generate": "generate.py"}
+          "enrich": "enrich.py", "classify": "classify.py", "generate": "generate.py"}
 
 
 def acquire_lock():

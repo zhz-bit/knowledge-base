@@ -48,9 +48,13 @@ def build_corpus():
     print("扫描 Zotero 综述树(取最深分类路径)...")
     tree = z.scan_tree()
     st = load_state("corpus.json", {})          # ② 算好的 indeg / cc
-    nodes, no_month = {}, 0
+    nodes, no_month, in_inbox = {}, 0, 0
     for k, v in tree.items():
         d = v["data"]
+        # 收件箱(待分类)里的条目不进图谱:它们没有语义分类,
+        # derive() 会把它们全推成默认 urban/e2e,污染泳道
+        if any(x in (v.get("leaf") or "") for x in ("_收件箱", "待分类")):
+            in_inbox += 1; continue
         m = month_of(d.get("date", ""))
         if not m:
             no_month += 1; continue
@@ -72,7 +76,7 @@ def build_corpus():
             "indeg": st.get(k, {}).get("indeg", 0), "cc": st.get(k, {}).get("cc", 0),
             "venue": d.get("proceedingsTitle") or d.get("publicationTitle") or "",
         }
-    print(f"语料 {len(nodes)} 篇(无日期丢弃 {no_month})")
+    print(f"语料 {len(nodes)} 篇(无日期丢弃 {no_month} | 收件箱待分类跳过 {in_inbox})")
     print("  track/para:", dict(Counter((n['track'], n['para']) for n in nodes.values())))
     print("  评级(来自⭐):", dict(Counter(n['tier'] or '未评' for n in nodes.values())))
     print("  CCF:", dict(Counter(n['ccf'] or '-' for n in nodes.values())))
