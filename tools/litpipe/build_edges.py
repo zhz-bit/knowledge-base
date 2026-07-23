@@ -28,6 +28,28 @@ NO_FETCH = "--no-fetch" in sys.argv
 
 S2 = "https://api.semanticscholar.org/graph/v1"
 REF_FIELDS = "externalIds,title,year,citationCount"
+
+# ---- Semantic Scholar API key(可选)----
+# 未注册额度是全局共享池,限流很凶(429 频发);有 key 后配额独享、快很多。
+# 单一真源:写在 ~/.config/zotkit/env 的 `S2_API_KEY=xxx` 一行。
+# 这样"插件触发"和"夜里 launchd 定时"读的是同一份配置,不会分叉。
+def _s2_key():
+    import os
+    f = os.path.expanduser("~/.config/zotkit/env")
+    try:
+        for ln in open(f, encoding="utf-8"):
+            ln = ln.strip()
+            if ln.startswith("S2_API_KEY") and "=" in ln:
+                return ln.split("=", 1)[1].strip().strip('"\'')
+    except Exception:
+        pass
+    return ""
+
+S2_KEY = _s2_key()
+HDR = {"User-Agent": "litpipe/1.0"}
+if S2_KEY:
+    HDR["x-api-key"] = S2_KEY
+SLEEP = 1.1 if S2_KEY else 3.2       # 有 key 就不用那么保守
 SEED = Path("/private/tmp/claude-501/-Users-zhaozhihua-knowledge-base/"
             "c5dbaf72-2174-4ab8-bbf0-dd3fd6e317ee/scratchpad/gaps_refs_cache.json")
 
@@ -35,7 +57,7 @@ SEED = Path("/private/tmp/claude-501/-Users-zhaozhihua-knowledge-base/"
 def s2_get(url, tries=6):
     for i in range(tries):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "litpipe/1.0"})
+            req = urllib.request.Request(url, headers=HDR)
             return json.loads(urllib.request.urlopen(req, timeout=45).read())
         except urllib.error.HTTPError as e:
             if e.code == 404: return None
@@ -112,7 +134,7 @@ def main():
             if (i + 1) % 5 == 0:
                 save_state("refs_cache.json", refs_cache); save_state("cc.json", cc_map)
                 print(f"  {i+1}/{len(todo)} 已抓(缓存 {len(refs_cache)})")
-            time.sleep(3.2)
+            time.sleep(SLEEP)
         save_state("cc.json", cc_map)
     save_state("refs_cache.json", refs_cache)
 
