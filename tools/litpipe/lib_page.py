@@ -461,6 +461,17 @@ for(const lid in L.lanes){
     x2:ln.x0-3.5,y2:top?L.topH-18:L.H-10,
     stroke:ln.col,"stroke-width":"1","stroke-dasharray":"2 8",opacity:".16"}));
 }
+/* 年份刻度:两区各一套(横向独立 = 各有各的时间尺度) */
+function drawTicks(list,m0,cut,ytop){
+  for(const t of list){
+    axLayer.appendChild(el("line",{x1:0,y1:t.y,x2:L.W,y2:t.y,stroke:"#283248",
+      "stroke-width":"1","stroke-dasharray":"3 6",opacity:".4"}));
+    const lb=el("text",{x:10,y:t.y-4,fill:"#6b768f","font-family":"var(--mono)","font-size":"11"});
+    lb.textContent=t.year; axLayer.appendChild(lb);
+  }
+  const o=el("text",{x:10,y:ytop,fill:"#6b768f","font-family":"var(--mono)","font-size":"10.5"});
+  o.textContent=`${Math.floor(m0/12)}–${cut/12-1}（压缩）`; axLayer.appendChild(o);
+}
 drawTicks(L.ticksF,L.fm0,L.cutF,90);
 drawTicks(L.ticks,L.m0,L.cut,L.topH+124);
 
