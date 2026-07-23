@@ -84,28 +84,12 @@ var LitPipe = {
   async init({ id, rootURI }) {
     this.id = id;
     this.rootURI = rootURI;
-    // 载入内置 CCF 库
-    // Zotero 9:File.getContentsAsync(URI) 已废弃(会抛),按官方提示改用 HTTP.request;再留 fetch 兜底
-    const url = rootURI + "content/ccf_db.json";
-    let txt = null;
+    // CCF 库由 bootstrap 通过 loadSubScript 载入到同一 ctx(见 ccf_data.js)
     try {
-      const resp = await Zotero.HTTP.request("GET", url, { responseType: "text" });
-      txt = resp.responseText !== undefined ? resp.responseText : resp.response;
-    } catch (e1) {
-      this.log("HTTP.request 读 CCF 库失败,改试 fetch:" + e1);
-      try {
-        txt = await (await fetch(url)).text();
-      } catch (e2) {
-        this.logErr("载入 CCF 库", e2);
-      }
-    }
-    if (txt) {
-      try {
-        this.ccf = JSON.parse(txt);
-        this.log(`CCF 库载入 ${Object.keys(this.ccf).length} 条`);
-      } catch (e) {
-        this.logErr("解析 CCF 库", e);
-      }
+      this.ccf = (typeof LITPIPE_CCF !== "undefined" && LITPIPE_CCF) ? LITPIPE_CCF : {};
+      this.log(`CCF 库载入 ${Object.keys(this.ccf).length} 条`);
+    } catch (e) {
+      this.logErr("载入 CCF 库", e);
     }
     try {
       await this.refreshSurveyCollections();

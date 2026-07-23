@@ -35,6 +35,9 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
     // 子脚本的执行上下文(关键:必须显式传给 loadSubScript)
     const ctx = { rootURI, Zotero };
     ctx._globalThis = ctx;
+    // CCF 数据用 loadSubScript 载入(支持 jar: 协议;XHR/fetch 读不了 xpi 内文件)
+    Services.scriptloader.loadSubScript(rootURI + "content/ccf_data.js", ctx);
+    log("ccf_data.js 已载入,条目 " + Object.keys(ctx.LITPIPE_CCF || {}).length);
     Services.scriptloader.loadSubScript(rootURI + "content/litpipe.js", ctx);
     log("litpipe.js 已载入");
 
