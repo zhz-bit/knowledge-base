@@ -728,6 +728,7 @@ const PAPERS = [
   '针对 VLM「2D 预训练缺 3D 归纳偏置」，用 query 式编码器产出<span class="hi">场景 / 智能体 / 地图三类环境 token</span>，分层投影进语言语义空间；',
   '自回归解码中显式建模<span class="hb">智能体—环境—自车交互</span>，捕捉轨迹规划关键的细粒度空间依赖；',
   '全开源 LLM 底座，nuScenes 开环规划与驾驶 QA 双 SOTA。'],
+ fig:"../assets/e2e-ad/25HST56S.png",
  dg:[["环视多图","in"],["ResNet-101 + FPN query 编码","enc"],["场景/智能体/地图 token","aux"],["开源 LLM","llm"],["轨迹","out"]],
  expr:{input:"环视多视角图像（共享 ResNet-101 + FPN 多尺度 2D 特征）+ 自车状态 + 语言指令",
    backbone:"Query 式 3D 感知编码器 + 分层对齐 + 开源 LLM（多规模）",
