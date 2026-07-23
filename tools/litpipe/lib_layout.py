@@ -50,7 +50,7 @@ def radius(indeg, cc):
     r = 3.4 + (indeg ** 0.55) * 1.5
     if cc:
         r += min(2.4, math.log10(cc + 1) * 0.45)
-    return round(min(r, 17), 1)
+    return round(min(r, 14), 1)   # 2*14=28 ≤ XG=30,保证同行不重叠
 
 
 def pack(items, x0, x1, yof, rank):
@@ -169,12 +169,20 @@ def main():
         rows = math.ceil(len(pool) / cols) or 1
         # 竖向居中于横带内(带高 TOP_H-86,留出标题行)
         y_top = 92 + max(0, (TOP_H - 110 - rows * GY) / 2)
+        lane_cx = (ln["x0"] + ln["x1"]) / 2
         for i, k in enumerate(pool):
-            xx = ln["x0"] + 9 + GX / 2 + (i % cols) * GX
-            yy = y_top + (i // cols) * GY
+            row, col = i // cols, i % cols
+            ncol = min(cols, len(pool) - row * cols)     # 末行按自身数量居中,不左对齐
+            xx = lane_cx + (col - (ncol - 1) / 2) * GX
+            yy = y_top + row * GY
             emit(k, round(xx, 1), round(yy, 1), lid)
+            # 基石带 34px 间距放不下 139 个标签(自驾页顶部带列距 192px 才敢全标),
+            # 只标每道被引最高的前 8 篇,其余靠悬停看
+            nodes[k]["showl"] = i < 8
+            nodes[k]["ldy"] = -(nodes[k]["r"] + 5) if col % 2 == 0 else (nodes[k]["r"] + 13)
 
     nodexy = defaultdict(list)          # lane -> [(y,x,r)],供河流包络用
+    clus = Counter((f'{n["band"]}|{n["lane"]}', n["month"]) for n in rest.values())
     for lid, ln in lanes.items():
         pool = [(k, C[k]["month"]) for k, n in rest.items() if f'{n["band"]}|{n["lane"]}' == lid]
         for k, (xx, yy, col) in pack(pool, ln["x0"], ln["x1"], yof2,
@@ -182,8 +190,10 @@ def main():
             emit(k, xx, yy, lid)
             r = nodes[k]["r"]
             nodexy[lid].append((yy, xx, r))
-            # 标签上下交错,避免相邻两点的标签叠在一起
+            # 标签上下交错(依据**列号**奇偶:同行相邻点只差 XG,不交错必然叠)
             nodes[k]["ldy"] = -(r + 5) if col % 2 == 0 else (r + 13)
+            # 显隐离线定:被引过的、或所在簇很稀疏的才标名,避免密集月糊成一片
+            nodes[k]["showl"] = (C[k]["indeg"] >= 1) or (clus[(lid, C[k]["month"])] <= 6)
 
     edges = [[a, b] for a, b in E if a in nodes and b in nodes]
 
@@ -195,7 +205,10 @@ def main():
     for a, b in edges:
         if C[a]["month"] > C[b]["month"]:
             dag.add_edge(a, b)
-    pr = nx.pagerank(dag.reverse(), alpha=0.85) if dag.number_of_edges() else {}
+    # 边 a→b 表示「a 引用 b」,PageRank 权重顺着边流向**被引者**,
+    # 所以直接对 dag 跑。此前误加 .reverse(),红环语义变成「引用别人多」——
+    # PR 最高的成了 2026 年 indeg=0 的新论文,与「奠基」完全相反。
+    pr = nx.pagerank(dag, alpha=0.85) if dag.number_of_edges() else {}
     prmax = max(pr.values()) if pr else 1
     for k, n in nodes.items():
         n["pr"] = round(pr.get(k, 0) / prmax, 3)
@@ -215,16 +228,16 @@ def main():
     WINpx = 3.4 * ROW_H                       # ±3.4 个月的窗口内取最远节点
     for lid, ln in lanes.items():
         pn = nodexy.get(lid) or []
-        if not pn:
-            continue
         cx = (ln["x0"] + ln["x1"]) / 2
         halfmax = (ln["x1"] - ln["x0"]) / 2 - 4
         pts = []
-        for bm in range(m0, m1 + BIN + 1, BIN):
+        # 压缩段(2015 前)只取 3 个采样点:整段才 120px,按 BIN=2 会塞进 160 个点,
+        # 样条被压成锯齿、JSON 还白白膨胀
+        for bm in [m0, (m0 + CUT) // 2, CUT - 1] + list(range(CUT, m1 + BIN + 1, BIN)):
             ys = yof2(bm)
             e = max((abs(xx - cx) + r for (yy, xx, r) in pn if abs(yy - ys) <= WINpx),
                     default=0)
-            hw = min(halfmax, e + 7) if e > 0 else 5
+            hw = min(halfmax, e + 7) if e > 0 else 6   # 空窗出细线,河不断流
             pts.append({"y": round(ys, 1), "hw": round(hw, 1)})
         ribbons[lid] = {"cx": round(cx, 1), "pts": pts, "col": ln["col"]}
 
