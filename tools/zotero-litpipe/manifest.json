@@ -7,6 +7,7 @@
   "applications": {
     "zotero": {
       "id": "litpipe@zhz.local",
+      "update_url": "https://raw.githubusercontent.com/zhz-bit/knowledge-base/main/tools/zotero-litpipe/update.json",
       "strict_min_version": "6.999",
       "strict_max_version": "10.*"
     }

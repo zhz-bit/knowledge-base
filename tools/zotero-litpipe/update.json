@@ -1,0 +1,13 @@
+{
+  "addons": {
+    "litpipe@zhz.local": {
+      "updates": [
+        {
+          "version": "0.1.0",
+          "update_link": "https://raw.githubusercontent.com/zhz-bit/knowledge-base/main/tools/litpipe.xpi",
+          "applications": { "zotero": { "strict_min_version": "6.999" } }
+        }
+      ]
+    }
+  }
+}
