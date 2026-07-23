@@ -1,0 +1,2302 @@
+{
+ "TOCS": {
+  "full": "ACM Transactions on Computer Systems",
+  "rank": "A"
+ },
+ "TOS": {
+  "full": "ACM Transactions on Storage",
+  "rank": "A"
+ },
+ "TCAD": {
+  "full": "IEEE Transactions On Computer-Aided Design Of Integrated Circuits And System",
+  "rank": "A"
+ },
+ "TC": {
+  "full": "IEEE Transactions on Computers",
+  "rank": "A"
+ },
+ "TPDS": {
+  "full": "IEEE Transactions on Parallel and Distributed Systems",
+  "rank": "A"
+ },
+ "TACO": {
+  "full": "ACM Transactions on Architecture and Code Optimization",
+  "rank": "A"
+ },
+ "TAAS": {
+  "full": "ACM Transactions on Autonomous and Adaptive Systems",
+  "rank": "B"
+ },
+ "TODAES": {
+  "full": "ACM Transactions on Design Automation of Electronic Systems",
+  "rank": "B"
+ },
+ "TECS": {
+  "full": "ACM Transactions on Embedded Computing Systems",
+  "rank": "B"
+ },
+ "TRETS": {
+  "full": "ACM Transactions on Reconfigurable Technology and Systems",
+  "rank": "B"
+ },
+ "TVLSI": {
+  "full": "IEEE Transactions on Very Large Scale Integration (VLSI) Systems",
+  "rank": "B"
+ },
+ "JPDC": {
+  "full": "Journal of Parallel and Distributed Computing",
+  "rank": "B"
+ },
+ "JSA": {
+  "full": "Journal of Systems Architecture: Embedded Software Design",
+  "rank": "B"
+ },
+ "PARCO": {
+  "full": "Parallel Computing",
+  "rank": "B"
+ },
+ "JETC": {
+  "full": "ACM Journal on Emerging Technologies in Computing Systems",
+  "rank": "C"
+ },
+ "DC": {
+  "full": "Distributed Computing",
+  "rank": "C"
+ },
+ "FGCS": {
+  "full": "Future Generation Computer Systems",
+  "rank": "C"
+ },
+ "TCC": {
+  "full": "Theory of Cryptography Conference",
+  "rank": "B"
+ },
+ "Integration": {
+  "full": "Integration, the VLSI Journal",
+  "rank": "C"
+ },
+ "JETTA": {
+  "full": "Journal of Electronic Testing-Theory and Applications",
+  "rank": "C"
+ },
+ "JGC": {
+  "full": "The Journal of Grid computing",
+  "rank": "C"
+ },
+ "RTS": {
+  "full": "Real-Time Systems",
+  "rank": "C"
+ },
+ "TJSC": {
+  "full": "The Journal of Supercomputing",
+  "rank": "C"
+ },
+ "TCASI": {
+  "full": "IEEE Transactions on Circuits and Systems I: Regular Papers",
+  "rank": "C"
+ },
+ "CCF-THPC": {
+  "full": "CCF Transactions on High Performance Computing",
+  "rank": "C"
+ },
+ "TSUSC": {
+  "full": "IEEE Transactions on Sustainable Computing",
+  "rank": "C"
+ },
+ "PPoPP": {
+  "full": "ACM SIGPLAN Symposium on Principles & Practice of Parallel Programming",
+  "rank": "A"
+ },
+ "FAST": {
+  "full": "Conference on File and Storage Technologies",
+  "rank": "A"
+ },
+ "DAC": {
+  "full": "Design Automation Conference",
+  "rank": "A"
+ },
+ "HPCA": {
+  "full": "High-Performance Computer Architecture",
+  "rank": "A"
+ },
+ "MICRO": {
+  "full": "IEEE/ACM International Symposium on Microarchitecture",
+  "rank": "A"
+ },
+ "SC": {
+  "full": "International Conference for High Performance Computing, Networking, Storage, and Analysis",
+  "rank": "A"
+ },
+ "ASPLOS": {
+  "full": "International Conference on Architectural Support for Programming Languages and Operating Systems",
+  "rank": "A"
+ },
+ "ISCA": {
+  "full": "International Symposium on Computer Architecture",
+  "rank": "A"
+ },
+ "USENIX ATC": {
+  "full": "USENIX Annual Technical Conference",
+  "rank": "A"
+ },
+ "EuroSys": {
+  "full": "European Conference on Computer Systems",
+  "rank": "A"
+ },
+ "SOCC": {
+  "full": "ACM Symposium on Cloud Computing",
+  "rank": "B"
+ },
+ "SPAA": {
+  "full": "ACM Symposium on Parallelism in Algorithms and Architectures",
+  "rank": "B"
+ },
+ "PODC": {
+  "full": "ACM Symposium on Principles of Distributed Computing",
+  "rank": "B"
+ },
+ "FPGA": {
+  "full": "ACM/SIGDA International Symposium on Field-Programmable Gate Arrays",
+  "rank": "B"
+ },
+ "CGO": {
+  "full": "Code Generation and Optimization",
+  "rank": "B"
+ },
+ "DATE": {
+  "full": "Design, Automation & Test in Europe",
+  "rank": "B"
+ },
+ "HOT CHIPS": {
+  "full": "ACM Symposium on High Performance Chips",
+  "rank": "B"
+ },
+ "CLUSTER": {
+  "full": "IEEE International Conference on Cluster Computing",
+  "rank": "B"
+ },
+ "ICCD": {
+  "full": "International Conference on Computer Design",
+  "rank": "B"
+ },
+ "ICCAD": {
+  "full": "International Conference on Computer-Aided Design",
+  "rank": "B"
+ },
+ "ICDCS": {
+  "full": "International Conference on Distributed Computing Systems",
+  "rank": "B"
+ },
+ "CODES+ISSS": {
+  "full": "International Conference on Hardware/Software Co-design and System Synthesis",
+  "rank": "B"
+ },
+ "HiPEAC": {
+  "full": "International Conference on High Performance and Embedded Architectures and Compilers",
+  "rank": "B"
+ },
+ "SIGMETRICS": {
+  "full": "International Conference on Measurement and Modeling of Computer Systems",
+  "rank": "B"
+ },
+ "PACT": {
+  "full": "International Conference on Parallel Architectures and Compilation Techniques",
+  "rank": "B"
+ },
+ "ICPP": {
+  "full": "International Conference on Parallel Processing",
+  "rank": "B"
+ },
+ "ICS": {
+  "full": "International Conference on Supercomputing",
+  "rank": "B"
+ },
+ "VEE": {
+  "full": "International Conference on Virtual Execution Environments",
+  "rank": "B"
+ },
+ "IPDPS": {
+  "full": "International Parallel & Distributed Processing Symposium",
+  "rank": "B"
+ },
+ "Performance": {
+  "full": "International Symposium on Computer Performance, Modeling, Measurements and Evaluation",
+  "rank": "B"
+ },
+ "HPDC": {
+  "full": "International Symposium on High Performance Distributed Computing",
+  "rank": "B"
+ },
+ "ITC": {
+  "full": "International Test Conference",
+  "rank": "B"
+ },
+ "LISA": {
+  "full": "Large Installation system Administration Conference",
+  "rank": "B"
+ },
+ "MSST": {
+  "full": "Mass Storage Systems and Technologies",
+  "rank": "B"
+ },
+ "RTAS": {
+  "full": "Real-Time and Embedded Technology and Applications Symposium",
+  "rank": "B"
+ },
+ "Euro-Par": {
+  "full": "European Conference on Parallel and Distributed Computing",
+  "rank": "B"
+ },
+ "CF": {
+  "full": "ACM International Conference on Computing Frontiers",
+  "rank": "C"
+ },
+ "SYSTOR": {
+  "full": "ACM International Systems and Storage Conference",
+  "rank": "C"
+ },
+ "NOCS": {
+  "full": "ACM/IEEE International Symposium on Networks-on-Chip",
+  "rank": "C"
+ },
+ "ASAP": {
+  "full": "Application-Specific Systems, Architectures, and Processors",
+  "rank": "C"
+ },
+ "ASP-DAC": {
+  "full": "Asia and South Pacific Design Automation Conference",
+  "rank": "C"
+ },
+ "ETS": {
+  "full": "European Test Symposium",
+  "rank": "C"
+ },
+ "FPL": {
+  "full": "Field Programmable Logic and Applications",
+  "rank": "C"
+ },
+ "FCCM": {
+  "full": "Field-Programmable Custom Computing Machines",
+  "rank": "C"
+ },
+ "GLSVLSI": {
+  "full": "Great Lakes Symposium on VLSI",
+  "rank": "C"
+ },
+ "ATS": {
+  "full": "IEEE Asian Test Symposium",
+  "rank": "C"
+ },
+ "HPCC": {
+  "full": "IEEE International Conference on High Performance Computing and Communications",
+  "rank": "C"
+ },
+ "HiPC": {
+  "full": "IEEE International Conference on High Performance Computing, Data and Analytics",
+  "rank": "C"
+ },
+ "MASCOTS": {
+  "full": "IEEE International Symposium on Modeling, Analysis, and Simulation of Computer and Telecommunication Systems",
+  "rank": "C"
+ },
+ "ISPA": {
+  "full": "IEEE International Symposium on Parallel and Distributed Processing with Applications",
+  "rank": "C"
+ },
+ "CCGRID": {
+  "full": "IEEE/ACM International Symposium on Cluster, Cloud and Grid Computing",
+  "rank": "C"
+ },
+ "NPC": {
+  "full": "IFIP International Conference on Network and Parallel Computing",
+  "rank": "C"
+ },
+ "ICA3PP": {
+  "full": "International Conference on Algorithms and Architectures for Parallel Processing",
+  "rank": "C"
+ },
+ "CASES": {
+  "full": "International Conference on Compilers, Architectures, and Synthesis for Embedded Systems",
+  "rank": "C"
+ },
+ "FPT": {
+  "full": "International Conference on Field-Programmable Technology",
+  "rank": "C"
+ },
+ "ICPADS": {
+  "full": "International Conference on Parallel and Distributed Systems",
+  "rank": "C"
+ },
+ "ISCAS": {
+  "full": "International Symposium on Circuits and Systems",
+  "rank": "C"
+ },
+ "ISLPED": {
+  "full": "International Symposium on Low Power Electronics and Design",
+  "rank": "C"
+ },
+ "ISPD": {
+  "full": "International Symposium on Physical Design",
+  "rank": "C"
+ },
+ "HotI": {
+  "full": "Symposium on High-Performance Interconnects",
+  "rank": "C"
+ },
+ "VTS": {
+  "full": "VLSI Test Symposium",
+  "rank": "C"
+ },
+ "ITC-Asia": {
+  "full": "International Test Conference in Asia",
+  "rank": "C"
+ },
+ "JSAC": {
+  "full": "IEEE Journal of Selected Areas in Communications",
+  "rank": "A"
+ },
+ "TMC": {
+  "full": "IEEE Transactions on Mobile Computing",
+  "rank": "A"
+ },
+ "TON": {
+  "full": "IEEE/ACM Transactions on Networking",
+  "rank": "A"
+ },
+ "TOIT": {
+  "full": "ACM Transactions on Internet Technology",
+  "rank": "B"
+ },
+ "TOMCCAP": {
+  "full": "ACM Transactions on Multimedia Computing,Communications and Application",
+  "rank": "B"
+ },
+ "TOSN": {
+  "full": "ACM Transactions on Sensor Networks",
+  "rank": "B"
+ },
+ "CN": {
+  "full": "Computer Networks",
+  "rank": "B"
+ },
+ "TCOM": {
+  "full": "IEEE Transactions on Communications",
+  "rank": "B"
+ },
+ "TWC": {
+  "full": "IEEE Transactions on Wireless Communications",
+  "rank": "B"
+ },
+ "CC": {
+  "full": "Computational complexity",
+  "rank": "B"
+ },
+ "TNSM": {
+  "full": "IEEE Transactions on Network and Service Management",
+  "rank": "C"
+ },
+ "JNCA": {
+  "full": "Journal of Network and Computer Applications",
+  "rank": "C"
+ },
+ "MONET": {
+  "full": "Mobile Networks & Applications",
+  "rank": "C"
+ },
+ "PPNA": {
+  "full": "Peer-to-Peer Networking and Applications",
+  "rank": "C"
+ },
+ "WCMC": {
+  "full": "Wireless Communications & Mobile Computing",
+  "rank": "C"
+ },
+ "IOTJ": {
+  "full": "IEEE Internet of Things Journal",
+  "rank": "C"
+ },
+ "IMWUT": {
+  "full": "Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous Technologies",
+  "rank": "A"
+ },
+ "SIGCOMM": {
+  "full": "ACM International Conference on Applications, Technologies, Architectures, and Protocols for Computer Communication",
+  "rank": "A"
+ },
+ "MobiCom": {
+  "full": "ACM International Conference on Mobile Computing and Networking",
+  "rank": "A"
+ },
+ "INFOCOM": {
+  "full": "IEEE International Conference on Computer Communications",
+  "rank": "A"
+ },
+ "NSDI": {
+  "full": "Symposium on Network System Design and Implementation",
+  "rank": "A"
+ },
+ "SenSys": {
+  "full": "ACM Conference on Embedded Networked Sensor Systems",
+  "rank": "B"
+ },
+ "CoNEXT": {
+  "full": "ACM International Conference on emerging Networking EXperiments and Technologies",
+  "rank": "B"
+ },
+ "SECON": {
+  "full": "IEEE Communications Society Conference on Sensor and Ad Hoc Communications and Networks",
+  "rank": "B"
+ },
+ "IPSN": {
+  "full": "International Conference on Information Processing in Sensor Networks",
+  "rank": "B"
+ },
+ "MobiSys": {
+  "full": "International Conference on Mobile Systems, Applications, and Services",
+  "rank": "B"
+ },
+ "ICNP": {
+  "full": "International Conference on Network Protocols",
+  "rank": "B"
+ },
+ "MobiHoc": {
+  "full": "International Symposium on Mobile Ad Hoc Networking and Computing",
+  "rank": "B"
+ },
+ "NOSSDAV": {
+  "full": "International Workshop on Network and Operating System Support for Digital Audio and Video",
+  "rank": "B"
+ },
+ "IWQoS": {
+  "full": "International Workshop on Quality of Service",
+  "rank": "B"
+ },
+ "IMC": {
+  "full": "Internet Measurement Conference",
+  "rank": "B"
+ },
+ "ANCS": {
+  "full": "Architectures for Networking and Communications Systems",
+  "rank": "C"
+ },
+ "APNOMS": {
+  "full": "Asia-Pacific Network Operations and Management Symposium",
+  "rank": "C"
+ },
+ "FORTE": {
+  "full": "Formal Techniques for Networked and Distributed Systems",
+  "rank": "C"
+ },
+ "LCN": {
+  "full": "IEEE Conference on Local Computer Networks",
+  "rank": "C"
+ },
+ "GLOBECOM": {
+  "full": "IEEE Global Communications Conference",
+  "rank": "C"
+ },
+ "ICC": {
+  "full": "IEEE International Conference on Communications",
+  "rank": "C"
+ },
+ "ICCCN": {
+  "full": "IEEE International Conference on Computer Communications and Networks",
+  "rank": "C"
+ },
+ "MASS": {
+  "full": "IEEE International Conference on Mobile Ad-hoc and Sensor Systems",
+  "rank": "C"
+ },
+ "P2P": {
+  "full": "IEEE International Conference on P2P Computing",
+  "rank": "C"
+ },
+ "IPCCC": {
+  "full": "IEEE International Performance Computing and Communications Conference",
+  "rank": "C"
+ },
+ "WoWMoM": {
+  "full": "IEEE International Symposium on a World of Wireless Mobile and Multimedia Networks",
+  "rank": "C"
+ },
+ "ISCC": {
+  "full": "IEEE Symposium on Computers and Communications",
+  "rank": "C"
+ },
+ "WCNC": {
+  "full": "IEEE Wireless Communications & Networking Conference",
+  "rank": "C"
+ },
+ "Networking": {
+  "full": "IFIP International Conferences on Networking",
+  "rank": "C"
+ },
+ "IM": {
+  "full": "IFIP/IEEE International Symposium on Integrated Network Management",
+  "rank": "C"
+ },
+ "MSN": {
+  "full": "International Conference on Mobile Ad-hoc and Sensor Networks",
+  "rank": "C"
+ },
+ "MSWiM": {
+  "full": "International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems",
+  "rank": "C"
+ },
+ "WASA": {
+  "full": "International Conference on Wireless Algorithms, Systems, and Applications",
+  "rank": "C"
+ },
+ "HotNets": {
+  "full": "The Workshop on Hot Topics in Networks",
+  "rank": "C"
+ },
+ "APNet": {
+  "full": "Asia-Pacific Workshop on Networking",
+  "rank": "C"
+ },
+ "TDSC": {
+  "full": "IEEE Transactions on Dependable and Secure Computing",
+  "rank": "A"
+ },
+ "TIFS": {
+  "full": "IEEE Transactions on Information Forensics and Security",
+  "rank": "A"
+ },
+ "TOPS": {
+  "full": "ACM Transactions on Privacy and Security",
+  "rank": "B"
+ },
+ "JCS": {
+  "full": "Journal of Computer Security",
+  "rank": "B"
+ },
+ "CLSR": {
+  "full": "Computer Law and Security Review",
+  "rank": "C"
+ },
+ "IMCS": {
+  "full": "Information Management & Computer Security",
+  "rank": "C"
+ },
+ "IJICS": {
+  "full": "International Journal of Information and Computer Security",
+  "rank": "C"
+ },
+ "IJISP": {
+  "full": "International Journal of Information Security and Privacy",
+  "rank": "C"
+ },
+ "JISA": {
+  "full": "Journal of Information Security and Application",
+  "rank": "C"
+ },
+ "SCN": {
+  "full": "Security and Communication Networks",
+  "rank": "C"
+ },
+ "CCS": {
+  "full": "ACM Conference on Computer and Communications Security",
+  "rank": "A"
+ },
+ "EUROCRYPT": {
+  "full": "European Cryptology Conference",
+  "rank": "A"
+ },
+ "S&P": {
+  "full": "IEEE Symposium on Security and Privacy",
+  "rank": "A"
+ },
+ "CRYPTO": {
+  "full": "International Cryptology Conference",
+  "rank": "A"
+ },
+ "USENIX Security": {
+  "full": "Usenix Security Symposium",
+  "rank": "A"
+ },
+ "NDSS": {
+  "full": "ISOC Network and Distributed System Security Symposium",
+  "rank": "A"
+ },
+ "ACSAC": {
+  "full": "Annual Computer Security Applications Conference",
+  "rank": "B"
+ },
+ "ASIACRYPT": {
+  "full": "Annual International Conference on the Theory and Application of Cryptology and Information Security",
+  "rank": "B"
+ },
+ "ESORICS": {
+  "full": "European Symposium on Research in Computer Security",
+  "rank": "B"
+ },
+ "FSE": {
+  "full": "Fast Software Encryption",
+  "rank": "B"
+ },
+ "CSFW": {
+  "full": "IEEE Computer Security Foundations Workshop",
+  "rank": "B"
+ },
+ "SRDS": {
+  "full": "IEEE International Symposium on Reliable Distributed Systems",
+  "rank": "B"
+ },
+ "CHES": {
+  "full": "International Conference on Cryptographic Hardware and Embedded Systems",
+  "rank": "B"
+ },
+ "DSN": {
+  "full": "International Conference on Dependable Systems and Networks",
+  "rank": "B"
+ },
+ "RAID": {
+  "full": "International Symposium on Recent Advances in Intrusion Detection",
+  "rank": "B"
+ },
+ "PKC": {
+  "full": "International Workshop on Practice and Theory in Public Key Cryptography",
+  "rank": "B"
+ },
+ "WiSec": {
+  "full": "ACM Conference on Security and Privacy in Wireless and Mobile Networks",
+  "rank": "C"
+ },
+ "SACMAT": {
+  "full": "ACM Symposium on Access Control Models and Technologies",
+  "rank": "C"
+ },
+ "DRM": {
+  "full": "ACM Workshop on Digital Rights Management",
+  "rank": "C"
+ },
+ "IH&MMSec": {
+  "full": "ACM Workshop on Information Hiding and Multimedia Security",
+  "rank": "C"
+ },
+ "ACNS": {
+  "full": "Applied Cryptography and Network Security",
+  "rank": "C"
+ },
+ "AsiaCCS": {
+  "full": "Asia Conference on Computer and Communications Security",
+  "rank": "C"
+ },
+ "ACISP": {
+  "full": "AustralasiaConferenceonInformation SecurityandPrivacy",
+  "rank": "C"
+ },
+ "CT-RSA": {
+  "full": "RSA Conference, Cryptographers' Track",
+  "rank": "C"
+ },
+ "DIMVA": {
+  "full": "Detection of Intrusions and Malware &Vulnerability Assessment",
+  "rank": "C"
+ },
+ "DFRWS": {
+  "full": "Digital Forensic Research Workshop",
+  "rank": "C"
+ },
+ "FC": {
+  "full": "Financial Cryptography and Data Security",
+  "rank": "C"
+ },
+ "TrustCom": {
+  "full": "IEEE International Conference on Trust,Security and Privacy in Computing and Communications",
+  "rank": "C"
+ },
+ "SEC": {
+  "full": "IFIP International Information Security Conference",
+  "rank": "C"
+ },
+ "IFIP WG 11.9": {
+  "full": "IFIP WG 11.9 International Conference on Digital Forensics",
+  "rank": "C"
+ },
+ "ISC": {
+  "full": "Information Security Conference",
+  "rank": "C"
+ },
+ "ICDF2C": {
+  "full": "International Conference on Digital Forensics & Cyber Crime",
+  "rank": "C"
+ },
+ "ICICS": {
+  "full": "International Conference on Information and Communications Security",
+  "rank": "C"
+ },
+ "SecureComm": {
+  "full": "International Conference on Security and Privacy in Communication Networks",
+  "rank": "C"
+ },
+ "NSPW": {
+  "full": "New Security Paradigms Workshop",
+  "rank": "C"
+ },
+ "PAM": {
+  "full": "Passive and Active Measurement Conference",
+  "rank": "C"
+ },
+ "PETS": {
+  "full": "Privacy Enhancing Technologies Symposium",
+  "rank": "C"
+ },
+ "SAC": {
+  "full": "Selected Areas in Cryptography",
+  "rank": "C"
+ },
+ "SOUPS": {
+  "full": "Symposium On Usable Privacy and Security",
+  "rank": "C"
+ },
+ "HotSec": {
+  "full": "USENIX Workshop on Hot Topics in Security",
+  "rank": "C"
+ },
+ "EuroS&P": {
+  "full": "IEEE European Symposium on Security and Privacy",
+  "rank": "C"
+ },
+ "Inscrypt": {
+  "full": "International Conference on Information Security and Cryptology",
+  "rank": "C"
+ },
+ "TOPLAS": {
+  "full": "ACM Transactions on Programming Languages & Systems",
+  "rank": "A"
+ },
+ "TOSEM": {
+  "full": "ACM Transactions on Software Engineering and Methodology",
+  "rank": "A"
+ },
+ "TSE": {
+  "full": "IEEE Transactions on Software Engineering",
+  "rank": "A"
+ },
+ "TSC": {
+  "full": "IEEE Transactions on Service Computing",
+  "rank": "A"
+ },
+ "ASE": {
+  "full": "International Conference on Automated Software Engineering",
+  "rank": "A"
+ },
+ "ESE": {
+  "full": "Empirical Software Engineering",
+  "rank": "B"
+ },
+ "IETS": {
+  "full": "IET Software",
+  "rank": "B"
+ },
+ "IST": {
+  "full": "Information and Software Technology",
+  "rank": "B"
+ },
+ "JFP": {
+  "full": "Journal of Functional Programming",
+  "rank": "B"
+ },
+ "JSS": {
+  "full": "Journal of Systems and Software",
+  "rank": "B"
+ },
+ "RE": {
+  "full": "IEEE International Requirement Engineering Conference",
+  "rank": "B"
+ },
+ "SCP": {
+  "full": "Science of Computer Programming",
+  "rank": "B"
+ },
+ "SoSyM": {
+  "full": "Software and System Modeling",
+  "rank": "B"
+ },
+ "STVR": {
+  "full": "Software Testing, Verification and Reliability",
+  "rank": "B"
+ },
+ "SPE": {
+  "full": "Software: Practice and Experience",
+  "rank": "B"
+ },
+ "CL": {
+  "full": "Computer Languages, Systems and Structures",
+  "rank": "C"
+ },
+ "IJSEKE": {
+  "full": "International Journal on Software Engineering and Knowledge Engineering",
+  "rank": "C"
+ },
+ "STTT": {
+  "full": "International Journal on Software Tools for Technology Transfer",
+  "rank": "C"
+ },
+ "JLAP": {
+  "full": "Journal of Logic and Algebraic Programming",
+  "rank": "C"
+ },
+ "JWE": {
+  "full": "Journal of Web Engineering",
+  "rank": "C"
+ },
+ "SOCA": {
+  "full": "Service Oriented Computing and Applications",
+  "rank": "C"
+ },
+ "SQJ": {
+  "full": "Software Quality Journal",
+  "rank": "C"
+ },
+ "TPLP": {
+  "full": "Theory and Practice of Logic Programming",
+  "rank": "C"
+ },
+ "PACM PL": {
+  "full": "Proceedings of the ACM on Programming Languages",
+  "rank": "C"
+ },
+ "PLDI": {
+  "full": "ACM SIGPLAN Symposium on Programming Language Design & Implementation",
+  "rank": "A"
+ },
+ "POPL": {
+  "full": "ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages",
+  "rank": "A"
+ },
+ "FSE/ESEC": {
+  "full": "ACM SIGSOFT Symposium on the Foundation of Software Engineering/ European Software Engineering Conference",
+  "rank": "A"
+ },
+ "SOSP": {
+  "full": "ACM Symposium on Operating Systems Principles",
+  "rank": "A"
+ },
+ "OOPSLA": {
+  "full": "Conference on Object-Oriented Programming Systems, Languages,and Applications",
+  "rank": "A"
+ },
+ "ICSE": {
+  "full": "International Conference on Software Engineering",
+  "rank": "A"
+ },
+ "ISSTA": {
+  "full": "International Symposium on Software Testing and Analysis",
+  "rank": "A"
+ },
+ "OSDI": {
+  "full": "USENIX Symposium on Operating Systems Design and Implementations",
+  "rank": "A"
+ },
+ "FM": {
+  "full": "International Symposium on Formal Methods",
+  "rank": "A"
+ },
+ "ECOOP": {
+  "full": "European Conference on Object-Oriented Programming",
+  "rank": "B"
+ },
+ "ETAPS": {
+  "full": "European Joint Conferences on Theory and Practice of Software",
+  "rank": "B"
+ },
+ "ICPC": {
+  "full": "IEEE International Conference on Program Comprehension",
+  "rank": "B"
+ },
+ "CAiSE": {
+  "full": "International Conference on Advanced Information Systems Engineering",
+  "rank": "B"
+ },
+ "ICFP": {
+  "full": "International Conference on Function Programming",
+  "rank": "B"
+ },
+ "LCTES": {
+  "full": "International Conference on Languages,Compilers, Tools and Theory for Embedded Systems",
+  "rank": "B"
+ },
+ "MoDELS": {
+  "full": "International Conference on Model Driven Engineering Languages and Systems",
+  "rank": "B"
+ },
+ "CP": {
+  "full": "International Conference on Principles and Practice of Constraint Programming",
+  "rank": "B"
+ },
+ "ICSOC": {
+  "full": "International Conference on Service Oriented Computing",
+  "rank": "B"
+ },
+ "SANER": {
+  "full": "International Conference on Software Analysis, Evolution, and Reengineering",
+  "rank": "B"
+ },
+ "ICSME": {
+  "full": "International Conference on Software Maintenance and Evolution",
+  "rank": "B"
+ },
+ "VMCAI": {
+  "full": "International Conference on Verification,Model Checking, and Abstract Interpretation",
+  "rank": "B"
+ },
+ "ICWS": {
+  "full": "International Conference on Web Services(Research Track)",
+  "rank": "B"
+ },
+ "Middleware": {
+  "full": "International Middleware Conference",
+  "rank": "B"
+ },
+ "SAS": {
+  "full": "International Static Analysis Symposium",
+  "rank": "B"
+ },
+ "ESEM": {
+  "full": "International Symposium on Empirical Software Engineering and Measurement",
+  "rank": "B"
+ },
+ "ISSRE": {
+  "full": "International Symposium on Software Reliability Engineering",
+  "rank": "B"
+ },
+ "HotOS": {
+  "full": "USENIX Workshop on Hot Topics in Operating Systems",
+  "rank": "B"
+ },
+ "PEPM": {
+  "full": "ACM SIGPLAN Workshop on Partial Evaluation and Program Manipulation",
+  "rank": "C"
+ },
+ "PASTE": {
+  "full": "ACMSIGPLAN-SIGSOFT Workshop on Program Analysis for Software Tools and Engineering",
+  "rank": "C"
+ },
+ "APLAS": {
+  "full": "Asian Symposium on Programming Languages and Systems",
+  "rank": "C"
+ },
+ "APSEC": {
+  "full": "Asia-Pacific Software Engineering Conference",
+  "rank": "C"
+ },
+ "EASE": {
+  "full": "Evaluation and Assessment in Software Engineering",
+  "rank": "C"
+ },
+ "ICECCS": {
+  "full": "IEEE International Conference on Engineering of Complex Computer Systems",
+  "rank": "C"
+ },
+ "ICST": {
+  "full": "IEEE International Conference on Software Testing, Verification and Validation",
+  "rank": "C"
+ },
+ "ISPASS": {
+  "full": "IEEE International Symposium on Performance Analysis of Systems and Software",
+  "rank": "C"
+ },
+ "SCAM": {
+  "full": "IEEE International Working Conference on Source Code Analysis and Manipulation",
+  "rank": "C"
+ },
+ "COMPSAC": {
+  "full": "International Computer Software and Applications Conference",
+  "rank": "C"
+ },
+ "ICFEM": {
+  "full": "International Conference on Formal Engineering Methods",
+  "rank": "C"
+ },
+ "TOOLS": {
+  "full": "International Conference on Objects, Models, Components, Patterns",
+  "rank": "C"
+ },
+ "QSIC": {
+  "full": "International Conference on Quality Software",
+  "rank": "C"
+ },
+ "SCC": {
+  "full": "International Conference on Service Computing",
+  "rank": "C"
+ },
+ "ICSSP": {
+  "full": "International Conference on Software and System Process",
+  "rank": "C"
+ },
+ "SEKE": {
+  "full": "International Conference on Software Engineering and Knowledge Engineering",
+  "rank": "C"
+ },
+ "QRS": {
+  "full": "International Conference on Software Quality, Reliability and Security",
+  "rank": "C"
+ },
+ "ICSR": {
+  "full": "International Conference on Software Reuse",
+  "rank": "C"
+ },
+ "ICWE": {
+  "full": "International Conference on Web Engineering",
+  "rank": "C"
+ },
+ "SPIN": {
+  "full": "International SPIN Workshop on Model Checking of Software",
+  "rank": "C"
+ },
+ "ATVA": {
+  "full": "International Symposium on Automated Technology for Verification and Analysis",
+  "rank": "C"
+ },
+ "LOPSTR": {
+  "full": "International Symposium on Logic-based Program Synthesis and Transformation",
+  "rank": "C"
+ },
+ "TASE": {
+  "full": "International Symposium on Theoretical Aspects of Software Engineering",
+  "rank": "C"
+ },
+ "MSR": {
+  "full": "Mining Software Repositories",
+  "rank": "C"
+ },
+ "REFSQ": {
+  "full": "Requirements Engineering: Foundation for Software Quality",
+  "rank": "C"
+ },
+ "WICSA": {
+  "full": "Working IEEE/IFIP Conference on Software Architecture",
+  "rank": "C"
+ },
+ "Internetware": {
+  "full": "The Asia-Pacific Symposium on Internetware",
+  "rank": "C"
+ },
+ "RV": {
+  "full": "International Conference on Runtime Verification",
+  "rank": "C"
+ },
+ "TKDD": {
+  "full": "ACM Transactions on Knowledge Discovery from Data",
+  "rank": "B"
+ },
+ "TWEB": {
+  "full": "ACM Transactions on the Web",
+  "rank": "B"
+ },
+ "AEI": {
+  "full": "Advanced Engineering Informatics",
+  "rank": "B"
+ },
+ "DKE": {
+  "full": "Data and Knowledge Engineering",
+  "rank": "B"
+ },
+ "DMKD": {
+  "full": "Data Mining and Knowledge Discovery",
+  "rank": "B"
+ },
+ "EJIS": {
+  "full": "European Journal of Information Systems",
+  "rank": "B"
+ },
+ "IPM": {
+  "full": "Information Processing and Management",
+  "rank": "B"
+ },
+ "IS": {
+  "full": "Information Systems",
+  "rank": "B"
+ },
+ "JASIST": {
+  "full": "Journal of the American Society for Information Science and Technology",
+  "rank": "B"
+ },
+ "JWS": {
+  "full": "Journal of Web Semantics",
+  "rank": "B"
+ },
+ "KAIS": {
+  "full": "Knowledge and Information Systems",
+  "rank": "B"
+ },
+ "DPD": {
+  "full": "Distributed and Parallel Databases",
+  "rank": "C"
+ },
+ "I&M": {
+  "full": "Information and Management",
+  "rank": "C"
+ },
+ "IPL": {
+  "full": "Information Processing Letters",
+  "rank": "C"
+ },
+ "IR": {
+  "full": "Information Retrieval Journal",
+  "rank": "C"
+ },
+ "IJCIS": {
+  "full": "International Journal of Cooperative Information Systems",
+  "rank": "C"
+ },
+ "IJGIS": {
+  "full": "International Journal of Geographical Information Science",
+  "rank": "C"
+ },
+ "IJIS": {
+  "full": "International Journal of Intelligent Systems",
+  "rank": "C"
+ },
+ "IJKM": {
+  "full": "International Journal of Knowledge Management",
+  "rank": "C"
+ },
+ "IJSWIS": {
+  "full": "International Journal on Semantic Web and Information Systems",
+  "rank": "C"
+ },
+ "JCIS": {
+  "full": "Journal of Computer Information Systems",
+  "rank": "C"
+ },
+ "JDM": {
+  "full": "Journal of Database Management",
+  "rank": "C"
+ },
+ "JIIS": {
+  "full": "Journal of Intelligent Information Systems",
+  "rank": "C"
+ },
+ "JSIS": {
+  "full": "Journal of Strategic Information Systems",
+  "rank": "C"
+ },
+ "DSE": {
+  "full": "Data Science and Engineering",
+  "rank": "C"
+ },
+ "SIGMOD": {
+  "full": "ACM Conference on Management of Data",
+  "rank": "A"
+ },
+ "SIGKDD": {
+  "full": "ACM Knowledge Discovery and Data Mining",
+  "rank": "A"
+ },
+ "ICDE": {
+  "full": "IEEE International Conference on Data Engineering",
+  "rank": "A"
+ },
+ "SIGIR": {
+  "full": "International Conference on Research on Development in Information Retrieval",
+  "rank": "A"
+ },
+ "VLDB": {
+  "full": "International Conference on Very Large Data Bases",
+  "rank": "A"
+ },
+ "CIKM": {
+  "full": "ACM International Conference on Information and Knowledge Management",
+  "rank": "B"
+ },
+ "WSDM": {
+  "full": "ACM International Conference on Web Search and Data Mining",
+  "rank": "B"
+ },
+ "PODS": {
+  "full": "ACM Symposium on Principles of Database Systems",
+  "rank": "B"
+ },
+ "DASFAA": {
+  "full": "Database Systems for Advanced Applications",
+  "rank": "B"
+ },
+ "ECML-PKDD": {
+  "full": "European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases",
+  "rank": "B"
+ },
+ "ISWC": {
+  "full": "IEEE International Semantic Web Conference",
+  "rank": "B"
+ },
+ "ICDM": {
+  "full": "International Conference on Data Mining",
+  "rank": "B"
+ },
+ "ICDT": {
+  "full": "International Conference on Database Theory",
+  "rank": "B"
+ },
+ "EDBT": {
+  "full": "International Conference on Extending DB Technology",
+  "rank": "B"
+ },
+ "CIDR": {
+  "full": "International Conference on Innovative Data Systems Research",
+  "rank": "B"
+ },
+ "SDM": {
+  "full": "SIAM International Conference on Data Mining",
+  "rank": "B"
+ },
+ "RecSys": {
+  "full": "ACM Conference on Recommender Systems",
+  "rank": "B"
+ },
+ "APWeb": {
+  "full": "Asia Pacific Web Conference",
+  "rank": "C"
+ },
+ "DEXA": {
+  "full": "Database and Expert System Applications",
+  "rank": "C"
+ },
+ "ECIR": {
+  "full": "European Conference on IR Research",
+  "rank": "C"
+ },
+ "ESWC": {
+  "full": "Extended Semantic Web Conference",
+  "rank": "C"
+ },
+ "WebDB": {
+  "full": "International ACM Workshop on Web and Databases",
+  "rank": "C"
+ },
+ "ER": {
+  "full": "International Conference on Conceptual Modeling",
+  "rank": "C"
+ },
+ "MDM": {
+  "full": "International Conference on Mobile Data Management",
+  "rank": "C"
+ },
+ "SSDBM": {
+  "full": "International Conference on Scientific and Statistical DB Management",
+  "rank": "C"
+ },
+ "WAIM": {
+  "full": "International Conference on Web Age Information Management",
+  "rank": "C"
+ },
+ "SSTD": {
+  "full": "International Symposium on Spatial and Temporal Databases",
+  "rank": "C"
+ },
+ "PAKDD": {
+  "full": "Pacific-Asia Conference on Knowledge Discovery and Data Mining",
+  "rank": "C"
+ },
+ "WISE": {
+  "full": "Web Information Systems Engineering",
+  "rank": "C"
+ },
+ "ADMA": {
+  "full": "The International Conference on Advanced Data Mining and Applications",
+  "rank": "C"
+ },
+ "TIT": {
+  "full": "IEEE Transactions on Information Theory",
+  "rank": "A"
+ },
+ "IANDC": {
+  "full": "Information and Computation",
+  "rank": "A"
+ },
+ "SICOMP": {
+  "full": "SIAM Journal on Computing",
+  "rank": "A"
+ },
+ "TALG": {
+  "full": "ACM Transactions on Algorithms",
+  "rank": "B"
+ },
+ "TOCL": {
+  "full": "ACM Transactions on Computational Logic",
+  "rank": "B"
+ },
+ "TOMS": {
+  "full": "ACM Transactions on Mathematical Software",
+  "rank": "B"
+ },
+ "Algorithmica": {
+  "full": "Algorithmica",
+  "rank": "B"
+ },
+ "FAC": {
+  "full": "Formal Aspects of Computing",
+  "rank": "B"
+ },
+ "FMSD": {
+  "full": "Formal Methods in System Design",
+  "rank": "B"
+ },
+ "INFORMS": {
+  "full": "INFORMS Journal on Computing",
+  "rank": "B"
+ },
+ "JCSS": {
+  "full": "Journal of Computer and System Sciences",
+  "rank": "B"
+ },
+ "JGO": {
+  "full": "Journal of Global Optimization",
+  "rank": "B"
+ },
+ "JSC": {
+  "full": "Journal of Symbolic Computation",
+  "rank": "B"
+ },
+ "MSCS": {
+  "full": "Mathematical Structures in Computer Science",
+  "rank": "B"
+ },
+ "TCS": {
+  "full": "Theoretical Computer Science",
+  "rank": "B"
+ },
+ "ACTA": {
+  "full": "Acta Informatica",
+  "rank": "C"
+ },
+ "APAL": {
+  "full": "Annals of Pure and Applied Logic",
+  "rank": "C"
+ },
+ "DAM": {
+  "full": "Discrete Applied Mathematics",
+  "rank": "C"
+ },
+ "FUIN": {
+  "full": "Fundamenta Informaticae",
+  "rank": "C"
+ },
+ "LISP": {
+  "full": "Higher-Order and Symbolic Computation",
+  "rank": "C"
+ },
+ "JCOMPLEXITY": {
+  "full": "Journal of Complexity",
+  "rank": "C"
+ },
+ "LOGCOM": {
+  "full": "Journal of Logic and Computation",
+  "rank": "C"
+ },
+ "JSL": {
+  "full": "Journal of Symbolic Logic",
+  "rank": "C"
+ },
+ "LMCS": {
+  "full": "Logical Methods in Computer Science",
+  "rank": "C"
+ },
+ "SIDMA": {
+  "full": "SIAM Journal on Discrete Mathematics",
+  "rank": "C"
+ },
+ "STOC": {
+  "full": "ACM Symposium on Theory of Computing",
+  "rank": "A"
+ },
+ "SODA": {
+  "full": "ACM-SIAM Symposium on Discrete Algorithms",
+  "rank": "A"
+ },
+ "CAV": {
+  "full": "Computer Aided Verification",
+  "rank": "A"
+ },
+ "FOCS": {
+  "full": "IEEE Annual Symposium on Foundations of Computer Science",
+  "rank": "A"
+ },
+ "LICS": {
+  "full": "IEEE Symposium on Logic in Computer Science",
+  "rank": "A"
+ },
+ "SoCG": {
+  "full": "ACM Symposium on Computational Geometry",
+  "rank": "B"
+ },
+ "ESA": {
+  "full": "European Symposium on Algorithms",
+  "rank": "B"
+ },
+ "CCC": {
+  "full": "IEEE Conference on Computational Complexity",
+  "rank": "B"
+ },
+ "ICALP": {
+  "full": "International Colloquium on Automata, Languages and Programming",
+  "rank": "B"
+ },
+ "CADE/IJCAR": {
+  "full": "International Conference on Automated Deduction/International Joint Conference on Automated Reasoning",
+  "rank": "B"
+ },
+ "CONCUR": {
+  "full": "International Conference on Concurrency Theory",
+  "rank": "B"
+ },
+ "HSCC": {
+  "full": "International Conference on Hybrid Systems: Computation and Control",
+  "rank": "B"
+ },
+ "SAT": {
+  "full": "Theory and Applications of Satisfiability Testing",
+  "rank": "B"
+ },
+ "COCOON": {
+  "full": "International Computing and Combinatorics Conference",
+  "rank": "B"
+ },
+ "CSL": {
+  "full": "Computer Science Logic",
+  "rank": "C"
+ },
+ "FMCAD": {
+  "full": "Formal Method in Computer-Aided Design",
+  "rank": "C"
+ },
+ "FSTTCS": {
+  "full": "Foundations of Software Technology and Theoretical Computer Science",
+  "rank": "C"
+ },
+ "DSAA": {
+  "full": "IEEE International Conference on Data Science and Advanced Analytics",
+  "rank": "C"
+ },
+ "ICTAC": {
+  "full": "International Colloquium on Theoretical Aspects of Computing",
+  "rank": "C"
+ },
+ "IPCO": {
+  "full": "International Conference on Integer Programming and Combinatorial Optimization",
+  "rank": "C"
+ },
+ "RTA": {
+  "full": "International Conference on Rewriting Techniques and Applications",
+  "rank": "C"
+ },
+ "ISAAC": {
+  "full": "International Symposium on Algorithms and Computation",
+  "rank": "C"
+ },
+ "MFCS": {
+  "full": "Mathematical Foundations of Computer Science",
+  "rank": "C"
+ },
+ "STACS": {
+  "full": "Symposium on Theoretical Aspects of Computer Science",
+  "rank": "C"
+ },
+ "SETTA": {
+  "full": "International Symposium on Dependable Software Engineering: Theories, Tools, and Applications",
+  "rank": "C"
+ },
+ "TOG": {
+  "full": "ACM Transactions on Graphics",
+  "rank": "A"
+ },
+ "TIP": {
+  "full": "IEEE Transactions on Image Processing",
+  "rank": "A"
+ },
+ "TVCG": {
+  "full": "IEEE Transactions on Visualization and Computer Graphics",
+  "rank": "A"
+ },
+ "CAGD": {
+  "full": "Computer Aided Geometric Design",
+  "rank": "B"
+ },
+ "CGF": {
+  "full": "Computer Graphics Forum",
+  "rank": "B"
+ },
+ "CAD": {
+  "full": "Computer-Aided Design",
+  "rank": "B"
+ },
+ "GM": {
+  "full": "Graphical Models",
+  "rank": "B"
+ },
+ "TCSVT": {
+  "full": "IEEE Transactions on Circuits and Systems for Video Technology",
+  "rank": "B"
+ },
+ "TMM": {
+  "full": "IEEE Transactions on Multimedia",
+  "rank": "B"
+ },
+ "SIIMS": {
+  "full": "SIAM Journal on Imaging Sciences",
+  "rank": "B"
+ },
+ "Speech Com": {
+  "full": "Speech Communication",
+  "rank": "B"
+ },
+ "CGTA": {
+  "full": "Computational Geometry: Theory and Applications",
+  "rank": "C"
+ },
+ "CAVW": {
+  "full": "Computer Animation and Virtual Worlds",
+  "rank": "C"
+ },
+ "C&G": {
+  "full": "Computers & Graphics",
+  "rank": "C"
+ },
+ "DCG": {
+  "full": "Discrete & Computational Geometry",
+  "rank": "C"
+ },
+ "SPL": {
+  "full": "IEEE Signal Processing Letters",
+  "rank": "C"
+ },
+ "IET-IPR": {
+  "full": "IET Image Processing",
+  "rank": "C"
+ },
+ "JVCIR": {
+  "full": "Journal of Visual Communication and Image Representation",
+  "rank": "C"
+ },
+ "MS": {
+  "full": "Multimedia Systems",
+  "rank": "C"
+ },
+ "MTA": {
+  "full": "Multimedia Tools and Applications",
+  "rank": "C"
+ },
+ "SPIC": {
+  "full": "Signal Processing: Image Communication",
+  "rank": "C"
+ },
+ "TVC": {
+  "full": "The Visual Computer",
+  "rank": "C"
+ },
+ "CVMJ": {
+  "full": "Computational Visual Media",
+  "rank": "C"
+ },
+ "ACM MM": {
+  "full": "ACM International Conference on Multimedia",
+  "rank": "A"
+ },
+ "SIGGRAPH": {
+  "full": "ACM SIGGRAPH Annual Conference",
+  "rank": "A"
+ },
+ "VR": {
+  "full": "IEEE Virtual Reality",
+  "rank": "A"
+ },
+ "IEEE VIS": {
+  "full": "IEEE Visualization Conference",
+  "rank": "A"
+ },
+ "ICMR": {
+  "full": "ACM SIGMM International Conference on Multimedia Retrieval",
+  "rank": "B"
+ },
+ "SI3D": {
+  "full": "ACM Symposium on Interactive 3D Graphics",
+  "rank": "B"
+ },
+ "SCA": {
+  "full": "ACM/Eurographics Symposium on Computer Animation",
+  "rank": "B"
+ },
+ "DCC": {
+  "full": "Data Compression Conference",
+  "rank": "B"
+ },
+ "EG": {
+  "full": "Eurographics",
+  "rank": "B"
+ },
+ "EuroVis": {
+  "full": "Eurographics Conference on Visualization",
+  "rank": "B"
+ },
+ "SGP": {
+  "full": "Eurographics Symposium on Geometry Processing",
+  "rank": "B"
+ },
+ "EGSR": {
+  "full": "Eurographics Symposium on Rendering",
+  "rank": "B"
+ },
+ "ICASSP": {
+  "full": "IEEE International Conference on Acoustics,Speech and SP",
+  "rank": "B"
+ },
+ "ICME": {
+  "full": "IEEE International Conference on Multimedia& Expo",
+  "rank": "B"
+ },
+ "ISMAR": {
+  "full": "International Symposium on Mixed and Augmented Reality",
+  "rank": "B"
+ },
+ "PG": {
+  "full": "Pacific Graphics: The Pacific Conference on Computer Graphics and Applications",
+  "rank": "B"
+ },
+ "SPM": {
+  "full": "Symposium on Solid and Physical Modeling",
+  "rank": "B"
+ },
+ "MICCAI": {
+  "full": "International Conference on Medical Image Computing and Computer-Assisted Intervention",
+  "rank": "B"
+ },
+ "CASA": {
+  "full": "Computer Animation and Social Agents",
+  "rank": "C"
+ },
+ "CGI": {
+  "full": "Computer Graphics International",
+  "rank": "C"
+ },
+ "INTERSPEECH": {
+  "full": "Conference of the International SpeechCommunication Association",
+  "rank": "C"
+ },
+ "GMP": {
+  "full": "Geometric Modeling and Processing",
+  "rank": "C"
+ },
+ "PacificVis": {
+  "full": "IEEE Pacific Visualization Symposium",
+  "rank": "C"
+ },
+ "3DV": {
+  "full": "International Conference on 3D Vision",
+  "rank": "C"
+ },
+ "CAD/Graphics": {
+  "full": "International Conference on Computer-Aided Design and Computer Graphics",
+  "rank": "C"
+ },
+ "ICIP": {
+  "full": "International Conference on Image Processing",
+  "rank": "C"
+ },
+ "MMM": {
+  "full": "International Conference on Multimedia Modeling",
+  "rank": "C"
+ },
+ "PCM": {
+  "full": "Pacific-Rim Conference on Multimedia",
+  "rank": "C"
+ },
+ "SMI": {
+  "full": "Shape Modeling International",
+  "rank": "C"
+ },
+ "CVM": {
+  "full": "Computational Visual Media",
+  "rank": "C"
+ },
+ "PRCV": {
+  "full": "Chinese Conference on Pattern Recognition and Computer Vision",
+  "rank": "C"
+ },
+ "AI": {
+  "full": "Artificial Intelligence",
+  "rank": "A"
+ },
+ "TPAMI": {
+  "full": "IEEE Trans on Pattern Analysis and Machine Intelligence",
+  "rank": "A"
+ },
+ "IJCV": {
+  "full": "International Journal of Computer Vision",
+  "rank": "A"
+ },
+ "JMLR": {
+  "full": "Journal of Machine Learning Research",
+  "rank": "A"
+ },
+ "TAP": {
+  "full": "ACM Transactions on Applied Perception",
+  "rank": "B"
+ },
+ "TSLP": {
+  "full": "ACM Transactions on Speech and Language Processing",
+  "rank": "B"
+ },
+ "AAMAS": {
+  "full": "International Joint Conference on Autonomous Agents and Multi-agent Systems",
+  "rank": "B"
+ },
+ "CVIU": {
+  "full": "Computer Vision and Image Understanding",
+  "rank": "B"
+ },
+ "TAC": {
+  "full": "IEEE Transactions on Affective Computing",
+  "rank": "B"
+ },
+ "TASLP": {
+  "full": "IEEE Transactions on Audio, Speech, and Language Processing",
+  "rank": "B"
+ },
+ "TEC": {
+  "full": "IEEE Transactions on Evolutionary Computation",
+  "rank": "B"
+ },
+ "TFS": {
+  "full": "IEEE Transactions on Fuzzy Systems",
+  "rank": "B"
+ },
+ "TNNLS": {
+  "full": "IEEE Transactions on Neural Networks and learning systems",
+  "rank": "B"
+ },
+ "IJAR": {
+  "full": "International Journal of Approximate Reasoning",
+  "rank": "B"
+ },
+ "JAIR": {
+  "full": "Journal of Artificial Intelligence Research",
+  "rank": "B"
+ },
+ "TACL": {
+  "full": "Transactions of the Association for Computational Linguistics",
+  "rank": "B"
+ },
+ "TALLIP": {
+  "full": "ACM Transactions on Asian and Low-Resource Language Information Processing",
+  "rank": "C"
+ },
+ "AIM": {
+  "full": "Artificial Intelligence in Medicine",
+  "rank": "C"
+ },
+ "DSS": {
+  "full": "Decision Support Systems",
+  "rank": "C"
+ },
+ "EAAI": {
+  "full": "Engineering Applications of Artificial Intelligence",
+  "rank": "C"
+ },
+ "ESWA": {
+  "full": "Expert Systems with Applications",
+  "rank": "C"
+ },
+ "TG": {
+  "full": "IEEE Transactions on Games",
+  "rank": "C"
+ },
+ "IET-CVI": {
+  "full": "IET Computer Vision",
+  "rank": "C"
+ },
+ "IVC": {
+  "full": "Image and Vision Computing",
+  "rank": "C"
+ },
+ "IDA": {
+  "full": "Intelligent Data Analysis",
+  "rank": "C"
+ },
+ "IJCIA": {
+  "full": "International Journal of Computational Intelligence and Applications",
+  "rank": "C"
+ },
+ "IJNS": {
+  "full": "International Journal of Neural Systems",
+  "rank": "C"
+ },
+ "IJPRAI": {
+  "full": "International Journal of Pattern Recognition and Artificial Intelligence",
+  "rank": "C"
+ },
+ "IJUFKS": {
+  "full": "International Journal of Uncertainty, Fuzziness and Knowledge-Based System",
+  "rank": "C"
+ },
+ "IJDAR": {
+  "full": "International Journal on Document Analysis and Recognition",
+  "rank": "C"
+ },
+ "JETAI": {
+  "full": "Journal of Experimental and Theoretical Artificial Intelligence",
+  "rank": "C"
+ },
+ "KBS": {
+  "full": "Knowledge-Based Systems",
+  "rank": "C"
+ },
+ "NLE": {
+  "full": "Natural Language Engineering",
+  "rank": "C"
+ },
+ "NCA": {
+  "full": "Neural Computing & Applications",
+  "rank": "C"
+ },
+ "NPL": {
+  "full": "Neural Processing Letters",
+  "rank": "C"
+ },
+ "PAA": {
+  "full": "Pattern Analysis and Applications",
+  "rank": "C"
+ },
+ "PRL": {
+  "full": "Pattern Recognition Letters",
+  "rank": "C"
+ },
+ "WI": {
+  "full": "Web Intelligence",
+  "rank": "C"
+ },
+ "TIIS": {
+  "full": "ACM Transactions on Interactive Intelligent Systems",
+  "rank": "C"
+ },
+ "AAAI": {
+  "full": "AAAI Conference on Artificial Intelligence",
+  "rank": "A"
+ },
+ "NeurIPS": {
+  "full": "Annual Conference on Neural Information Processing Systems",
+  "rank": "A"
+ },
+ "ACL": {
+  "full": "Annual Meeting of the Association for Computational Linguistics",
+  "rank": "A"
+ },
+ "CVPR": {
+  "full": "IEEE Conference on Computer Vision and Pattern Recognition",
+  "rank": "A"
+ },
+ "ICCV": {
+  "full": "International Conference on Computer Vision",
+  "rank": "A"
+ },
+ "ICML": {
+  "full": "International Conference on Machine Learning",
+  "rank": "A"
+ },
+ "IJCAI": {
+  "full": "International Joint Conference on Artificial Intelligence",
+  "rank": "A"
+ },
+ "COLT": {
+  "full": "Annual Conference on Computational Learning Theory",
+  "rank": "B"
+ },
+ "EMNLP": {
+  "full": "Conference on Empirical Methods in Natural Language Processing",
+  "rank": "B"
+ },
+ "ECAI": {
+  "full": "European Conference on Artificial Intelligence",
+  "rank": "B"
+ },
+ "ECCV": {
+  "full": "European Conference on Computer Vision",
+  "rank": "B"
+ },
+ "ICRA": {
+  "full": "IEEE International Conference on Robotics and Automation",
+  "rank": "B"
+ },
+ "ICAPS": {
+  "full": "International Conference on Automated Planning and Scheduling",
+  "rank": "B"
+ },
+ "ICCBR": {
+  "full": "International Conference on Case-Based Reasoning and Development",
+  "rank": "B"
+ },
+ "COLING": {
+  "full": "International Conference on Computational Linguistics",
+  "rank": "B"
+ },
+ "KR": {
+  "full": "International Conference on Principles of Knowledge Representation and Reasoning",
+  "rank": "B"
+ },
+ "UAI": {
+  "full": "International Conference on Uncertainty in Artificial Intelligence",
+  "rank": "B"
+ },
+ "PPSN": {
+  "full": "Parallel Problem Solving from Nature",
+  "rank": "B"
+ },
+ "NAACL": {
+  "full": "The Annual Conference of the North American Chapter of the Association for Computational Linguistics",
+  "rank": "B"
+ },
+ "AISTATS": {
+  "full": "Artificial Intelligence and Statistics",
+  "rank": "C"
+ },
+ "ACCV": {
+  "full": "Asian Conference on Computer Vision",
+  "rank": "C"
+ },
+ "ACML": {
+  "full": "Asian Conference on Machine Learning",
+  "rank": "C"
+ },
+ "BMVC": {
+  "full": "British Machine Vision Conference",
+  "rank": "C"
+ },
+ "NLPCC": {
+  "full": "CCF International Conference on Natural Language Processing and Chinese Computing",
+  "rank": "C"
+ },
+ "CoNLL": {
+  "full": "Conference on Computational Natural Language Learning",
+  "rank": "C"
+ },
+ "GECCO": {
+  "full": "Genetic and Evolutionary Computation Conference",
+  "rank": "C"
+ },
+ "ICTAI": {
+  "full": "IEEE International Conference on Tools with Artificial Intelligence",
+  "rank": "C"
+ },
+ "IROS": {
+  "full": "IEEERSJ International Conference on Intelligent Robots and Systems",
+  "rank": "C"
+ },
+ "ALT": {
+  "full": "International Conference on Algorithmic Learning Theory",
+  "rank": "C"
+ },
+ "ICANN": {
+  "full": "International Conference on Artificial Neural Networks",
+  "rank": "C"
+ },
+ "FG": {
+  "full": "International Conference on Automatic Face and Gesture Recognition",
+  "rank": "C"
+ },
+ "ICDAR": {
+  "full": "International Conference on Document Analysis and Recognition",
+  "rank": "C"
+ },
+ "ILP": {
+  "full": "International Conference on Inductive Logic Programming",
+  "rank": "C"
+ },
+ "KSEM": {
+  "full": "International conference on Knowledge Science,Engineering and Management",
+  "rank": "C"
+ },
+ "ICONIP": {
+  "full": "International Conference on Neural Information Processing",
+  "rank": "C"
+ },
+ "ICPR": {
+  "full": "International Conference on Pattern Recognition",
+  "rank": "C"
+ },
+ "ICB": {
+  "full": "International Joint Conference on Biometrics",
+  "rank": "C"
+ },
+ "IJCNN": {
+  "full": "International Joint Conference on Neural Networks",
+  "rank": "C"
+ },
+ "PRICAI": {
+  "full": "Pacific Rim International Conference on Artificial Intelligence",
+  "rank": "C"
+ },
+ "TOCHI": {
+  "full": "ACM Transactions on Computer-Human Interaction",
+  "rank": "A"
+ },
+ "IJHCS": {
+  "full": "International Journal of Human Computer Studies",
+  "rank": "A"
+ },
+ "CSCW": {
+  "full": "ACM Conference on Computer Supported Cooperative Work and Social Computing",
+  "rank": "A"
+ },
+ "HCI": {
+  "full": "Human Computer Interaction",
+  "rank": "B"
+ },
+ "IWC": {
+  "full": "Interacting with Computers",
+  "rank": "B"
+ },
+ "IJHCI": {
+  "full": "International Journal of Human-Computer Interaction",
+  "rank": "B"
+ },
+ "UMUAI": {
+  "full": "User Modeling and User-Adapted Interaction",
+  "rank": "B"
+ },
+ "TSMC": {
+  "full": "IEEE Transactions on Systems, Man, and Cybernetics: Systems",
+  "rank": "B"
+ },
+ "BIT": {
+  "full": "Behaviour & Information Technology",
+  "rank": "C"
+ },
+ "PUC": {
+  "full": "Personal and Ubiquitous Computing",
+  "rank": "C"
+ },
+ "PMC": {
+  "full": "Pervasive and Mobile Computing",
+  "rank": "C"
+ },
+ "PACMHCI": {
+  "full": "Proceedings of the ACM on Human-Computer Interaction",
+  "rank": "C"
+ },
+ "CHI": {
+  "full": "ACM Conference on Human Factors in Computing Systems",
+  "rank": "A"
+ },
+ "UbiComp": {
+  "full": "ACM International Conference on Ubiquitous Computing",
+  "rank": "A"
+ },
+ "UIST": {
+  "full": "ACM Symposium on User Interface Software and Technology",
+  "rank": "A"
+ },
+ "GROUP": {
+  "full": "ACM Conference on Supporting Group Work",
+  "rank": "B"
+ },
+ "IUI": {
+  "full": "ACM International Conference on Intelligent User Interfaces",
+  "rank": "B"
+ },
+ "ITS": {
+  "full": "ACM International Conference on Interactive Tabletops and Surfaces",
+  "rank": "B"
+ },
+ "ECSCW": {
+  "full": "European Conference on Computer Supported Cooperative Work",
+  "rank": "B"
+ },
+ "PERCOM": {
+  "full": "IEEE International Conference on Pervasive Computing and Communications",
+  "rank": "B"
+ },
+ "MobileHCI": {
+  "full": "International Conference on Human Computer Interaction with Mobile Devices and Services",
+  "rank": "B"
+ },
+ "ICWSM": {
+  "full": "The International AAAI Conference on Web and Social Media",
+  "rank": "B"
+ },
+ "DIS": {
+  "full": "ACM Conference on Designing Interactive Systems",
+  "rank": "C"
+ },
+ "ICMI": {
+  "full": "ACM International Conference on Multimodal Interaction",
+  "rank": "C"
+ },
+ "ASSETS": {
+  "full": "ACM SIGACCESS Conference on Computers and Accessibility",
+  "rank": "C"
+ },
+ "GI": {
+  "full": "Graphics Interface conference",
+  "rank": "C"
+ },
+ "UIC": {
+  "full": "IEEE International Conference on Ubiquitous Intelligence and Computing",
+  "rank": "C"
+ },
+ "INTERACT": {
+  "full": "IFIP TC13 Conference on Human-Computer Interaction",
+  "rank": "C"
+ },
+ "IDC": {
+  "full": "Interaction Design and Children",
+  "rank": "C"
+ },
+ "CollaborateCom": {
+  "full": "International Conference on Collaborative Computing: Networking, Applications and Worksharing",
+  "rank": "C"
+ },
+ "CSCWD": {
+  "full": "International Conference on Computer Supported Cooperative Work in Design",
+  "rank": "C"
+ },
+ "CoopIS": {
+  "full": "International Conference on Cooperative Information Systems",
+  "rank": "C"
+ },
+ "MobiQuitous": {
+  "full": "International Conference on Mobile and Ubiquitous Systems: Computing,Networking and Services",
+  "rank": "C"
+ },
+ "AVI": {
+  "full": "International Working Conference on Advanced Visual Interfaces",
+  "rank": "C"
+ },
+ "SCIS": {
+  "full": "Science China Information Sciences",
+  "rank": "A"
+ },
+ "ISMB": {
+  "full": "International conference on Intelligent Systems for Molecular Biology",
+  "rank": "B"
+ },
+ "TASAE": {
+  "full": "IEEE Transactions on Automation Science and Engineering",
+  "rank": "B"
+ },
+ "TGARS": {
+  "full": "IEEE Transactions on Geoscience and Remote Sensing",
+  "rank": "B"
+ },
+ "TITS": {
+  "full": "IEEE Transactions on Intelligent Transportation Systems",
+  "rank": "B"
+ },
+ "TMI": {
+  "full": "IEEE Transactions on Medical Imaging",
+  "rank": "B"
+ },
+ "TR": {
+  "full": "IEEE Transactions on Robotics",
+  "rank": "B"
+ },
+ "TCBB": {
+  "full": "IEEE-ACM Transactions on Computational Biology and Bioinformatics",
+  "rank": "B"
+ },
+ "JCST": {
+  "full": "Journal of Computer Science and Technology",
+  "rank": "B"
+ },
+ "JAMIA": {
+  "full": "Journal of the American Medical Informatics Association",
+  "rank": "B"
+ },
+ "FCS": {
+  "full": "Frontiers of Computer Science",
+  "rank": "B"
+ },
+ "JBHI": {
+  "full": "IEEE Journal of Biomedical and Health Informatics",
+  "rank": "C"
+ },
+ "TBD": {
+  "full": "IEEE Transactions on Big Data",
+  "rank": "C"
+ },
+ "JBI": {
+  "full": "Journal of Biomedical Informatics",
+  "rank": "C"
+ },
+ "TII": {
+  "full": "IEEE Transactions on Industrial Informatics",
+  "rank": "C"
+ },
+ "TCPS": {
+  "full": "ACM Transactions on Cyber-Physical Systems",
+  "rank": "C"
+ },
+ "TOCE": {
+  "full": "ACM Transactions on Computing Education",
+  "rank": "C"
+ },
+ "FITEE": {
+  "full": "Frontiers of Information Technology & Electronic Engineering",
+  "rank": "C"
+ },
+ "TCSS": {
+  "full": "IEEE Transaction on Computational Social Systems",
+  "rank": "C"
+ },
+ "WWW": {
+  "full": "International World Wide Web Conferences",
+  "rank": "A"
+ },
+ "RTSS": {
+  "full": "Real-Time Systems Symposium",
+  "rank": "A"
+ },
+ "WINE": {
+  "full": "Conference on Web and Internet Economics",
+  "rank": "A"
+ },
+ "CogSci": {
+  "full": "Cognitive Science Society Annual Conference",
+  "rank": "B"
+ },
+ "BIBM": {
+  "full": "IEEE International Conference on Bioinformatics and Biomedicine",
+  "rank": "B"
+ },
+ "EMSOFT": {
+  "full": "International Conference on Embedded Software",
+  "rank": "B"
+ },
+ "RECOMB": {
+  "full": "International Conference on Research in Computational Molecular Biology",
+  "rank": "B"
+ },
+ "AMIA": {
+  "full": "American Medical Informatics Association Annual Symposium",
+  "rank": "C"
+ },
+ "APBC": {
+  "full": "Asia Pacific Bioinformatics Conference",
+  "rank": "C"
+ },
+ "SMC": {
+  "full": "IEEE International Conference on Systems, Man, and Cybernetics",
+  "rank": "C"
+ },
+ "COSIT": {
+  "full": "International Conference on Spatial Information Theory",
+  "rank": "C"
+ },
+ "ISBRA": {
+  "full": "International Symposium on Bioinformatics Research and Applications",
+  "rank": "C"
+ },
+ "SAGT": {
+  "full": "International Symposium on Algorithmic Game Theory",
+  "rank": "C"
+ },
+ "SIGSPATIAL": {
+  "full": "ACM SIGSPATIAL International Conference on Advances in Geographic Information Systems",
+  "rank": "C"
+ },
+ "ICIC": {
+  "full": "International Conference on Intelligent Computing",
+  "rank": "C"
+ }
+}

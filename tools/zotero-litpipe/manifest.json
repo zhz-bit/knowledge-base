@@ -1,0 +1,14 @@
+{
+  "manifest_version": 2,
+  "name": "litpipe · 文献元数据即时校正",
+  "version": "0.1.0",
+  "description": "往「自动驾驶综述」目录树加论文时,即时规范会议/期刊名并按官方 CCF 库打 CCF-A/B/C 标签(离线,不联网、不调 LLM)。",
+  "author": "zhz",
+  "applications": {
+    "zotero": {
+      "id": "litpipe@zhz.local",
+      "strict_min_version": "6.999",
+      "strict_max_version": "7.9.*"
+    }
+  }
+}
