@@ -42,7 +42,7 @@ MIN_LANE = 62       # 泳道最小宽度(太窄放不下节点)
 PX_PER_PAPER = 1.5  # 泳道宽度 ∝ 论文数
 TOP_H = 300         # 第一层横带高度
 ROW_H = 15          # 每月的纵向像素
-XG, YG = 15, 15     # 同月多篇时的网格间距
+XG, YG = 30, 24     # 簇内网格间距(自驾页用 46/34,全库节点多 2.4 倍,按比例收紧)
 
 
 def radius(indeg, cc):
@@ -53,21 +53,30 @@ def radius(indeg, cc):
     return round(min(r, 17), 1)
 
 
-def pack(items, x0, x1, yof, taken):
-    """把一组 (key, month) 放进泳道:同月的横向铺开,铺不下就换行(月内微调 y)。"""
+def pack(items, x0, x1, yof, rank):
+    """每(泳道,月份)摆成一个**双向居中的簇** —— 这是自驾页节点分布的核心。
+
+    左对齐平铺会让点排成僵硬的列、且与河流形状脱节;居中成簇才会长成有机的河。
+    列数随当月数量按 sqrt 增长(不超泳道能容纳的列数),簇再整体居中到该月的 y 上。
+    """
     out = {}
     cx = (x0 + x1) / 2
-    half = max(6.0, (x1 - x0) / 2 - 5)
-    cols = max(1, int(half * 2 // XG))
+    laneHW = max(6.0, (x1 - x0) / 2 - 6)
+    maxcols = max(1, int((laneHW * 2) // XG))
     bym = defaultdict(list)
     for k, m in items:
         bym[m].append(k)
     for m, ks in sorted(bym.items()):
+        ks.sort(key=lambda k: -rank(k))       # 高被引排前面,落在簇中心
+        n = len(ks)
+        cols = min(maxcols, max(1, round((n * 1.4) ** 0.5)))
+        rows = math.ceil(n / cols)
         for i, k in enumerate(ks):
-            col = i % cols
-            row = i // cols
-            x = cx - half + XG * col + XG / 2 if cols > 1 else cx
-            out[k] = (round(min(max(x, x0 + 5), x1 - 5), 1), round(yof(m) + row * YG, 1))
+            row, col = i // cols, i % cols
+            ncol = min(cols, n - row * cols)   # 末行不足时也居中,不左对齐
+            xx = cx + (col - (ncol - 1) / 2) * XG
+            yy = yof(m) + (row - (rows - 1) / 2) * YG
+            out[k] = (round(xx, 1), round(yy, 1), col)
     return out
 
 
@@ -165,10 +174,16 @@ def main():
             yy = y_top + (i // cols) * GY
             emit(k, round(xx, 1), round(yy, 1), lid)
 
+    nodexy = defaultdict(list)          # lane -> [(y,x,r)],供河流包络用
     for lid, ln in lanes.items():
         pool = [(k, C[k]["month"]) for k, n in rest.items() if f'{n["band"]}|{n["lane"]}' == lid]
-        for k, (xx, yy) in pack(pool, ln["x0"], ln["x1"], yof2, None).items():
+        for k, (xx, yy, col) in pack(pool, ln["x0"], ln["x1"], yof2,
+                                     lambda k: C[k]["indeg"]).items():
             emit(k, xx, yy, lid)
+            r = nodes[k]["r"]
+            nodexy[lid].append((yy, xx, r))
+            # 标签上下交错,避免相邻两点的标签叠在一起
+            nodes[k]["ldy"] = -(r + 5) if col % 2 == 0 else (r + 13)
 
     edges = [[a, b] for a, b in E if a in nodes and b in nodes]
 
@@ -192,23 +207,26 @@ def main():
         edges_tr = [[a, b] for a, b in dag.edges()]
     print(f"PageRank 完成 | 主干边 {len(edges_tr)}/{len(edges)}(传递约简)")
 
-    # ---------- 河流色带:每条泳道按时间窗的论文密度定宽 ----------
-    # 这是自驾页的招牌元素 —— 河宽 = 该时段该方向的产出强度,一眼看出哪条线在什么时候爆发。
+    # ---------- 河流色带:**包络真实节点簇**,而不是另算一套密度 ----------
+    # 关键。先摆点、再用点反推河宽,河才会恰好裹住节点;
+    # 用独立的密度公式画河,点和河就是两套坐标,看上去像"点没长在河里"。
     ribbons = {}
-    STEP = 4      # 每 4 个月采一次
+    BIN = 2                                   # 每 2 个月采一次
+    WINpx = 3.4 * ROW_H                       # ±3.4 个月的窗口内取最远节点
     for lid, ln in lanes.items():
-        ms = sorted(C[k]["month"] for k in nodes if nodes[k]["lane"] == lid)
-        if not ms:
+        pn = nodexy.get(lid) or []
+        if not pn:
             continue
-        halfmax = (ln["x1"] - ln["x0"]) / 2
+        cx = (ln["x0"] + ln["x1"]) / 2
+        halfmax = (ln["x1"] - ln["x0"]) / 2 - 4
         pts = []
-        for m in range(m0, m1 + 1, STEP):
-            # 以 ±10 个月为窗做平滑计数,免得河流锯齿
-            c = sum(1 for x in ms if abs(x - m) <= 10)
-            hw = min(halfmax, 3 + (c ** 0.62) * halfmax / 7)
-            pts.append({"y": round(yof2(m), 1), "hw": round(hw, 1)})
-        ribbons[lid] = {"cx": round((ln["x0"] + ln["x1"]) / 2, 1), "pts": pts,
-                        "col": ln["col"]}
+        for bm in range(m0, m1 + BIN + 1, BIN):
+            ys = yof2(bm)
+            e = max((abs(xx - cx) + r for (yy, xx, r) in pn if abs(yy - ys) <= WINpx),
+                    default=0)
+            hw = min(halfmax, e + 7) if e > 0 else 5
+            pts.append({"y": round(ys, 1), "hw": round(hw, 1)})
+        ribbons[lid] = {"cx": round(cx, 1), "pts": pts, "col": ln["col"]}
 
     # 年份刻度
     ticks = [{"y": round(yof2(y * 12), 1), "year": y}
