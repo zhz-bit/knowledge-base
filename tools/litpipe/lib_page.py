@@ -341,7 +341,8 @@ lg.innerHTML=L.bands.filter(b=>b.n).map(b=>
  +`<span class="it"><svg width="34" height="16"><circle cx="6" cy="8" r="3" fill="#9aa6bf"/>`
  +`<circle cx="23" cy="8" r="7" fill="#9aa6bf"/></svg>大小＝库内被引</span>`
  +`<span class="it"><svg width="22" height="16"><circle cx="11" cy="8" r="4" fill="#46d7cc"/>`
- +`<circle cx="11" cy="8" r="6.6" fill="none" stroke="#ff8a8a" stroke-width="2"/></svg>红环＝PageRank</span>`;
+ +`<circle cx="11" cy="8" r="6.6" fill="none" stroke="#ff8a8a" stroke-width="2"/></svg>红环＝PageRank</span>`
+ +`<span class="it" style="color:#6b768f">泳道＝最深一级分类，同一个二级分类下的道共用一个色系</span>`;
 const offBands=new Set();
 
 /* ── 领域下拉 ── */
@@ -412,19 +413,21 @@ function regionTitle(y,col,txt){
   const t=el("text",{x:16,y:y,fill:col,"font-family":"var(--mono)","font-size":"13","letter-spacing":"1.6"});
   t.textContent=txt; axLayer.appendChild(t);}
 regionTitle(26,"#b49bff",`0 · 公用基石（${L.stats.found} 篇 · 全库共用 · 独立时间轴）`);
-regionTitle(L.topH+24,"#f0a361",`细分方向（${L.stats.n-L.stats.found} 篇 · 独立时间轴 · 与上区仅靠引用边相连）`);
+regionTitle(L.topH+22,"#f0a361",`细分方向（${L.stats.n-L.stats.found} 篇 · 独立时间轴 · 与上区仅靠引用边相连）`);
 
 let seenBand=new Set();
 for(const lid in L.lanes){
   const ln=L.lanes[lid], top=ln.band==="0 公用基石";
-  const y0=top?52:L.topH+44, y1=top?L.topH-18:L.H-10;
+  const y0=top?50:L.topH+42, y1=top?L.topH-18:L.H-10;
   axLayer.appendChild(el("line",{x1:ln.x0-5,y1:y0,x2:ln.x0-5,y2:y1,
     stroke:ln.col,"stroke-width":"1","stroke-dasharray":"2 8",opacity:".16"}));
-  const t=el("text",{x:(ln.x0+ln.x1)/2,y:top?48:L.topH+58,"text-anchor":"middle",fill:ln.col,
-    "font-family":"var(--mono)","font-size":"11.5"});
+  /* 97 条道横排标签必然互相压 —— 改成竖排贴在道顶,靠色系区分归属 */
+  const cx=(ln.x0+ln.x1)/2, ly=top?46:L.topH+56;
+  const t=el("text",{x:cx,y:ly,fill:ln.col,"font-family":"var(--mono)","font-size":"10.5",
+    "text-anchor":"start","transform":`rotate(-90 ${cx} ${ly})`});
   t.textContent=`${ln.label}（${ln.n}）`; axLayer.appendChild(t);
   if(!top&&!seenBand.has(ln.band)){seenBand.add(ln.band);
-    const b=el("text",{x:ln.x0,y:L.topH+40,fill:ln.col,"font-family":"var(--mono)",
+    const b=el("text",{x:ln.x0,y:L.topH+38,fill:ln.col,"font-family":"var(--mono)",
       "font-size":"13.5","font-weight":"600","letter-spacing":"1"});
     b.textContent=ln.band; axLayer.appendChild(b);}
 }
@@ -467,7 +470,7 @@ for(const k in L.nodes){
     const atEdge=n.x>L.W-150;   // 右缘长名会出画,翻成右对齐
     const t=el("text",{class:"skl",x:atEdge?(n.x-n.r-4):n.x,y:n.y+(n.ldy||-(n.r+5)),
       "text-anchor":atEdge?"end":"middle","font-size":"10",fill:"#9aa6bf"});
-    t.textContent=(n.zh||n.t).slice(0,18); g.appendChild(t);
+    t.textContent=n.nm||n.t.slice(0,20); g.appendChild(t);
   }
   nLayer.appendChild(g); nEls[k]=g;
 }

@@ -150,6 +150,8 @@ def main():
             "id": k, "key": k, "title": title, "name": (title.split(":")[0][:26] or k),
             "month": m, "year": (d.get("date", "") or "")[:4],
             "band": deep["band"], "lane": deep["lane"], "leaf": deep["name"], "path": deep["path"],
+            # 泳道下沉到**最深**一级:基石两棵树的叶子按 0.x 前缀合并回同一条道
+            "sub": (deep["lane"] if deep["found"] else deep["name"]),
             "stars": stars, "tier": STAR2TIER.get(stars, ""), "ccf": ccf, "zh": zh,
             "arxiv": arxiv_of(d),
             "doi": (d.get("DOI") or "").strip(),   # S2 批量接口靠它定位,漏了会退化成慢的标题检索

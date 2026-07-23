@@ -11,7 +11,7 @@
 输入 state/lib_corpus.json(含 indeg/cc) + state/lib_edges.json
 输出 state/lib_layout.json
 """
-import json, math, sys
+import colorsys, json, math, sys
 from pathlib import Path
 from collections import defaultdict, Counter
 import networkx as nx
@@ -35,11 +35,25 @@ BAND_COL = {
 BAND_ORDER = ["5 自动驾驶综述", "4 时空序列预测", "2 计算机视觉",
               "3 自然语言处理", "1 深度学习", "6 数据集"]
 
+def shade(hexcol, i, n):
+    """在桶色基础上派生第 i/n 个变体:同一个二级分类下的所有叶子共用一个色,
+    不同二级分类之间靠色相±与明度阶梯区分,但仍能一眼看出属于同一个桶。"""
+    h = hexcol.lstrip("#")
+    r, g, b = (int(h[j:j + 2], 16) / 255 for j in (0, 2, 4))
+    hh, ll, ss = colorsys.rgb_to_hls(r, g, b)
+    if n > 1:
+        t = i / (n - 1) - 0.5            # -0.5 … +0.5
+        hh = (hh + t * 0.075) % 1.0      # 色相轻微扇开
+        ll = min(0.82, max(0.34, ll + t * 0.26))
+    r2, g2, b2 = colorsys.hls_to_rgb(hh, ll, ss)
+    return "#%02x%02x%02x" % (int(r2 * 255), int(g2 * 255), int(b2 * 255))
+
+
 PAD = 26            # 画布左右留白
-LANE_GAP = 10       # 泳道间距
+LANE_GAP = 7        # 泳道间距(97 条道,收紧)
 GROUP_GAP = 34      # 桶之间的间距
-MIN_LANE = 62       # 泳道最小宽度(太窄放不下节点)
-PX_PER_PAPER = 1.5  # 泳道宽度 ∝ 论文数
+MIN_LANE = 40       # 泳道最小宽度(叶级泳道有的只有 1 篇,不必留 62)
+PX_PER_PAPER = 2.1  # 泳道宽度 ∝ 论文数
 ROW_H_F = 9         # 基石河区每月像素(比主河区密:139 篇不必占同样高度)
 CUT_F = 2012 * 12   # 基石早年更稀疏(1958-2011 共 8 篇),压缩线比主河区更早
 ROW_H = 15          # 每月的纵向像素
@@ -96,13 +110,17 @@ def main():
     x = PAD
 
     def add_lanes(band, pool):
+        """泳道 = **最深一级**分类;颜色按二级分类分组(同二级同色),桶色派生。"""
         nonlocal x
-        cnt = Counter(n["lane"] for n in pool.values())
-        for lane, c in sorted(cnt.items()):
+        base = BAND_COL.get(band, "#999999")
+        l2 = sorted({n["lane"] for n in pool.values()})
+        col2 = {ln: shade(base, i, len(l2)) for i, ln in enumerate(l2)}
+        cnt = Counter((n["lane"], n["sub"]) for n in pool.values())
+        for (lane, sub), c in sorted(cnt.items()):
             w = max(MIN_LANE, c * PX_PER_PAPER)
-            lid = f"{band}|{lane}"
-            lanes[lid] = {"x0": round(x, 1), "x1": round(x + w, 1), "label": lane,
-                          "band": band, "col": BAND_COL.get(band, "#999"), "n": c}
+            lid = f"{band}|{lane}|{sub}"
+            lanes[lid] = {"x0": round(x, 1), "x1": round(x + w, 1), "label": sub,
+                          "band": band, "l2": lane, "col": col2[lane], "n": c}
             x += w + LANE_GAP
         x += GROUP_GAP - LANE_GAP
 
@@ -120,15 +138,17 @@ def main():
     # 基石不再是静态网格,而是**同样按年份分列的河**;与下方细分方向是两个
     # 横向独立的区块(各有各的时间刻度),只靠引用边发生关系。
     flanes = {}
-    fcnt = Counter(n["lane"] for n in found.values())
+    fcnt = Counter(n["sub"] for n in found.values())
     ftotal = sum(fcnt.values()) or 1
     avail = W - 2 * PAD - LANE_GAP * (len(fcnt) - 1)
     fx = PAD
     for lane, c in sorted(fcnt.items()):
         w = avail * c / ftotal
-        lid = f"{FOUNDATION}|{lane}"
+        lid = f"{FOUNDATION}|{lane}|{lane}"
         flanes[lid] = {"x0": round(fx, 1), "x1": round(fx + w, 1), "label": lane,
-                       "band": FOUNDATION, "col": BAND_COL[FOUNDATION], "n": c}
+                       "band": FOUNDATION, "l2": lane,
+                       "col": shade(BAND_COL[FOUNDATION], list(sorted(fcnt)).index(lane), len(fcnt)),
+                       "n": c}
         fx += w + LANE_GAP
 
     fms = [n["month"] for n in found.values()]
@@ -161,27 +181,30 @@ def main():
 
     def emit(k, xx, yy, lid):
         n = C[k]
-        nodes[k] = {"x": xx, "y": yy, "r": radius(n["indeg"], n["cc"]),
+        # nm = 英文缩略名(冒号前的主标题截断)—— 节点标签用它,不用中文译名:
+        # 中文方块字在 10px 下横向占位是英文的两倍,97 条窄道里必然互相压
+        nm = (n["title"] or k).split(":")[0].split(" - ")[0].strip()[:24]
+        nodes[k] = {"nm": nm, "x": xx, "y": yy, "r": radius(n["indeg"], n["cc"]),
                     "lane": lid, "band": n["band"], "col": lanes.get(lid, flanes.get(lid, {})).get("col", "#999"),
                     "t": n["title"][:110], "zh": n.get("zh", ""), "y4": n["year"],
                     "tier": n["tier"], "ccf": n["ccf"], "indeg": n["indeg"], "cc": n["cc"],
                     "ax": n.get("arxiv", ""), "leaf": n["leaf"], "venue": (n.get("venue") or "")[:46]}
 
     # 基石区:与主河区**同一套**居中成簇算法,只是换自己的时间轴
-    fclus = Counter((f'{n["band"]}|{n["lane"]}', n["month"]) for n in found.values())
+    fclus = Counter((f'{n["band"]}|{n["sub"]}|{n["sub"]}', n["month"]) for n in found.values())
     for lid, ln in flanes.items():
-        pool = [(k, C[k]["month"]) for k, n in found.items() if f'{n["band"]}|{n["lane"]}' == lid]
+        pool = [(k, C[k]["month"]) for k, n in found.items() if f'{n["band"]}|{n["sub"]}|{n["sub"]}' == lid]
         for k, (xx, yy, col) in pack(pool, ln["x0"], ln["x1"], yofF,
                                      lambda k: C[k]["indeg"]).items():
             emit(k, xx, yy, lid)
             r = nodes[k]["r"]
             nodexy[lid].append((yy, xx, r))
             nodes[k]["ldy"] = -(r + 5) if col % 2 == 0 else (r + 13)
-            nodes[k]["showl"] = (C[k]["indeg"] >= 1) or (fclus[(lid, C[k]["month"])] <= 6)
+            pass  # 见下方 label_pick
 
-    clus = Counter((f'{n["band"]}|{n["lane"]}', n["month"]) for n in rest.values())
+    clus = Counter((f'{n["band"]}|{n["lane"]}|{n["sub"]}', n["month"]) for n in rest.values())
     for lid, ln in lanes.items():
-        pool = [(k, C[k]["month"]) for k, n in rest.items() if f'{n["band"]}|{n["lane"]}' == lid]
+        pool = [(k, C[k]["month"]) for k, n in rest.items() if f'{n["band"]}|{n["lane"]}|{n["sub"]}' == lid]
         for k, (xx, yy, col) in pack(pool, ln["x0"], ln["x1"], yof2,
                                      lambda k: C[k]["indeg"]).items():
             emit(k, xx, yy, lid)
@@ -190,7 +213,24 @@ def main():
             # 标签上下交错(依据**列号**奇偶:同行相邻点只差 XG,不交错必然叠)
             nodes[k]["ldy"] = -(r + 5) if col % 2 == 0 else (r + 13)
             # 显隐离线定:被引过的、或所在簇很稀疏的才标名,避免密集月糊成一片
-            nodes[k]["showl"] = (C[k]["indeg"] >= 1) or (clus[(lid, C[k]["month"])] <= 6)
+            # 标签显隐:按**道内被引排名**取前 K(K 随道宽而定),不再用 indeg>=1 ——
+            # 那会让 1085/1205 个点都带标签,在 40~270px 宽的道里必然互相压
+            pass  # 见下方 label_pick
+
+    # ---------- 标签显隐:每条道按被引取前 K,K ∝ 道宽 ----------
+    # 同一条道内还要求相邻两个标签的 y 至少差 26px,否则同月簇里仍会叠。
+    for lid, ln in {**flanes, **lanes}.items():
+        pool = sorted((k for k, n in nodes.items() if n["lane"] == lid),
+                      key=lambda k: -C[k]["indeg"])
+        K = max(3, int((ln["x1"] - ln["x0"]) / 26))
+        taken = []
+        for k in pool:
+            n = nodes[k]
+            if len(taken) >= K or any(abs(n["y"] - y) < 26 for y in taken):
+                n["showl"] = False
+            else:
+                n["showl"] = True
+                taken.append(n["y"])
 
     edges = [[a, b] for a, b in E if a in nodes and b in nodes]
 
