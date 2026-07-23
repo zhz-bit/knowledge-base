@@ -389,11 +389,16 @@ function _pt(e){const r=svg.getBoundingClientRect();return{x:(e.clientX-r.left)*
 svg.addEventListener("wheel",e=>{e.preventDefault();const p=_pt(e),f=e.deltaY<0?1.12:1/1.12;
   const nk=Math.min(7,Math.max(0.4,_k*f));_tx=p.x-(p.x-_tx)*(nk/_k);_ty=p.y-(p.y-_ty)*(nk/_k);_k=nk;_apply();},{passive:false});
 let _drag=null;
+/* 浏览器在 mouseup 之后还会补发一个 click —— 拖动结束那一下会被 document 的
+   解锁逻辑当成「点了空白处」,把锁定态冲掉。用位移判据把两者分开:
+   按下到松开位移超过 4px 就是拖动,吞掉紧随其后的那个 click。 */
+let _suppressClick=false;
 svg.addEventListener("mousedown",e=>{if(e.target.closest(".sknode"))return;
-  _drag={x:e.clientX,y:e.clientY,tx:_tx,ty:_ty};svg.style.cursor="grabbing";});
+  _drag={x:e.clientX,y:e.clientY,tx:_tx,ty:_ty,moved:false};svg.style.cursor="grabbing";});
 addEventListener("mousemove",e=>{if(!_drag)return;const r=svg.getBoundingClientRect();
+  if(Math.abs(e.clientX-_drag.x)+Math.abs(e.clientY-_drag.y)>4) _drag.moved=true;
   _tx=_drag.tx+(e.clientX-_drag.x)*L.W/r.width;_ty=_drag.ty+(e.clientY-_drag.y)*L.H/r.height;_apply();});
-addEventListener("mouseup",()=>{if(_drag){_drag=null;svg.style.cursor="";}});
+addEventListener("mouseup",()=>{if(_drag){_suppressClick=_drag.moved;_drag=null;svg.style.cursor="";}});
 svg.addEventListener("dblclick",()=>{_tx=0;_ty=0;_k=1;_apply();});
 
 /* ── 河流色带(三次样条平滑) ── */
@@ -585,6 +590,7 @@ for(const k in nEls){
       card.style.display="none"; locked=null; clr(); setLockHint();};});
 }
 document.addEventListener("click",()=>{
+  if(_suppressClick){ _suppressClick=false; return; }   // 刚拖完,不当作点击
   card.style.display="none";
   if(locked){ locked=null; clr(); setLockHint(); }
 });
