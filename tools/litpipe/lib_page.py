@@ -413,34 +413,56 @@ function regionTitle(y,col,txt){
   const t=el("text",{x:16,y:y,fill:col,"font-family":"var(--mono)","font-size":"13","letter-spacing":"1.6"});
   t.textContent=txt; axLayer.appendChild(t);}
 regionTitle(26,"#b49bff",`0 · 公用基石（${L.stats.found} 篇 · 全库共用 · 独立时间轴）`);
-regionTitle(L.topH+22,"#f0a361",`细分方向（${L.stats.n-L.stats.found} 篇 · 独立时间轴 · 与上区仅靠引用边相连）`);
+regionTitle(L.topH+26,"#f0a361",`细分方向（${L.stats.n-L.stats.found} 篇 · 独立时间轴 · 与上区仅靠引用边相连）`);
 
-let seenBand=new Set();
+/* ── 分层表头:像表格的合并列 —— 桶跨其全部道、二级跨其全部叶、叶各占一格 ── */
+/* 汉字横排(竖排太费眼),放不下就截断:等宽字体下 CJK 约占 1 个字宽、ASCII 约 0.55 */
+const _cw=(c,fs)=>(/[　-鿿＀-￯]/.test(c)?fs:fs*0.55);
+function _width(t,fs){let a=0;for(const c of t)a+=_cw(c,fs);return a;}
+/* 三级降级:「名称（篇数）」放不下 → 只留名称 → 再放不下才截断加省略号 */
+function fitText(label,n,px,fs){
+  const full=`${label}（${n}）`;
+  if(_width(full,fs)<=px-6) return full;
+  if(_width(label,fs)<=px-6) return label;
+  let acc=0,out="";
+  for(const c of label){ if(acc+_cw(c,fs)+_cw("…",fs)>px-6) break; acc+=_cw(c,fs); out+=c; }
+  return out.length?out+"…":"";
+}
+function headerRow(rows,y,fs,weight,tickH){
+  for(const r of rows){
+    const cx=(r.x0+r.x1)/2, wpx=r.x1-r.x0;
+    const label=fitText(r.label,r.n,wpx,fs);
+    if(label){
+      const t=el("text",{x:cx,y:y,"text-anchor":"middle",fill:r.col,
+        "font-family":"var(--mono)","font-size":fs,"font-weight":weight||"400"});
+      t.textContent=label; axLayer.appendChild(t);
+    }
+    /* 合并列的边界竖线,让层级像表格一样读得出来 */
+    if(tickH){
+      for(const x of [r.x0-3,r.x1+3])
+        axLayer.appendChild(el("line",{x1:x,y1:y-fs-1,x2:x,y2:y+tickH,
+          stroke:r.col,"stroke-width":"1",opacity:".33"}));
+      axLayer.appendChild(el("line",{x1:r.x0-3,y1:y+tickH,x2:r.x1+3,y2:y+tickH,
+        stroke:r.col,"stroke-width":"1",opacity:".33"}));
+    }
+  }
+}
+/* 主河区表头三层 */
+headerRow(L.header.bands, L.topH+52, 13.5, "600", 5);
+headerRow(L.header.l2,    L.topH+82, 11.5, "500", 4);
+headerRow(L.header.leaf,  L.topH+108, 10.5, "400", 0);
+/* 基石区只有一层(叶=二级) */
+headerRow(L.headerF.leaf, 62, 11.5, "500", 4);
+
+/* 泳道分隔虚线 */
 for(const lid in L.lanes){
   const ln=L.lanes[lid], top=ln.band==="0 公用基石";
-  const y0=top?50:L.topH+42, y1=top?L.topH-18:L.H-10;
-  axLayer.appendChild(el("line",{x1:ln.x0-5,y1:y0,x2:ln.x0-5,y2:y1,
+  axLayer.appendChild(el("line",{x1:ln.x0-3.5,y1:top?72:L.topH+118,
+    x2:ln.x0-3.5,y2:top?L.topH-18:L.H-10,
     stroke:ln.col,"stroke-width":"1","stroke-dasharray":"2 8",opacity:".16"}));
-  /* 97 条道横排标签必然互相压 —— 改成竖排贴在道顶,靠色系区分归属 */
-  const cx=(ln.x0+ln.x1)/2, ly=top?46:L.topH+56;
-  const t=el("text",{x:cx,y:ly,fill:ln.col,"font-family":"var(--mono)","font-size":"10.5",
-    "text-anchor":"start","transform":`rotate(-90 ${cx} ${ly})`});
-  t.textContent=`${ln.label}（${ln.n}）`; axLayer.appendChild(t);
-  if(!top&&!seenBand.has(ln.band)){seenBand.add(ln.band);
-    const b=el("text",{x:ln.x0,y:L.topH+38,fill:ln.col,"font-family":"var(--mono)",
-      "font-size":"13.5","font-weight":"600","letter-spacing":"1"});
-    b.textContent=ln.band; axLayer.appendChild(b);}
 }
-function drawTicks(list,m0,cut,ytop){
-  for(const t of list){
-    axLayer.appendChild(el("line",{x1:0,y1:t.y,x2:L.W,y2:t.y,stroke:"#283248",
-      "stroke-width":"1","stroke-dasharray":"3 6",opacity:".4"}));
-    const lb=el("text",{x:10,y:t.y-4,fill:"#6b768f","font-family":"var(--mono)","font-size":"11"});
-    lb.textContent=t.year; axLayer.appendChild(lb);}
-  const o=el("text",{x:10,y:ytop,fill:"#6b768f","font-family":"var(--mono)","font-size":"10.5"});
-  o.textContent=`${Math.floor(m0/12)}–${cut/12-1}（压缩）`; axLayer.appendChild(o);}
-drawTicks(L.ticksF,L.fm0,L.cutF,72);
-drawTicks(L.ticks,L.m0,L.cut,L.topH+72);
+drawTicks(L.ticksF,L.fm0,L.cutF,90);
+drawTicks(L.ticks,L.m0,L.cut,L.topH+124);
 
 /* ── 边 + 上下游邻接 ── */
 const up={},dn={}; for(const k in L.nodes){up[k]=[];dn[k]=[];}

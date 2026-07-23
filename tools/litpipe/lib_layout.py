@@ -43,8 +43,8 @@ def shade(hexcol, i, n):
     hh, ll, ss = colorsys.rgb_to_hls(r, g, b)
     if n > 1:
         t = i / (n - 1) - 0.5            # -0.5 … +0.5
-        hh = (hh + t * 0.075) % 1.0      # 色相轻微扇开
-        ll = min(0.82, max(0.34, ll + t * 0.26))
+        hh = (hh + t * 0.055) % 1.0      # 色相轻微扇开
+        ll = min(0.80, max(0.50, ll + t * 0.15))   # 明度只在中高段内摆,别拉到刺眼
     r2, g2, b2 = colorsys.hls_to_rgb(hh, ll, ss)
     return "#%02x%02x%02x" % (int(r2 * 255), int(g2 * 255), int(b2 * 255))
 
@@ -157,8 +157,8 @@ def main():
     def yofF(m):
         """基石区时间轴:2012 前压进 90px 窄带(1958–2011 只有 8 篇),之后按月展开。"""
         if m < CUT_F:
-            return 78 + (m - fm0) / max(1, CUT_F - fm0) * 90
-        return 178 + (m - CUT_F) * ROW_H_F
+            return 96 + (m - fm0) / max(1, CUT_F - fm0) * 90
+        return 196 + (m - CUT_F) * ROW_H_F
 
     TOP_H = round(yofF(fm1) + 66)          # 基石区高度由它自己的时间跨度决定
 
@@ -170,8 +170,8 @@ def main():
     def yof2(m):
         """2015 前压进一条 120px 的窄带,之后按月线性展开 —— 否则 1988–2014 拉出一大片空白。"""
         if m < CUT:
-            return TOP_H + 78 + (m - m0) / max(1, CUT - m0) * 120
-        return TOP_H + 203 + (m - CUT) * ROW_H
+            return TOP_H + 128 + (m - m0) / max(1, CUT - m0) * 120
+        return TOP_H + 253 + (m - CUT) * ROW_H
 
     H = yof2(m1) + 90
 
@@ -282,6 +282,33 @@ def main():
     make_ribbons(flanes, yofF, fm0, fm1, CUT_F, 3.4 * ROW_H_F)
     make_ribbons(lanes, yof2, m0, m1, CUT, WINpx)
 
+    # ---------- 分层表头:像表格的合并列一样,band 跨其全部道、二级跨其全部叶 ----------
+    def spans(lane_dict, keyfn):
+        out = {}
+        for lid, ln in lane_dict.items():
+            k = keyfn(ln)
+            if k not in out:
+                out[k] = {"x0": ln["x0"], "x1": ln["x1"], "col": ln["col"], "n": 0}
+            out[k]["x0"] = min(out[k]["x0"], ln["x0"])
+            out[k]["x1"] = max(out[k]["x1"], ln["x1"])
+            out[k]["n"] += ln["n"]
+        return [{"label": k[-1], "x0": round(v["x0"], 1), "x1": round(v["x1"], 1),
+                 "col": v["col"], "n": v["n"]} for k, v in out.items()]
+
+    header = {
+        "bands": [dict(h, col=BAND_COL.get(h["label"], h["col"]))
+                  for h in spans(lanes, lambda ln: (ln["band"],))],
+        "l2":    spans(lanes, lambda ln: (ln["band"], ln["l2"])),
+        "leaf":  [{"label": ln["label"], "x0": ln["x0"], "x1": ln["x1"],
+                   "col": ln["col"], "n": ln["n"]} for ln in lanes.values()],
+    }
+    headerF = {
+        "bands": [],
+        "l2":    [],
+        "leaf":  [{"label": ln["label"], "x0": ln["x0"], "x1": ln["x1"],
+                   "col": ln["col"], "n": ln["n"]} for ln in flanes.values()],
+    }
+
     # 年份刻度:两区各一套(横向独立 = 各有各的时间尺度)
     ticks = [{"y": round(yof2(y * 12), 1), "year": y}
              for y in range(CUT // 12, m1 // 12 + 1)]
@@ -290,6 +317,7 @@ def main():
     L = {
         "nodes": nodes, "edges": edges, "edges_tr": edges_tr,
         "ribbons": ribbons, "ticks": ticks, "ticksF": ticksF,
+        "header": header, "headerF": headerF,
         "lanes": {**flanes, **lanes},
         "bands": [{"name": b, "col": BAND_COL.get(b, "#999"),
                    "n": sum(1 for n in C.values() if n["band"] == b)}
