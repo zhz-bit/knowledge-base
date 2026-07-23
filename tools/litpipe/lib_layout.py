@@ -14,6 +14,7 @@
 import json, math, sys
 from pathlib import Path
 from collections import defaultdict, Counter
+import networkx as nx
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -170,8 +171,51 @@ def main():
             emit(k, xx, yy, lid)
 
     edges = [[a, b] for a, b in E if a in nodes and b in nodes]
+
+    # ---------- PageRank(红环)与主干边(传递约简) ----------
+    # 只保留"新引旧"的边构成 DAG:引用本该是有向无环的,但元数据里偶有年份颠倒,
+    # 不滤会让 transitive_reduction 直接抛异常。
+    dag = nx.DiGraph()
+    dag.add_nodes_from(nodes)
+    for a, b in edges:
+        if C[a]["month"] > C[b]["month"]:
+            dag.add_edge(a, b)
+    pr = nx.pagerank(dag.reverse(), alpha=0.85) if dag.number_of_edges() else {}
+    prmax = max(pr.values()) if pr else 1
+    for k, n in nodes.items():
+        n["pr"] = round(pr.get(k, 0) / prmax, 3)
+    try:
+        tr = nx.transitive_reduction(dag)
+        edges_tr = [[a, b] for a, b in tr.edges()]
+    except Exception as e:
+        print("传递约简失败,主干退化为全部边:", e)
+        edges_tr = [[a, b] for a, b in dag.edges()]
+    print(f"PageRank 完成 | 主干边 {len(edges_tr)}/{len(edges)}(传递约简)")
+
+    # ---------- 河流色带:每条泳道按时间窗的论文密度定宽 ----------
+    # 这是自驾页的招牌元素 —— 河宽 = 该时段该方向的产出强度,一眼看出哪条线在什么时候爆发。
+    ribbons = {}
+    STEP = 4      # 每 4 个月采一次
+    for lid, ln in lanes.items():
+        ms = sorted(C[k]["month"] for k in nodes if nodes[k]["lane"] == lid)
+        if not ms:
+            continue
+        halfmax = (ln["x1"] - ln["x0"]) / 2
+        pts = []
+        for m in range(m0, m1 + 1, STEP):
+            # 以 ±10 个月为窗做平滑计数,免得河流锯齿
+            c = sum(1 for x in ms if abs(x - m) <= 10)
+            hw = min(halfmax, 3 + (c ** 0.62) * halfmax / 7)
+            pts.append({"y": round(yof2(m), 1), "hw": round(hw, 1)})
+        ribbons[lid] = {"cx": round((ln["x0"] + ln["x1"]) / 2, 1), "pts": pts,
+                        "col": ln["col"]}
+
+    # 年份刻度
+    ticks = [{"y": round(yof2(y * 12), 1), "year": y}
+             for y in range(CUT // 12, m1 // 12 + 1)]
     L = {
-        "nodes": nodes, "edges": edges,
+        "nodes": nodes, "edges": edges, "edges_tr": edges_tr,
+        "ribbons": ribbons, "ticks": ticks,
         "lanes": {**flanes, **lanes},
         "bands": [{"name": b, "col": BAND_COL.get(b, "#999"),
                    "n": sum(1 for n in C.values() if n["band"] == b)}

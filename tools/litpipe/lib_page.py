@@ -49,9 +49,13 @@ h1{font-size:30px;margin:0 0 8px;letter-spacing:.5px;}
 .bar .cnt{font-size:12px;color:var(--muted);}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin:2px 0 8px;}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;}
-.viewport{position:relative;overflow:auto;border:1px solid var(--line);border-radius:10px;
-  background:#0a0e14;max-height:78vh;}
-svg{display:block;}
+.viewport{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:10px;
+  background:#0a0e14;height:78vh;}
+.viewport:fullscreen{height:100vh;border-radius:0;}
+svg{display:block;width:100%;height:100%;cursor:grab;}
+.skedge{fill:none;stroke-width:1;}
+.sknode{cursor:pointer;}
+.skl{font:10px "SF Mono",Menlo,monospace;fill:var(--muted);pointer-events:none;}
 .lanebox{fill:#ffffff06;stroke:#ffffff12;}
 .lanelbl{font:11px/1.2 "SF Mono",Menlo,monospace;fill:var(--muted);}
 .bandlbl{font:12px/1.2 "SF Mono",Menlo,monospace;fill:var(--ink);opacity:.85;}
@@ -111,17 +115,20 @@ table.bands td.n{font-family:"SF Mono",Menlo,monospace;color:var(--muted);text-a
       <option value="">全部</option><option value="S">S</option><option value="A">A</option>
       <option value="B">B</option><option value="C">C</option><option value="_none">未评</option></select>
     <label>引用边</label><select id="f-edge">
+      <option value="tr">主干（传递约简）</option>
+      <option value="all">全部</option>
       <option value="none">隐藏</option>
-      <option value="30">仅骨干（指向被引≥30 的）</option>
-      <option value="12">主干（≥12）</option>
-      <option value="all">全部 8208 条</option>
     </select>
+    <label><input type="checkbox" id="ck-rib" checked> 显示范式河流</label>
+    <button id="ck-full">⛶ 全屏</button>
     <button id="f-reset">重置</button>
     <span class="grow"></span><span class="cnt" id="cnt"></span>
   </div>
   <div class="legend" id="legend"></div>
   <div class="viewport" id="vp"><svg id="svg"></svg></div>
-  <p class="note">点一下节点看详情；有 arXiv 号的可直接跳原文。2015 年之前的论文压在顶部窄带里（否则 1958–2014 会拉出一大片空白）。</p>
+  <p class="note"><b>悬停一个节点</b>会把它的全部上游（被它引用的思想来源，蓝）与下游（引用它的后续工作，绿）点亮，其余淡出——这是看清一条思想脉络的主要方式。
+  滚轮朝光标缩放 / 拖拽平移 / 双击复位。红环粗细＝PageRank，河流宽度＝该时段该方向的产出强度。
+  2015 年之前的论文压在顶部窄带里（否则 1958–2014 会拉出一大片空白）。</p>
 </div>
 
 </div>
@@ -155,117 +162,176 @@ const fb = document.getElementById("f-band");
 fb.innerHTML = `<option value="">全部</option>` +
   L.bands.filter(b=>b.n).map(b=>`<option value="${b.name}">${b.name}（${b.n}）</option>`).join("");
 
-/* ── 画图 ── */
-const NS = "http://www.w3.org/2000/svg";
-const svg = document.getElementById("svg");
-svg.setAttribute("width", L.W); svg.setAttribute("height", L.H);
-svg.setAttribute("viewBox", `0 0 ${L.W} ${L.H}`);
-function el(t, a){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); return e; }
+/* ── 画图(沿用自驾页的视觉语言:河流色带 / PageRank 红环 / 悬停溯源 / 缩放平移)── */
+const NS="http://www.w3.org/2000/svg";
+const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const svg=document.getElementById("svg");
+svg.setAttribute("viewBox",`0 0 ${L.W} ${L.H}`);
+svg.setAttribute("preserveAspectRatio","xMidYMin meet");
 
-const gLane = el("g",{}), gEdge = el("g",{}), gNode = el("g",{}), gLbl = el("g",{});
-svg.append(gLane, gEdge, gNode, gLbl);
+/* 河流用竖向渐变填充,顶部浓、底部淡 */
+const defs=el("defs");
+const RIBID={};
+L.bands.forEach((b,i)=>{
+  const id="grad"+i, c=b.col;
+  const g=el("linearGradient",{id,x1:"0",y1:"0",x2:"0",y2:"1"});
+  g.appendChild(el("stop",{offset:"0","stop-color":c,"stop-opacity":".20"}));
+  g.appendChild(el("stop",{offset:"1","stop-color":c,"stop-opacity":".02"}));
+  defs.appendChild(g); RIBID[b.name]="url(#"+id+")";
+});
+svg.appendChild(defs);
 
-/* 泳道底框 + 标题 */
-const topLanes = Object.entries(L.lanes).filter(([k,v])=>v.band==="0 公用基石");
-const mainLanes = Object.entries(L.lanes).filter(([k,v])=>v.band!=="0 公用基石");
-gLane.append(el("rect",{x:8,y:44,width:L.W-16,height:L.topH-56,rx:10,
-  fill:"#b49bff08",stroke:"#b49bff22"}));
-const t1 = el("text",{x:16,y:32,class:"bandlbl"}); t1.textContent = `第一层 · 公用基石（${L.stats.found} 篇）`;
-gLbl.append(t1);
-for(const [k,v] of topLanes){
-  gLane.append(el("rect",{x:v.x0,y:56,width:v.x1-v.x0,height:L.topH-70,rx:8,class:"lanebox"}));
-  const t = el("text",{x:v.x0+7,y:70,class:"lanelbl"}); t.textContent = `${v.label}（${v.n}）`;
-  gLbl.append(t);
+const vp=el("g"); svg.appendChild(vp);
+const ribLayer=el("g"), laneLayer=el("g"), eLayer=el("g"), nLayer=el("g"), lblLayer=el("g");
+vp.append(ribLayer,laneLayer,eLayer,nLayer,lblLayer);
+
+/* ── 缩放 / 平移(朝光标缩放,双击复位)── */
+let _tx=0,_ty=0,_k=1;
+const _apply=()=>vp.setAttribute("transform",`translate(${_tx.toFixed(1)} ${_ty.toFixed(1)}) scale(${_k.toFixed(3)})`);
+function _pt(e){const r=svg.getBoundingClientRect();return{x:(e.clientX-r.left)*L.W/r.width,y:(e.clientY-r.top)*L.H/r.height};}
+svg.addEventListener("wheel",e=>{e.preventDefault();const p=_pt(e),f=e.deltaY<0?1.12:1/1.12;
+  const nk=Math.min(9,Math.max(0.3,_k*f));_tx=p.x-(p.x-_tx)*(nk/_k);_ty=p.y-(p.y-_ty)*(nk/_k);_k=nk;_apply();},{passive:false});
+let _drag=null;
+svg.addEventListener("mousedown",e=>{if(e.target.closest(".sknode"))return;
+  _drag={x:e.clientX,y:e.clientY,tx:_tx,ty:_ty};svg.style.cursor="grabbing";});
+addEventListener("mousemove",e=>{if(!_drag)return;const r=svg.getBoundingClientRect();
+  _tx=_drag.tx+(e.clientX-_drag.x)*L.W/r.width;_ty=_drag.ty+(e.clientY-_drag.y)*L.H/r.height;_apply();});
+addEventListener("mouseup",()=>{if(_drag){_drag=null;svg.style.cursor="";}});
+svg.addEventListener("dblclick",()=>{_tx=0;_ty=0;_k=1;_apply();});
+
+/* ── 河流色带(平滑三次样条,宽度∝该时段产出)── */
+function _sm(pts){let d="";for(let i=0;i<pts.length-1;i++){
+  const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+  d+=` C ${(p1.x+(p2.x-p0.x)/6).toFixed(1)} ${(p1.y+(p2.y-p0.y)/6).toFixed(1)}, `
+   + `${(p2.x-(p3.x-p1.x)/6).toFixed(1)} ${(p2.y-(p3.y-p1.y)/6).toFixed(1)}, `
+   + `${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;}return d;}
+for(const lid in L.ribbons){
+  const r=L.ribbons[lid], band=L.lanes[lid].band;
+  const Lf=r.pts.map(q=>({x:r.cx-q.hw,y:q.y})), Rg=r.pts.map(q=>({x:r.cx+q.hw,y:q.y})).reverse();
+  ribLayer.appendChild(el("path",{d:`M ${Lf[0].x} ${Lf[0].y}`+_sm(Lf)+` L ${Rg[0].x} ${Rg[0].y}`+_sm(Rg)+" Z",
+    fill:RIBID[band]||"rgba(150,150,150,.05)",stroke:"none"}));
 }
-let curBand = null;
-let li = 0;
-for(const [k,v] of mainLanes){
-  gLane.append(el("rect",{x:v.x0,y:L.topH+30,width:v.x1-v.x0,height:L.H-L.topH-46,rx:8,class:"lanebox"}));
-  // 相邻泳道标签交错两行高度,否则长分类名会互相压成一团
-  const t = el("text",{x:v.x0+5,y:L.topH+(li++%2?24:11),class:"lanelbl"}); t.textContent = v.label;
-  gLbl.append(t);
-  if(v.band!==curBand){
-    curBand=v.band;
-    const b = el("text",{x:v.x0,y:L.topH+6,class:"bandlbl",fill:v.col}); b.textContent=v.band;
-    gLbl.append(b);
-  }
+
+/* ── 第一层横带 + 泳道分隔虚线 + 标签 ── */
+laneLayer.appendChild(el("rect",{x:0,y:0,width:L.W,height:L.topH-14,fill:"rgba(180,155,255,.05)"}));
+const th=el("text",{x:16,y:26,fill:"#b49bff","font-family":"var(--mono)","font-size":"12.5","letter-spacing":"1.5"});
+th.textContent=`第一层 · 公用基石（${L.stats.found} 篇，全库共用）`; lblLayer.appendChild(th);
+for(const lid in L.lanes){
+  const ln=L.lanes[lid], top=ln.band==="0 公用基石";
+  const y0=top?56:L.topH+16, y1=top?L.topH-20:L.H-10;
+  laneLayer.appendChild(el("line",{x1:ln.x0-5,y1:y0,x2:ln.x0-5,y2:y1,stroke:ln.col,
+    "stroke-width":"1","stroke-dasharray":"2 8",opacity:".18"}));
+  const t=el("text",{x:(ln.x0+ln.x1)/2,y:top?72:L.topH+30,"text-anchor":"middle",fill:ln.col,
+    "font-family":"var(--mono)","font-size":"11.5"});
+  t.textContent=`${ln.label}（${ln.n}）`; lblLayer.appendChild(t);
 }
+/* 领域大标题 */
+let seen=new Set();
+for(const lid in L.lanes){const ln=L.lanes[lid];
+  if(ln.band==="0 公用基石"||seen.has(ln.band))continue; seen.add(ln.band);
+  const t=el("text",{x:ln.x0,y:L.topH+8,fill:ln.col,"font-family":"var(--mono)","font-size":"13.5",
+    "font-weight":"600","letter-spacing":"1"});
+  t.textContent=ln.band; lblLayer.appendChild(t);}
 /* 年份刻度 */
-const y0=Math.floor(L.m0/12), y1=Math.floor(L.m1/12), cutY=L.cut/12;
-function yof(m){ return m<L.cut ? L.topH+70+(m-L.m0)/Math.max(1,L.cut-L.m0)*120
-                                : L.topH+195+(m-L.cut)*15; }
-for(let y=cutY; y<=y1; y++){
-  const yy = yof(y*12);
-  gLane.append(el("line",{x1:8,y1:yy,x2:L.W-8,y2:yy,class:"gridln"}));
-  const t=el("text",{x:10,y:yy-3,class:"yearlbl"}); t.textContent=y; gLbl.append(t);
+for(const t of L.ticks){
+  laneLayer.appendChild(el("line",{x1:0,y1:t.y,x2:L.W,y2:t.y,stroke:"var(--line)",
+    "stroke-width":"1","stroke-dasharray":"3 6",opacity:".45"}));
+  const lb=el("text",{x:10,y:t.y-4,fill:"#5c6675","font-family":"var(--mono)","font-size":"11"});
+  lb.textContent=t.year; lblLayer.appendChild(lb);}
+const tOld=el("text",{x:10,y:L.topH+66,fill:"#5c6675","font-family":"var(--mono)","font-size":"11"});
+tOld.textContent=`${Math.floor(L.m0/12)}–${L.cut/12-1}（压缩）`; lblLayer.appendChild(tOld);
+
+/* ── 边 + 上下游邻接表 ── */
+const up={},dn={}; for(const k in L.nodes){up[k]=[];dn[k]=[];}
+const eEls=[];
+for(const [a,b] of L.edges){
+  const A=L.nodes[a],B=L.nodes[b]; if(!A||!B)continue;
+  up[a].push(b); dn[b].push(a);
+  const my=(A.y+B.y)/2;
+  const p=el("path",{class:"skedge",d:`M${A.x} ${A.y} C ${A.x} ${my}, ${B.x} ${my}, ${B.x} ${B.y}`,
+    stroke:"var(--line)",opacity:"0"});
+  p.__a=a; p.__b=b; eLayer.appendChild(p); eEls.push(p);
 }
-const tOld=el("text",{x:10,y:L.topH+66,class:"yearlbl"}); tOld.textContent=`${y0}–${cutY-1}（压缩）`;
-gLbl.append(tOld);
+const trSet=new Set((L.edges_tr||[]).map(e=>e[0]+">"+e[1]));
+function reach(s,adj){const seen=new Set(),st=[s];
+  while(st.length){const x=st.pop();for(const y of adj[x]||[])if(!seen.has(y)){seen.add(y);st.push(y);}}
+  return seen;}
 
-/* 边 */
-const edgeEls = L.edges.map(([a,b])=>{
-  const A=L.nodes[a], B=L.nodes[b];
-  const e = el("path",{d:`M${A.x},${A.y} C${A.x},${(A.y+B.y)/2} ${B.x},${(A.y+B.y)/2} ${B.x},${B.y}`,class:"edge"});
-  e.__a=a; e.__b=b; gEdge.append(e); return e;
-});
-
-/* 节点 */
-const nodeEls = {};
+/* ── 节点:PageRank 红环 + 本体 + 高被引才挂标签 ── */
+const nEls={};
 for(const k in L.nodes){
-  const n = L.nodes[k];
-  const c = el("circle",{cx:n.x,cy:n.y,r:n.r,fill:n.col,"fill-opacity":.62,
-    stroke:n.col,"stroke-width":.9,class:"node"});
-  c.__k = k;
-  gNode.append(c); nodeEls[k]=c;
+  const n=L.nodes[k];
+  const g=el("g",{class:"sknode"}); g.__k=k;
+  if(n.pr>0.05) g.appendChild(el("circle",{cx:n.x,cy:n.y,r:n.r+2.6,fill:"none",stroke:"#d4694a",
+    "stroke-width":(0.5+n.pr*5.5).toFixed(2),"stroke-opacity":(0.3+n.pr*0.7).toFixed(2)}));
+  g.appendChild(el("circle",{class:"skc",cx:n.x,cy:n.y,r:n.r,fill:n.col,"fill-opacity":".78",
+    stroke:"var(--bg)","stroke-width":"1.4"}));
+  if(n.indeg>=22){   // 1183 个点全挂标签会糊成一片,只标真正的枢纽
+    const t=el("text",{class:"skl",x:n.x,y:n.y-n.r-4,"text-anchor":"middle"});
+    t.textContent=(n.zh||n.t).slice(0,16); g.appendChild(t);
+  }
+  nLayer.appendChild(g); nEls[k]=g;
 }
 
-/* ── 交互 ── */
-const tip = document.getElementById("tip");
-function showTip(ev, k){
-  const n = L.nodes[k];
-  const ax = n.ax ? ` · <a href="https://arxiv.org/abs/${n.ax}" target="_blank" rel="noopener">arXiv ${n.ax} ↗</a>` : "";
-  tip.innerHTML = `<div class="tt">${n.tier?`<span class="tier t${n.tier}">${n.tier}</span>`:""}${n.t}</div>`
-    + (n.zh?`<div class="zh">${n.zh}</div>`:"")
-    + `<div class="mt">${n.y4} · ${n.venue||"预印本"}${n.ccf?` · CCF-${n.ccf}`:""}</div>`
-    + `<div class="mt">${n.band} / ${n.leaf} · 库内被引 ${n.indeg} · 全局被引 ${n.cc}${ax}</div>`;
-  tip.style.display="block";
-  const r = tip.getBoundingClientRect();
-  tip.style.left = Math.min(ev.clientX+14, innerWidth-r.width-12)+"px";
-  tip.style.top  = Math.min(ev.clientY+14, innerHeight-r.height-12)+"px";
+/* ── 悬停溯源:上游染蓝、下游染绿,其余淡出 ── */
+const tip=document.getElementById("tip");
+let eMode="tr";
+function edgeVis(){for(const p of eEls){
+  const on=(eMode==="all")||(eMode==="tr"&&trSet.has(p.__a+">"+p.__b));
+  p.setAttribute("opacity",on?"0.16":"0"); p.setAttribute("stroke","var(--line)");}}
+function clr(){for(const k in nEls){nEls[k].style.opacity="";
+  nEls[k].querySelector(".skc").setAttribute("stroke","var(--bg)");} edgeVis();}
+for(const k in nEls){
+  const g=nEls[k], n=L.nodes[k];
+  g.addEventListener("mouseenter",()=>{
+    const anc=reach(k,up),des=reach(k,dn),keep=new Set([k,...anc,...des]);
+    for(const j in nEls) nEls[j].style.opacity=keep.has(j)?"1":"0.1";
+    g.querySelector(".skc").setAttribute("stroke","var(--ink)");
+    for(const p of eEls){
+      const on=(p.__a===k&&keep.has(p.__b))||(p.__b===k&&keep.has(p.__a));
+      p.setAttribute("opacity",on?"0.8":"0.02");
+      p.setAttribute("stroke",p.__a===k?"#6aa6ff":p.__b===k?"#8fd67a":"var(--line)");}
+    const ax=n.ax?` · <a href="https://arxiv.org/abs/${n.ax}" target="_blank" rel="noopener">arXiv ${n.ax} ↗</a>`:"";
+    tip.innerHTML=`<div class="tt">${n.tier?`<span class="tier t${n.tier}">${n.tier}</span>`:""}${n.t}</div>`
+      +(n.zh?`<div class="zh">${n.zh}</div>`:"")
+      +`<div class="mt">${n.y4} · ${n.venue||"预印本"}${n.ccf?` · CCF-${n.ccf}`:""}</div>`
+      +`<div class="mt">${n.band} / ${n.leaf}</div>`
+      +`<div class="mt">库内被引 <b>${n.indeg}</b> · 全局 <b>${n.cc}</b> · PageRank <b>${n.pr}</b>`
+      +` · 上游 ${anc.size} / 下游 ${des.size}${ax}</div>`;
+    tip.style.display="block";});
+  g.addEventListener("mousemove",e=>{
+    tip.style.left=Math.min(e.clientX+14,innerWidth-420)+"px";
+    tip.style.top=Math.min(e.clientY+14,innerHeight-tip.offsetHeight-12)+"px";});
+  g.addEventListener("mouseleave",()=>{clr();tip.style.display="none";});
 }
-gNode.addEventListener("click", e=>{
-  if(e.target.__k){ showTip(e, e.target.__k); e.stopPropagation(); }
-});
-document.addEventListener("click", ()=>{ tip.style.display="none"; });
 
 /* ── 筛选 ── */
 function apply(){
-  const band = fb.value, tier = document.getElementById("f-tier").value,
-        emode = document.getElementById("f-edge").value;
-  let vis = 0;
-  const on = {};
+  const band=fb.value, tier=document.getElementById("f-tier").value;
+  eMode=document.getElementById("f-edge").value;
+  let vis=0;
   for(const k in L.nodes){
-    const n = L.nodes[k];
-    let ok = true;
-    if(band && n.band!==band) ok=false;
-    if(tier==="_none" && n.tier) ok=false;
-    else if(tier && tier!=="_none" && n.tier!==tier) ok=false;
-    on[k]=ok; if(ok) vis++;
-    nodeEls[k].classList.toggle("dim", !ok);
+    const n=L.nodes[k]; let ok=true;
+    if(band&&n.band!==band) ok=false;
+    if(tier==="_none"&&n.tier) ok=false;
+    else if(tier&&tier!=="_none"&&n.tier!==tier) ok=false;
+    if(ok)vis++;
+    nEls[k].style.display=ok?"":"none";
   }
-  for(const e of edgeEls){
-    const show = emode!=="none" && on[e.__a] && on[e.__b]
-      && (emode==="all" || L.nodes[e.__b].indeg >= +emode);
-    e.style.display = show ? "" : "none";
-  }
-  document.getElementById("cnt").textContent = `${vis} / ${L.stats.n} 篇`;
+  edgeVis();
+  document.getElementById("cnt").textContent=`${vis} / ${L.stats.n} 篇`;
 }
 ["f-band","f-tier","f-edge"].forEach(id=>
-  document.getElementById(id).addEventListener("change", apply));
-document.getElementById("f-reset").addEventListener("click", ()=>{
-  fb.value=""; document.getElementById("f-tier").value="";
-  document.getElementById("f-edge").value="none"; apply();
-});
+  document.getElementById(id).addEventListener("change",apply));
+document.getElementById("f-reset").addEventListener("click",()=>{
+  fb.value="";document.getElementById("f-tier").value="";
+  document.getElementById("f-edge").value="tr";_tx=0;_ty=0;_k=1;_apply();apply();});
+document.getElementById("ck-rib").addEventListener("change",e=>{
+  ribLayer.style.display=e.target.checked?"":"none";});
+document.getElementById("ck-full").addEventListener("click",()=>{
+  const vpEl=document.getElementById("vp");
+  if(!document.fullscreenElement) vpEl.requestFullscreen&&vpEl.requestFullscreen();
+  else document.exitFullscreen&&document.exitFullscreen();});
 apply();
 </script>
 """
