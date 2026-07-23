@@ -54,23 +54,75 @@ S2_KEY = _s2_key()
 HDR = {"User-Agent": "litpipe/1.0"}
 if S2_KEY:
     HDR["x-api-key"] = S2_KEY
-SLEEP = 1.1 if S2_KEY else 3.2       # 有 key 就不用那么保守
+SLEEP = 0.2                          # 篇间不再空等:限流由 s2_get 的快速重试吸收
 SEED = Path("/private/tmp/claude-501/-Users-zhaozhihua-knowledge-base/"
             "c5dbaf72-2174-4ab8-bbf0-dd3fd6e317ee/scratchpad/gaps_refs_cache.json")
 
 
-def s2_get(url, tries=6):
+def s2_get(url, tries=10):
+    """429 要**快速重试,不要退避**。
+
+    实测(带 key,12 篇 references):间隔 2 秒成功 1/8、间隔 3 秒成功 0/8,
+    但间隔 1.3 秒最多重试 8 次能到 5/6。说明 S2 的 429 是"全局池此刻满了",
+    不是针对本客户端的惩罚窗口 —— 干等只是把自己排到更后面。
+    旧代码退避 6→11→16→21→26 秒,把单篇拖到 88 秒;改完约 11 秒/篇。
+    """
     for i in range(tries):
         try:
             req = urllib.request.Request(url, headers=HDR)
             return json.loads(urllib.request.urlopen(req, timeout=45).read())
         except urllib.error.HTTPError as e:
             if e.code == 404: return None
-            if e.code == 429: time.sleep(6 + 5 * i); continue
-            time.sleep(3)
+            if e.code == 429: time.sleep(1.3); continue
+            time.sleep(2)
         except Exception:
-            time.sleep(3)
+            time.sleep(2)
     return None
+
+
+BATCH_FIELDS = ("title,citationCount,externalIds,"
+                "references.externalIds,references.title,references.citationCount")
+
+
+def s2_batch(ids, tries=10):
+    """一次请求拿多篇的完整参考列表 —— 官方口径「1 秒 1 次请求,1 次返回不止一篇」。
+
+    上限实测:200 篇一次能过,但**嵌套参考总数被截在 10000 条**
+    (200 篇 × 平均 50 条正好撞顶,会静默丢数据),所以按 50 篇一批走。
+    """
+    body = json.dumps({"ids": ids}).encode()
+    hdr = {**HDR, "Content-Type": "application/json"}
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(f"{S2}/paper/batch?fields={BATCH_FIELDS}",
+                                         headers=hdr, data=body)
+            return json.loads(urllib.request.urlopen(req, timeout=180).read())
+        except urllib.error.HTTPError as e:
+            if e.code == 429: time.sleep(1.2); continue
+            if e.code in (400, 404): return None
+            time.sleep(2)
+        except Exception:
+            time.sleep(2)
+    return None
+
+
+def s2_id(paper):
+    """能直接定位的 ID:arXiv 优先,其次非 arXiv 的 DOI。拿不到则返回 None(退回标题检索)。"""
+    if paper.get("arxiv"): return f"arXiv:{paper['arxiv']}"
+    doi = (paper.get("doi") or "").strip()
+    if doi and not doi.startswith("10.48550"):
+        return f"DOI:{doi}"
+    return None
+
+
+def parse_refs(rec):
+    """把 batch 返回的一条记录拆成 (refs, cc),格式与 fetch_refs 一致。"""
+    refs = []
+    for cp in (rec.get("references") or []):
+        ex = (cp or {}).get("externalIds") or {}
+        refs.append({"ax": ex.get("ArXiv"), "doi": ex.get("DOI"),
+                     "t": (cp or {}).get("title") or "", "cc": (cp or {}).get("citationCount") or 0})
+    return refs, rec.get("citationCount")
 
 
 def fetch_refs(paper):
@@ -136,8 +188,34 @@ def main():
         print(f"--no-fetch:跳过抓取(还有 {len(todo)} 篇没缓存)")
     else:
         if LIMIT: todo = todo[:LIMIT]
-        print(f"待抓 {len(todo)} 篇 ...")
         cc_map = load_state("cc.json", {})
+
+        # —— 快路:能用 ID 定位的走批量,一次 50 篇 ——
+        idmap = {}
+        for k in todo:
+            sid = s2_id(corpus[k])
+            if sid: idmap.setdefault(sid, k)      # 同 ID 只留一篇,避免重复
+        bat = list(idmap)
+        print(f"待抓 {len(todo)} 篇:批量可定位 {len(bat)},其余 {len(todo)-len(bat)} 篇走标题检索", flush=True)
+        for i in range(0, len(bat), 50):
+            chunk = bat[i:i + 50]
+            recs = s2_batch(chunk)
+            if not recs:
+                print(f"  批 {i//50+1} 失败,跳过(留给下一轮)", flush=True); continue
+            for sid, rec in zip(chunk, recs):
+                k = idmap[sid]
+                if not rec:
+                    continue
+                refs, cc = parse_refs(rec)
+                refs_cache[k] = refs
+                if cc is not None: cc_map[k] = cc
+            save_state("refs_cache.json", refs_cache); save_state("cc.json", cc_map)
+            print(f"  批量 {min(i+50,len(bat))}/{len(bat)}(缓存 {len(refs_cache)})", flush=True)
+            time.sleep(1.2)
+
+        # —— 慢路:剩下的逐篇标题检索 ——
+        todo = [k for k in todo if k not in refs_cache]
+        print(f"批量后仍缺 {len(todo)} 篇,逐篇检索 ...", flush=True)
         for i, k in enumerate(todo):
             refs, cc = fetch_refs(corpus[k])
             refs_cache[k] = refs if refs is not None else []

@@ -152,6 +152,7 @@ def main():
             "band": deep["band"], "lane": deep["lane"], "leaf": deep["name"], "path": deep["path"],
             "stars": stars, "tier": STAR2TIER.get(stars, ""), "ccf": ccf, "zh": zh,
             "arxiv": arxiv_of(d),
+            "doi": (d.get("DOI") or "").strip(),   # S2 批量接口靠它定位,漏了会退化成慢的标题检索
             "indeg": st.get(k, {}).get("indeg", 0), "cc": st.get(k, {}).get("cc", 0),
             "venue": d.get("proceedingsTitle") or d.get("publicationTitle") or "",
         }
