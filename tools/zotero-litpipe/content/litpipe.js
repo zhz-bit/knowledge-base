@@ -68,12 +68,17 @@ var LitPipe = {
   VENUE_FIELD: { conferencePaper: "proceedingsTitle", journalArticle: "publicationTitle" },
   SURVEY_ROOT_KEY: "I7T4VTBG",   // 「自动驾驶综述」根分类
 
-  log(msg) { try { Zotero.debug("[litpipe] " + msg); } catch (e) {} },
+  log(msg) {
+    const line = "[litpipe] " + msg;
+    try { Zotero.debug(line); } catch (e) {}
+    try { dump(line + "\n"); } catch (e) {}
+  },
 
   logErr(where, e) {
     const m = `[litpipe] ${where} 失败: ${e && (e.stack || e.message || e)}`;
     try { Zotero.debug(m); } catch (_) {}
     try { Zotero.logError(new Error(m)); } catch (_) {}
+    try { dump(m + "\n"); } catch (_) {}
   },
 
   async init({ id, rootURI }) {
@@ -221,3 +226,6 @@ var LitPipe = {
     },
   },
 };
+
+// 挂到 Zotero,供 bootstrap 访问(不依赖裸全局)
+Zotero.LitPipe = LitPipe;

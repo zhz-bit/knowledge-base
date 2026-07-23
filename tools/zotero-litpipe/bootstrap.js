@@ -1,64 +1,62 @@
-/* litpipe · Zotero bootstrap(适配 Zotero 9)
- * 生命周期:install / startup / shutdown / uninstall
- * 真正的逻辑在 content/litpipe.js
+/* eslint-disable no-undef */
+/* litpipe · Zotero bootstrap
  *
- * 防御性要点(踩过的坑):
- *  · Zotero 9 里 startup 抛异常会变成 "uncaught exception: undefined",完全看不出原因
- *    → 全程 try/catch,并同时用 Zotero.debug + Zotero.logError 打出来
- *  · Services 不保证已注入,自己 import 兜底
+ * 严格照 Zotero 官方 Make It Red 范式(与本机可用插件 ccfinfo 写法一致):
+ *   · loadSubScript 必须传第二个参数 ctx —— 否则子脚本里的 var 落到不确定作用域,
+ *     后续拿不到对象且报错难查(踩过:连一行日志都看不到)
+ *   · 子脚本把自己挂到 Zotero.LitPipe,bootstrap 通过 Zotero.LitPipe 访问,不依赖裸全局
+ *   · 日志用 dump() 兜底,即便 Zotero.debug 不可用也能在终端看到
  */
 
-var LitPipe;
+var chromeHandle;
 
 function log(msg) {
-  try { Zotero.debug("[litpipe/bootstrap] " + msg); } catch (e) { /* noop */ }
+  const line = "[litpipe/bootstrap] " + msg;
+  try { Zotero.debug(line); } catch (e) { /* noop */ }
+  try { dump(line + "\n"); } catch (e) { /* noop */ }
 }
 
 function logErr(where, e) {
   const m = `[litpipe/bootstrap] ${where} 失败: ${e && (e.stack || e.message || e)}`;
   try { Zotero.debug(m); } catch (_) {}
   try { Zotero.logError(new Error(m)); } catch (_) {}
+  try { dump(m + "\n"); } catch (_) {}
 }
 
-function install() { log("installed"); }
-function uninstall() { log("uninstalled"); }
+function install() {}
+function uninstall() {}
 
-async function startup({ id, version, rootURI }) {
+async function startup({ id, version, resourceURI, rootURI }, reason) {
   try {
+    await Zotero.initializationPromise;
+    if (!rootURI) rootURI = resourceURI.spec;
     log("starting " + version + " @ " + rootURI);
 
-    // Services 兜底(某些 Zotero 版本不自动注入)
-    if (typeof Services === "undefined") {
-      // eslint-disable-next-line no-global-assign
-      globalThis.Services = ChromeUtils.importESModule(
-        "resource://gre/modules/Services.sys.mjs").Services;
-      log("已自行 import Services");
-    }
-
-    if (Zotero.initializationPromise) await Zotero.initializationPromise;
-    log("Zotero 就绪");
-
-    Services.scriptloader.loadSubScript(rootURI + "content/litpipe.js");
-    if (typeof LitPipe === "undefined" || !LitPipe) {
-      throw new Error("loadSubScript 后仍拿不到 LitPipe(作用域问题)");
-    }
+    // 子脚本的执行上下文(关键:必须显式传给 loadSubScript)
+    const ctx = { rootURI, Zotero };
+    ctx._globalThis = ctx;
+    Services.scriptloader.loadSubScript(rootURI + "content/litpipe.js", ctx);
     log("litpipe.js 已载入");
 
-    Zotero.LitPipe = LitPipe;      // 挂到 Zotero 上,便于在调试台手动调用
-    await LitPipe.init({ id, rootURI });
+    if (!Zotero.LitPipe) throw new Error("子脚本未挂载 Zotero.LitPipe");
+    await Zotero.LitPipe.init({ id, rootURI });
     log("started ✓");
   } catch (e) {
     logErr("startup", e);
   }
 }
 
-function shutdown() {
+function shutdown({ id, version, resourceURI, rootURI }, reason) {
   try {
+    if (typeof APP_SHUTDOWN !== "undefined" && reason === APP_SHUTDOWN) return;
     log("shutting down");
-    if (LitPipe) LitPipe.shutdown();
+    if (Zotero.LitPipe) Zotero.LitPipe.shutdown();
+    delete Zotero.LitPipe;
+    if (chromeHandle) { chromeHandle.destruct(); chromeHandle = undefined; }
   } catch (e) {
     logErr("shutdown", e);
   }
-  LitPipe = undefined;
-  try { delete Zotero.LitPipe; } catch (e) { /* noop */ }
 }
+
+function onMainWindowLoad({ window }, reason) {}
+function onMainWindowUnload({ window }, reason) {}
