@@ -40,7 +40,8 @@ LANE_GAP = 10       # 泳道间距
 GROUP_GAP = 34      # 桶之间的间距
 MIN_LANE = 62       # 泳道最小宽度(太窄放不下节点)
 PX_PER_PAPER = 1.5  # 泳道宽度 ∝ 论文数
-TOP_H = 300         # 第一层横带高度
+ROW_H_F = 9         # 基石河区每月像素(比主河区密:139 篇不必占同样高度)
+CUT_F = 2012 * 12   # 基石早年更稀疏(1958-2011 共 8 篇),压缩线比主河区更早
 ROW_H = 15          # 每月的纵向像素
 XG, YG = 30, 24     # 簇内网格间距(自驾页用 46/34,全库节点多 2.4 倍,按比例收紧)
 
@@ -105,18 +106,6 @@ def main():
             x += w + LANE_GAP
         x += GROUP_GAP - LANE_GAP
 
-    # 第一层:基石的 5 条道单独一套坐标(横带内)
-    fx = PAD
-    flanes = {}
-    fcnt = Counter(n["lane"] for n in found.values())
-    ftotal = sum(fcnt.values())
-    for lane, c in sorted(fcnt.items()):
-        w = max(140, c * 6.0)
-        lid = f"{FOUNDATION}|{lane}"
-        flanes[lid] = {"x0": round(fx, 1), "x1": round(fx + w, 1), "label": lane,
-                       "band": FOUNDATION, "col": BAND_COL[FOUNDATION], "n": c}
-        fx += w + LANE_GAP
-
     for band in BAND_ORDER:
         pool = {k: n for k, n in rest.items() if n["band"] == band}
         if pool:
@@ -125,30 +114,50 @@ def main():
     for band in sorted({n["band"] for n in rest.values()} - set(BAND_ORDER)):
         add_lanes(band, {k: n for k, n in rest.items() if n["band"] == band})
 
-    W = max(x, fx) + PAD
-    # 基石横带按比例铺满同样宽度
-    if ftotal:
-        scale = (W - 2 * PAD) / max(1, fx - PAD - LANE_GAP)
-        for v in flanes.values():
-            v["x0"] = round(PAD + (v["x0"] - PAD) * scale, 1)
-            v["x1"] = round(PAD + (v["x1"] - PAD) * scale, 1)
+    W = x + PAD
 
-    # ---------- 时间轴 ----------
+    # ---------- 基石河区:5 条道横铺满整宽,自带一套时间轴 ----------
+    # 基石不再是静态网格,而是**同样按年份分列的河**;与下方细分方向是两个
+    # 横向独立的区块(各有各的时间刻度),只靠引用边发生关系。
+    flanes = {}
+    fcnt = Counter(n["lane"] for n in found.values())
+    ftotal = sum(fcnt.values()) or 1
+    avail = W - 2 * PAD - LANE_GAP * (len(fcnt) - 1)
+    fx = PAD
+    for lane, c in sorted(fcnt.items()):
+        w = avail * c / ftotal
+        lid = f"{FOUNDATION}|{lane}"
+        flanes[lid] = {"x0": round(fx, 1), "x1": round(fx + w, 1), "label": lane,
+                       "band": FOUNDATION, "col": BAND_COL[FOUNDATION], "n": c}
+        fx += w + LANE_GAP
+
+    fms = [n["month"] for n in found.values()]
+    fm0, fm1 = min(fms), max(fms)
+
+    def yofF(m):
+        """基石区时间轴:2012 前压进 90px 窄带(1958–2011 只有 8 篇),之后按月展开。"""
+        if m < CUT_F:
+            return 78 + (m - fm0) / max(1, CUT_F - fm0) * 90
+        return 178 + (m - CUT_F) * ROW_H_F
+
+    TOP_H = round(yofF(fm1) + 66)          # 基石区高度由它自己的时间跨度决定
+
+    # ---------- 主河区时间轴 ----------
     months = [n["month"] for n in rest.values()]
     m0, m1 = min(months), max(months)
-    # 2015 之前的老论文压缩:否则 1958–2014 会拉出一大片空白
     CUT = 2015 * 12
 
     def yof2(m):
-        """2015 前压进一条 120px 的窄带,之后按月线性展开 —— 否则 1958–2014 拉出一大片空白。"""
+        """2015 前压进一条 120px 的窄带,之后按月线性展开 —— 否则 1988–2014 拉出一大片空白。"""
         if m < CUT:
-            return TOP_H + 70 + (m - m0) / max(1, CUT - m0) * 120
-        return TOP_H + 195 + (m - CUT) * ROW_H
+            return TOP_H + 78 + (m - m0) / max(1, CUT - m0) * 120
+        return TOP_H + 203 + (m - CUT) * ROW_H
 
     H = yof2(m1) + 90
 
     # ---------- 落点 ----------
     nodes = {}
+    nodexy = defaultdict(list)          # lane -> [(y,x,r)],供河流包络用
 
     def emit(k, xx, yy, lid):
         n = C[k]
@@ -158,30 +167,18 @@ def main():
                     "tier": n["tier"], "ccf": n["ccf"], "indeg": n["indeg"], "cc": n["cc"],
                     "ax": n.get("arxiv", ""), "leaf": n["leaf"], "venue": (n.get("venue") or "")[:46]}
 
-    # 第一层横带:道内按库内被引降序网格铺开。
-    # 间距必须 ≥ 最大半径×2,否则大点(ResNet r=17)会糊成一条 —— 上一版用 17px 就糊了。
+    # 基石区:与主河区**同一套**居中成簇算法,只是换自己的时间轴
+    fclus = Counter((f'{n["band"]}|{n["lane"]}', n["month"]) for n in found.values())
     for lid, ln in flanes.items():
-        pool = [k for k, n in found.items() if f'{n["band"]}|{n["lane"]}' == lid]
-        pool.sort(key=lambda k: -C[k]["indeg"])
-        GX = GY = 34
-        inner = ln["x1"] - ln["x0"] - 18
-        cols = max(1, int(inner // GX))
-        rows = math.ceil(len(pool) / cols) or 1
-        # 竖向居中于横带内(带高 TOP_H-86,留出标题行)
-        y_top = 92 + max(0, (TOP_H - 110 - rows * GY) / 2)
-        lane_cx = (ln["x0"] + ln["x1"]) / 2
-        for i, k in enumerate(pool):
-            row, col = i // cols, i % cols
-            ncol = min(cols, len(pool) - row * cols)     # 末行按自身数量居中,不左对齐
-            xx = lane_cx + (col - (ncol - 1) / 2) * GX
-            yy = y_top + row * GY
-            emit(k, round(xx, 1), round(yy, 1), lid)
-            # 基石带 34px 间距放不下 139 个标签(自驾页顶部带列距 192px 才敢全标),
-            # 只标每道被引最高的前 8 篇,其余靠悬停看
-            nodes[k]["showl"] = i < 8
-            nodes[k]["ldy"] = -(nodes[k]["r"] + 5) if col % 2 == 0 else (nodes[k]["r"] + 13)
+        pool = [(k, C[k]["month"]) for k, n in found.items() if f'{n["band"]}|{n["lane"]}' == lid]
+        for k, (xx, yy, col) in pack(pool, ln["x0"], ln["x1"], yofF,
+                                     lambda k: C[k]["indeg"]).items():
+            emit(k, xx, yy, lid)
+            r = nodes[k]["r"]
+            nodexy[lid].append((yy, xx, r))
+            nodes[k]["ldy"] = -(r + 5) if col % 2 == 0 else (r + 13)
+            nodes[k]["showl"] = (C[k]["indeg"] >= 1) or (fclus[(lid, C[k]["month"])] <= 6)
 
-    nodexy = defaultdict(list)          # lane -> [(y,x,r)],供河流包络用
     clus = Counter((f'{n["band"]}|{n["lane"]}', n["month"]) for n in rest.values())
     for lid, ln in lanes.items():
         pool = [(k, C[k]["month"]) for k, n in rest.items() if f'{n["band"]}|{n["lane"]}' == lid]
@@ -226,32 +223,40 @@ def main():
     ribbons = {}
     BIN = 2                                   # 每 2 个月采一次
     WINpx = 3.4 * ROW_H                       # ±3.4 个月的窗口内取最远节点
-    for lid, ln in lanes.items():
-        pn = nodexy.get(lid) or []
-        cx = (ln["x0"] + ln["x1"]) / 2
-        halfmax = (ln["x1"] - ln["x0"]) / 2 - 4
-        pts = []
-        # 压缩段(2015 前)只取 3 个采样点:整段才 120px,按 BIN=2 会塞进 160 个点,
-        # 样条被压成锯齿、JSON 还白白膨胀
-        for bm in [m0, (m0 + CUT) // 2, CUT - 1] + list(range(CUT, m1 + BIN + 1, BIN)):
-            ys = yof2(bm)
-            e = max((abs(xx - cx) + r for (yy, xx, r) in pn if abs(yy - ys) <= WINpx),
-                    default=0)
-            hw = min(halfmax, e + 7) if e > 0 else 6   # 空窗出细线,河不断流
-            pts.append({"y": round(ys, 1), "hw": round(hw, 1)})
-        ribbons[lid] = {"cx": round(cx, 1), "pts": pts, "col": ln["col"]}
+    def make_ribbons(lane_dict, yof, a0, a1, cut, win):
+        for lid, ln in lane_dict.items():
+            pn = nodexy.get(lid) or []
+            cx = (ln["x0"] + ln["x1"]) / 2
+            halfmax = (ln["x1"] - ln["x0"]) / 2 - 4
+            pts = []
+            # 压缩段只取 3 个采样点:整段才 90~120px,按 BIN=2 会塞进上百个点,
+            # 样条被压成锯齿、JSON 还白白膨胀
+            for bm in [a0, (a0 + cut) // 2, cut - 1] + list(range(cut, a1 + BIN + 1, BIN)):
+                ys = yof(bm)
+                e = max((abs(xx - cx) + r for (yy, xx, r) in pn if abs(yy - ys) <= win),
+                        default=0)
+                hw = min(halfmax, e + 7) if e > 0 else 6   # 空窗出细线,河不断流
+                pts.append({"y": round(ys, 1), "hw": round(hw, 1)})
+            ribbons[lid] = {"cx": round(cx, 1), "pts": pts, "col": ln["col"]}
 
-    # 年份刻度
+    make_ribbons(flanes, yofF, fm0, fm1, CUT_F, 3.4 * ROW_H_F)
+    make_ribbons(lanes, yof2, m0, m1, CUT, WINpx)
+
+    # 年份刻度:两区各一套(横向独立 = 各有各的时间尺度)
     ticks = [{"y": round(yof2(y * 12), 1), "year": y}
              for y in range(CUT // 12, m1 // 12 + 1)]
+    ticksF = [{"y": round(yofF(y * 12), 1), "year": y}
+              for y in range(CUT_F // 12, fm1 // 12 + 1, 2)]
     L = {
         "nodes": nodes, "edges": edges, "edges_tr": edges_tr,
-        "ribbons": ribbons, "ticks": ticks,
+        "ribbons": ribbons, "ticks": ticks, "ticksF": ticksF,
         "lanes": {**flanes, **lanes},
         "bands": [{"name": b, "col": BAND_COL.get(b, "#999"),
                    "n": sum(1 for n in C.values() if n["band"] == b)}
                   for b in [FOUNDATION] + BAND_ORDER],
-        "W": round(W), "H": round(H), "topH": TOP_H, "cut": CUT, "m0": m0, "m1": m1,
+        "W": round(W), "H": round(H), "topH": TOP_H,
+        "cut": CUT, "m0": m0, "m1": m1,
+        "cutF": CUT_F, "fm0": fm0, "fm1": fm1,
         "stats": {"n": len(nodes), "e": len(edges), "lanes": len(lanes) + len(flanes),
                   "found": len(found)},
     }

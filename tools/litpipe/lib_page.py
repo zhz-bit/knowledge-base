@@ -21,7 +21,7 @@ PAGE = HERE.parent.parent / "pages" / "zotero-library-atlas.html"
 HTML = r"""<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Zotero 全库文献地图</title>
-<meta name="description" content="整个 Zotero 库 __N__ 篇文献的一张泳道地图：公用基石坐第一层，自动驾驶／时空预测／计算机视觉／NLP／深度学习／数据集并列成河，纵轴为时间，点大小＝库内被引，红环＝PageRank，__E__ 条引用边（主干经传递约简）。" />
+<meta name="description" content="整个 Zotero 库 __N__ 篇文献的一张泳道地图：分公用基石与细分方向两个横向独立的河区，各有各的时间轴，只靠引用边相连；纵轴为年份，点大小＝库内被引，红环＝PageRank，河宽＝产出强度，__E__ 条引用边（主干经传递约简）。" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -198,10 +198,10 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 <header class="hero">
   <div class="eyebrow">文献库 · A LIBRARY ATLAS</div>
   <h1>Zotero <em>全库文献地图</em></h1>
-  <p class="lede">整个 Zotero 库的<b>一张图</b>。泳道不是人为划的，而是<b>从目录结构自动长出来的</b>：
-  <b>公用基石</b>坐第一层横带，内部按 5 个子方向分并列细道；其余领域在下方并列成河，每个领域内部再按二级分类分道。
-  <b>纵轴是时间</b>，点的大小是<b>库内被引次数</b>，红环是 <b>PageRank</b>，河的宽度就是<b>该时段该方向的产出强度</b>。
-  在 Zotero 里新增一个二级分类，重跑一次这里就自动多一条道。</p>
+  <p class="lede">整个 Zotero 库的<b>一张图</b>，分成<b>两个横向独立的河区</b>：上面是<b>公用基石</b>（跨领域通用的骨干与范式），
+  下面是<b>细分方向</b>。两区<b>各有各的时间轴</b>，只靠<b>引用边</b>发生关系——悬停任一节点就能看见思想是怎么从上游流下来的。
+  泳道不是人为划的，而是<b>从 Zotero 目录结构自动长出来的</b>；<b>纵轴是年份</b>，点的大小是<b>库内被引次数</b>，
+  红环是 <b>PageRank</b>，河的宽度就是<b>该时段该方向的产出强度</b>。在 Zotero 里新增一个二级分类，重跑一次这里就自动多一条道。</p>
   <div class="byline">
     <span class="pill">__DATE__</span><span class="pill">__N__ 篇</span>
     <span class="pill">__E__ 条引用边</span><span class="pill">主干 __ETR__ 条</span>
@@ -213,7 +213,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
 <details class="blk" id="atlas" open>
   <summary><span class="stt">全库泳道图</span>
-    <span class="scount">纵轴＝时间 · 大小＝库内被引 · 红环＝PageRank · 河宽＝产出强度</span></summary>
+    <span class="scount">上下两区各有时间轴 · 大小＝库内被引 · 红环＝PageRank · 河宽＝产出强度</span></summary>
   <div id="gwrap">
     <div class="controls">
       <span class="flbl">引用边</span>
@@ -241,7 +241,8 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
     <span class="t">怎么读这张图</span>
     <p><b>悬停</b>任一节点，它的全部<b>上游</b>（被它引用的思想来源，蓝）与<b>下游</b>（引用它的后续工作，橄榄）会一起亮起，其余淡出——这是看清一条脉络最快的方式。</p>
     <p><b>点击</b>弹出可交互卡片（含 arXiv 链接）。滚轮朝光标缩放 / 拖拽平移 / 双击复位 / ⛶ 全屏。图例可点，用来单独关掉某个领域。</p>
-    <p>2015 年之前的论文压在顶部窄带里——库里最早到 __Y0__ 年，不压的话那二十几年会拉出一大片空白。</p>
+    <p><b>两区的时间尺度不同</b>（基石区更密），中间有虚线分界——不要把跨区的纵向距离读成时间差。
+    各区早年论文都压在自己顶部的窄带里：基石区最早到 1958 年、细分方向最早到 __Y0__ 年，不压的话会拉出一大片空白。</p>
   </div></div>
 </details>
 
@@ -402,30 +403,41 @@ for(const lid in L.ribbons){
   path.__band=band; ribLayer.appendChild(path); ribEls.push(path);
 }
 
-/* ── 第一层横带 · 泳道分隔 · 标签 · 年份刻度(全进 axLayer) ── */
-axLayer.appendChild(el("rect",{x:0,y:0,width:L.W,height:L.topH-14,fill:"rgba(180,155,255,.05)"}));
-const th=el("text",{x:16,y:26,fill:"#b49bff","font-family":"var(--mono)","font-size":"12.5","letter-spacing":"1.5"});
-th.textContent=`0 · 公用基石（${L.stats.found} 篇，全库共用）`; axLayer.appendChild(th);
+/* ── 两个横向独立的河区:上=公用基石、下=细分方向,各有各的时间刻度 ── */
+axLayer.appendChild(el("rect",{x:0,y:0,width:L.W,height:L.topH-16,fill:"rgba(180,155,255,.045)"}));
+/* 区间分界:两区时间尺度不同,必须画清楚,否则会被误读成一条连续时间轴 */
+axLayer.appendChild(el("line",{x1:0,y1:L.topH-8,x2:L.W,y2:L.topH-8,
+  stroke:"#36425e","stroke-width":"1.4","stroke-dasharray":"10 7"}));
+function regionTitle(y,col,txt){
+  const t=el("text",{x:16,y:y,fill:col,"font-family":"var(--mono)","font-size":"13","letter-spacing":"1.6"});
+  t.textContent=txt; axLayer.appendChild(t);}
+regionTitle(26,"#b49bff",`0 · 公用基石（${L.stats.found} 篇 · 全库共用 · 独立时间轴）`);
+regionTitle(L.topH+24,"#f0a361",`细分方向（${L.stats.n-L.stats.found} 篇 · 独立时间轴 · 与上区仅靠引用边相连）`);
+
 let seenBand=new Set();
 for(const lid in L.lanes){
   const ln=L.lanes[lid], top=ln.band==="0 公用基石";
-  axLayer.appendChild(el("line",{x1:ln.x0-5,y1:top?56:L.topH+16,x2:ln.x0-5,y2:top?L.topH-20:L.H-10,
+  const y0=top?52:L.topH+44, y1=top?L.topH-18:L.H-10;
+  axLayer.appendChild(el("line",{x1:ln.x0-5,y1:y0,x2:ln.x0-5,y2:y1,
     stroke:ln.col,"stroke-width":"1","stroke-dasharray":"2 8",opacity:".16"}));
-  const t=el("text",{x:(ln.x0+ln.x1)/2,y:top?74:L.topH+30,"text-anchor":"middle",fill:ln.col,
+  const t=el("text",{x:(ln.x0+ln.x1)/2,y:top?48:L.topH+58,"text-anchor":"middle",fill:ln.col,
     "font-family":"var(--mono)","font-size":"11.5"});
   t.textContent=`${ln.label}（${ln.n}）`; axLayer.appendChild(t);
   if(!top&&!seenBand.has(ln.band)){seenBand.add(ln.band);
-    const b=el("text",{x:ln.x0,y:L.topH+8,fill:ln.col,"font-family":"var(--mono)",
+    const b=el("text",{x:ln.x0,y:L.topH+40,fill:ln.col,"font-family":"var(--mono)",
       "font-size":"13.5","font-weight":"600","letter-spacing":"1"});
     b.textContent=ln.band; axLayer.appendChild(b);}
 }
-for(const t of L.ticks){
-  axLayer.appendChild(el("line",{x1:0,y1:t.y,x2:L.W,y2:t.y,stroke:"#283248",
-    "stroke-width":"1","stroke-dasharray":"3 6",opacity:".45"}));
-  const lb=el("text",{x:10,y:t.y-4,fill:"#6b768f","font-family":"var(--mono)","font-size":"11"});
-  lb.textContent=t.year; axLayer.appendChild(lb);}
-const tOld=el("text",{x:10,y:L.topH+64,fill:"#6b768f","font-family":"var(--mono)","font-size":"11"});
-tOld.textContent=`${Math.floor(L.m0/12)}–${L.cut/12-1}（压缩）`; axLayer.appendChild(tOld);
+function drawTicks(list,m0,cut,ytop){
+  for(const t of list){
+    axLayer.appendChild(el("line",{x1:0,y1:t.y,x2:L.W,y2:t.y,stroke:"#283248",
+      "stroke-width":"1","stroke-dasharray":"3 6",opacity:".4"}));
+    const lb=el("text",{x:10,y:t.y-4,fill:"#6b768f","font-family":"var(--mono)","font-size":"11"});
+    lb.textContent=t.year; axLayer.appendChild(lb);}
+  const o=el("text",{x:10,y:ytop,fill:"#6b768f","font-family":"var(--mono)","font-size":"10.5"});
+  o.textContent=`${Math.floor(m0/12)}–${cut/12-1}（压缩）`; axLayer.appendChild(o);}
+drawTicks(L.ticksF,L.fm0,L.cutF,72);
+drawTicks(L.ticks,L.m0,L.cut,L.topH+72);
 
 /* ── 边 + 上下游邻接 ── */
 const up={},dn={}; for(const k in L.nodes){up[k]=[];dn[k]=[];}
