@@ -25,6 +25,11 @@ LIMIT = None
 for i, a in enumerate(sys.argv):
     if a == "--limit": LIMIT = int(sys.argv[i + 1])
 NO_FETCH = "--no-fetch" in sys.argv
+# --library:语料换成**全库**(lib_corpus.json),边写到独立文件,不碰自驾页的 edges.json。
+# refs_cache 按 Zotero key 存,两边共用同一份缓存 —— 自驾树那 521 篇直接复用,不重抓。
+LIB = "--library" in sys.argv
+EDGES_OUT = "lib_edges.json" if LIB else "edges.json"
+CORPUS_OUT = "lib_corpus.json" if LIB else "corpus.json"
 
 S2 = "https://api.semanticscholar.org/graph/v1"
 REF_FIELDS = "externalIds,title,year,citationCount"
@@ -95,16 +100,22 @@ def fetch_refs(paper):
 
 
 def main():
-    z = Zot()
-    print("扫描 Zotero 综述树 ...")
-    tree = z.scan_tree()
-    corpus = {}
-    for k, v in tree.items():
-        d = v["data"]
-        corpus[k] = {"title": d.get("title", ""), "arxiv": arxiv_of(d),
-                     "doi": (d.get("DOI") or ""), "year": (d.get("date", "") or "")[:4],
-                     "leaf": v["leaf"], "itemType": d.get("itemType")}
-    print(f"语料 {len(corpus)} 篇")
+    if LIB:
+        corpus = load_state("lib_corpus.json", {})
+        if not corpus:
+            raise SystemExit("先跑 lib_corpus.py 生成 state/lib_corpus.json")
+        print(f"全库语料 {len(corpus)} 篇(来自 lib_corpus.py)")
+    else:
+        z = Zot()
+        print("扫描 Zotero 综述树 ...")
+        tree = z.scan_tree()
+        corpus = {}
+        for k, v in tree.items():
+            d = v["data"]
+            corpus[k] = {"title": d.get("title", ""), "arxiv": arxiv_of(d),
+                         "doi": (d.get("DOI") or ""), "year": (d.get("date", "") or "")[:4],
+                         "leaf": v["leaf"], "itemType": d.get("itemType")}
+        print(f"语料 {len(corpus)} 篇")
 
     refs_cache = load_state("refs_cache.json", {})
 
@@ -151,7 +162,7 @@ def main():
                 c = ref.get("cc") or 0
                 if c > harvest.get(dst, 0): harvest[dst] = c
     edges = sorted(edges)
-    save_state("edges.json", [list(e) for e in edges])
+    save_state(EDGES_OUT, [list(e) for e in edges])
 
     # cc:优先用抓取时拿到的;缺的用收割值补(被引过的论文基本都能补上)
     cc_map = load_state("cc.json", {})
@@ -161,7 +172,7 @@ def main():
     for k, n in corpus.items():
         n["indeg"] = indeg.get(k, 0)
         n["cc"] = cc_map.get(k, 0)
-    save_state("corpus.json", corpus)
+    save_state(CORPUS_OUT, corpus)
 
     cached = sum(1 for k in corpus if k in refs_cache)
     print(f"\n缓存覆盖 {cached}/{len(corpus)} 篇 | 引用边 {len(edges)} 条")

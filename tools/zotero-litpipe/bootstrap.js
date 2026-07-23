@@ -33,7 +33,7 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
     log("starting " + version + " @ " + rootURI);
 
     // 子脚本的执行上下文(关键:必须显式传给 loadSubScript)
-    const ctx = { rootURI, Zotero };
+    const ctx = { rootURI, Zotero, Services, Components, IOUtils, PathUtils };
     ctx._globalThis = ctx;
     // CCF 数据用 loadSubScript 载入(支持 jar: 协议;XHR/fetch 读不了 xpi 内文件)
     Services.scriptloader.loadSubScript(rootURI + "content/ccf_data.js", ctx);
@@ -43,6 +43,8 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
 
     if (!Zotero.LitPipe) throw new Error("子脚本未挂载 Zotero.LitPipe");
     await Zotero.LitPipe.init({ id, rootURI });
+    // 插件是在主窗口开着的时候装的,onMainWindowLoad 不会再触发,手动补挂菜单
+    for (const win of Zotero.getMainWindows()) Zotero.LitPipe.addMenu(win);
     log("started ✓");
   } catch (e) {
     logErr("startup", e);
@@ -53,7 +55,10 @@ function shutdown({ id, version, resourceURI, rootURI }, reason) {
   try {
     if (typeof APP_SHUTDOWN !== "undefined" && reason === APP_SHUTDOWN) return;
     log("shutting down");
-    if (Zotero.LitPipe) Zotero.LitPipe.shutdown();
+    if (Zotero.LitPipe) {
+      for (const win of Zotero.getMainWindows()) Zotero.LitPipe.removeMenu(win);
+      Zotero.LitPipe.shutdown();
+    }
     delete Zotero.LitPipe;
     if (chromeHandle) { chromeHandle.destruct(); chromeHandle = undefined; }
   } catch (e) {
@@ -61,5 +66,14 @@ function shutdown({ id, version, resourceURI, rootURI }, reason) {
   }
 }
 
-function onMainWindowLoad({ window }, reason) {}
-function onMainWindowUnload({ window }, reason) {}
+function onMainWindowLoad({ window }, reason) {
+  try {
+    if (Zotero.LitPipe) Zotero.LitPipe.addMenu(window);
+  } catch (e) { logErr("onMainWindowLoad", e); }
+}
+
+function onMainWindowUnload({ window }, reason) {
+  try {
+    if (Zotero.LitPipe) Zotero.LitPipe.removeMenu(window);
+  } catch (e) { logErr("onMainWindowUnload", e); }
+}

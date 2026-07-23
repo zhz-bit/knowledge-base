@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "litpipe",
-  "version": "0.1.0",
-  "description": "Instant metadata correction: normalize venue names and tag CCF rank for items added to the AD survey collection tree.",
+  "version": "0.2.0",
+  "description": "Metadata correction (venue normalization + CCF tagging) plus a Tools menu to run the litpipe pipeline and configure the Semantic Scholar API key.",
   "author": "zhz",
   "applications": {
     "zotero": {

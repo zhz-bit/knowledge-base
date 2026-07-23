@@ -190,6 +190,164 @@ var LitPipe = {
     return changes;
   },
 
+  // ==================== B/C 部分:工具菜单 ====================
+  // B 手动触发管线(②③④步,python 端做真正的活);C 配置 S2 API Key 与仓库路径。
+  // 没做偏好面板:那要 chrome.manifest + chromeHandle 注册 chrome:// URL,
+  // 机械多、Zotero 9 上易踩坑;菜单 + 对话框同样能填,风险低得多。
+
+  MENU_ID: "litpipe-tools-menu",
+  PREF_REPO: "extensions.litpipe.repo",
+  DEFAULT_REPO: "/Users/zhaozhihua/knowledge-base",
+
+  repoPath() {
+    try {
+      const v = Zotero.Prefs.get(this.PREF_REPO, true);
+      if (v) return v;
+    } catch (e) {}
+    return this.DEFAULT_REPO;
+  },
+
+  envPath() {
+    const home = Services.dirsvc.get("Home", Components.interfaces.nsIFile).path;
+    return PathUtils.join(home, ".config", "zotkit", "env");
+  },
+
+  addMenu(win) {
+    try {
+      const doc = win.document;
+      if (doc.getElementById(this.MENU_ID)) return;      // 幂等,重复调用不叠加
+      const popup = doc.getElementById("menu_ToolsPopup");
+      if (!popup) { this.log("找不到工具菜单,跳过挂载"); return; }
+      const menu = doc.createXULElement("menu");
+      menu.id = this.MENU_ID;
+      menu.setAttribute("label", "litpipe 文献管线");
+      const sub = doc.createXULElement("menupopup");
+      const mk = (label, fn) => {
+        const mi = doc.createXULElement("menuitem");
+        mi.setAttribute("label", label);
+        mi.addEventListener("command", () => fn.call(this, win));
+        sub.appendChild(mi);
+      };
+      mk("立即更新(抓引用 → 评级 → 归类 → 重建页面)", this.runPipeline);
+      mk("查看上次运行日志", this.showLog);
+      sub.appendChild(doc.createXULElement("menuseparator"));
+      mk("设置 Semantic Scholar API Key…", this.setS2Key);
+      mk("设置知识库仓库路径…", this.setRepo);
+      menu.appendChild(sub);
+      popup.appendChild(menu);
+      this.log("工具菜单已挂载");
+    } catch (e) {
+      this.logErr("挂载菜单", e);
+    }
+  },
+
+  removeMenu(win) {
+    try {
+      const el = win.document.getElementById(this.MENU_ID);
+      if (el) el.remove();
+    } catch (e) { /* 窗口已销毁,忽略 */ }
+  },
+
+  logFile() { return PathUtils.join(this.repoPath(), "tools", "litpipe", "state", "run.log"); },
+
+  /** B:跑管线。python 端已有文件锁,这里只负责启动 + 把进度回显到 Zotero。 */
+  async runPipeline(win) {
+    if (this.running) {
+      this.toast(win, "litpipe", "管线正在运行中,请等它结束");
+      return;
+    }
+    const repo = this.repoPath();
+    const log = this.logFile();
+    const pw = new Zotero.ProgressWindow({ closeOnClick: false });
+    pw.changeHeadline("litpipe 管线");
+    // 注意:ItemProgress 首参是**条目类型名**,不是图标 URL —— 传 chrome:// 路径
+    // 不会报错但图标为空(它只把值塞进 data-itemType 再拼 CSS 类名)
+    const line = new pw.ItemProgress("journalArticle", "正在启动…");
+    pw.show();
+
+    // 通过登录 shell 启动,才能拿到 conda 的 python 与 PATH 里的 claude
+    const cmd = `cd ${JSON.stringify(repo)}/tools/litpipe && `
+      + `exec python pipeline.py --apply > ${JSON.stringify(log)} 2>&1`;
+    this.running = true;
+    let timer = null;
+    const poll = async () => {
+      try {
+        const txt = await IOUtils.readUTF8(log);
+        const lines = txt.split("\n").filter(l => l.trim());
+        if (lines.length) line.setText(lines[lines.length - 1].slice(0, 90));
+      } catch (e) { /* 日志还没写出来 */ }
+    };
+    timer = win.setInterval(poll, 2500);
+
+    try {
+      await Zotero.Utilities.Internal.exec("/bin/bash", ["-lc", cmd]);
+      await poll();
+      line.setProgress(100);
+      pw.addDescription("完成。菜单里「查看上次运行日志」可看全文。");
+    } catch (e) {
+      await poll();
+      line.setError();
+      pw.addDescription("失败:" + (e && (e.message || e)) + "(详见运行日志)");
+      this.logErr("跑管线", e);
+    } finally {
+      this.running = false;
+      win.clearInterval(timer);
+      pw.startCloseTimer(9000);
+    }
+  },
+
+  async showLog(win) {
+    let txt = "";
+    try {
+      txt = await IOUtils.readUTF8(this.logFile());
+    } catch (e) {
+      txt = "还没有运行日志(先执行一次「立即更新」)。";
+    }
+    const tail = txt.split("\n").slice(-40).join("\n");
+    Services.prompt.alert(win, "litpipe 运行日志(末 40 行)", tail);
+  },
+
+  /** C:把 key 写进 ~/.config/zotkit/env —— build_edges.py 从这里读。 */
+  async setS2Key(win) {
+    const file = this.envPath();
+    let txt = "";
+    try { txt = await IOUtils.readUTF8(file); } catch (e) { /* 还没有这个文件 */ }
+    const cur = (txt.match(/^S2_API_KEY\s*=\s*(.*)$/m) || [])[1] || "";
+    const val = { value: cur.trim().replace(/^["']|["']$/g, "") };
+    const ok = Services.prompt.prompt(
+      win, "Semantic Scholar API Key",
+      "填入后抓引用从 3.2 秒/篇提速到 1.1 秒/篇。留空则清除。\n写入:" + file,
+      val, null, {});
+    if (!ok) return;
+    const key = (val.value || "").trim();
+    let out = txt.replace(/^S2_API_KEY\s*=.*$/m, "").replace(/\n{3,}/g, "\n\n");
+    if (key) out = (out.trimEnd() + "\nS2_API_KEY=" + key + "\n").replace(/^\n+/, "");
+    try {
+      await IOUtils.writeUTF8(file, out);
+      this.toast(win, "litpipe", key ? "API Key 已保存,下次抓引用自动提速" : "API Key 已清除");
+    } catch (e) {
+      this.logErr("写 env", e);
+      Services.prompt.alert(win, "litpipe", "写入失败:" + e);
+    }
+  },
+
+  async setRepo(win) {
+    const val = { value: this.repoPath() };
+    const ok = Services.prompt.prompt(win, "知识库仓库路径",
+      "litpipe 脚本所在仓库的根目录(内含 tools/litpipe/)。", val, null, {});
+    if (!ok) return;
+    Zotero.Prefs.set(this.PREF_REPO, (val.value || "").trim(), true);
+    this.toast(win, "litpipe", "仓库路径已保存");
+  },
+
+  toast(win, head, body) {
+    const pw = new Zotero.ProgressWindow();
+    pw.changeHeadline(head);
+    pw.addDescription(body);
+    pw.show();
+    pw.startCloseTimer(4000);
+  },
+
   observer: {
     async notify(event, type, ids/*, extraData */) {
       try {
