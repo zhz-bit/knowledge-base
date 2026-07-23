@@ -107,6 +107,10 @@ details.blk>div:last-child{margin-bottom:16px;}
 .controls label.chk{font-family:var(--mono); font-size:12px; color:var(--muted);
   display:inline-flex; align-items:center; gap:6px; cursor:pointer;}
 .controls .hint{font-family:var(--mono); font-size:11.5px; color:var(--dim); margin-left:auto;}
+.controls .lockhint{font-family:var(--mono); font-size:11.5px; color:var(--terra);
+  background:var(--soft-terra); border:1px solid rgba(240,163,97,.4); border-radius:999px;
+  padding:3px 11px; display:none;}
+.controls .lockhint.on{display:inline-block;}
 
 .legend{display:flex; flex-wrap:wrap; gap:8px 16px; margin:0 0 14px;
   font-size:12.5px; color:var(--muted); align-items:center;}
@@ -231,6 +235,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
       <label class="chk"><input type="checkbox" id="ck-rib" checked> 显示范式河流</label>
       <button class="act" id="ck-full">⛶ 全屏</button>
       <button class="act" id="f-reset">重置</button>
+      <span class="lockhint" id="lockhint"></span>
       <span class="hint" id="stat"></span>
     </div>
     <div class="legend" id="legend"></div>
@@ -240,7 +245,9 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
   <div class="callout note"><div class="ic">🌊</div><div class="ct">
     <span class="t">怎么读这张图</span>
     <p><b>悬停</b>任一节点，它的全部<b>上游</b>（被它引用的思想来源，蓝）与<b>下游</b>（引用它的后续工作，橄榄）会一起亮起，其余淡出——这是看清一条脉络最快的方式。</p>
-    <p><b>点击</b>弹出可交互卡片（含 arXiv 链接）。滚轮朝光标缩放 / 拖拽平移 / 双击复位 / ⛶ 全屏。图例可点，用来单独关掉某个领域。</p>
+    <p><b>点击锁定</b>：点一个节点会把它的溯源<b>钉住</b>，移开鼠标也不消失，方便顺着边慢慢看；
+    同时弹出可交互卡片（含 arXiv 链接与全局被引数）。再点该点、点空白处或按「重置」解锁。</p>
+    <p>滚轮朝光标缩放 / 拖拽平移 / 双击复位 / ⛶ 全屏。图例可点，用来单独关掉某个领域。</p>
     <p><b>两区的时间尺度不同</b>（基石区更密），中间有虚线分界——不要把跨区的纵向距离读成时间差。
     各区早年论文都压在自己顶部的窄带里：基石区最早到 1958 年、细分方向最早到 __Y0__ 年，不压的话会拉出一大片空白。</p>
   </div></div>
@@ -508,8 +515,9 @@ for(const k in L.nodes){
   nLayer.appendChild(g); nEls[k]=g;
 }
 
-/* ── 可见性 / 悬停溯源 / 点击弹卡 ── */
+/* ── 可见性 / 悬停溯源 / 点击锁定 ── */
 let eMode="tr";
+let locked=null;          // 被锁定的节点 key;非空时悬停不再改变高亮
 function vis(k){const n=L.nodes[k];
   const band=fb.value, tier=document.getElementById("f-tier").value;
   if(offBands.has(n.band)) return false;
@@ -522,31 +530,49 @@ function edgeVis(){for(const p of eEls){
   p.setAttribute("opacity",on&&vis(p.__a)&&vis(p.__b)?"0.2":"0");
   p.setAttribute("stroke","#36425e");}}
 /* 被筛掉的点淡出而非 display:none —— 位置本身是坐标信息,消失会让河看起来漏了 */
-function clr(){for(const k in nEls){nEls[k].style.opacity=vis(k)?"1":"0.12";
-  nEls[k].querySelector(".skc").setAttribute("stroke","#0e1320");} edgeVis();}
+/* 复位到"无高亮"态;若有锁定节点则复位成它的溯源态 */
+function clr(){
+  if(locked){ paint(locked); return; }
+  for(const k in nEls){nEls[k].style.opacity=vis(k)?"1":"0.12";
+    nEls[k].querySelector(".skc").setAttribute("stroke","#0e1320");}
+  edgeVis();
+}
+/* 把某节点的上下游溯源画出来,返回 {anc,des} 供 tip/卡片用 */
+function paint(k){
+  const anc=reach(k,up),des=reach(k,dn),keep=new Set([k,...anc,...des]);
+  for(const j in nEls) nEls[j].style.opacity=keep.has(j)?"1":"0.12";
+  nEls[k].querySelector(".skc").setAttribute("stroke",locked===k?"#f0a361":"#e4ebf7");
+  nEls[k].querySelector(".skc").setAttribute("stroke-width",locked===k?"2.6":"1.6");
+  for(const p of eEls){
+    const on=(p.__a===k&&keep.has(p.__b))||(p.__b===k&&keep.has(p.__a));
+    p.setAttribute("opacity",on?"0.85":"0.02");
+    p.setAttribute("stroke",p.__a===k?"#6aa6ff":p.__b===k?"#9bce6b":"#36425e");}
+  return {anc,des};
+}
 function meta(n){
   return `${n.y4} · ${n.venue||"预印本"}${n.ccf?` <span class="badge ccf">CCF-${n.ccf}</span>`:""}`;}
 for(const k in nEls){
   const g=nEls[k], n=L.nodes[k];
   g.addEventListener("mouseenter",()=>{
-    const anc=reach(k,up),des=reach(k,dn),keep=new Set([k,...anc,...des]);
-    for(const j in nEls) nEls[j].style.opacity=keep.has(j)?"1":"0.12";
-    g.querySelector(".skc").setAttribute("stroke","#e4ebf7");
-    for(const p of eEls){
-      const on=(p.__a===k&&keep.has(p.__b))||(p.__b===k&&keep.has(p.__a));
-      p.setAttribute("opacity",on?"0.85":"0.02");
-      p.setAttribute("stroke",p.__a===k?"#6aa6ff":p.__b===k?"#9bce6b":"#36425e");}
+    if(locked) return;                       // 已锁定:悬停不再抢走高亮
+    const {anc,des}=paint(k);
     tip.innerHTML=`<div class="tt">${n.tier?`<span class="tier ${TIERC[n.tier]}">${n.tier}</span>`:""}${n.zh||n.t}</div>`
       +`<div class="tm">${meta(n)}</div>`
       +(n.zh?`<div class="tc">${n.t}</div>`:"")
-      +`<div class="tc" style="color:#6b768f">${n.band} / ${n.leaf}<br>库内被引 <b>${n.indeg}</b>`
-      +` · PageRank <b>${n.pr}</b> · 上游 ${anc.size} / 下游 ${des.size}</div>`;
+      +`<div class="tc" style="color:#6b768f">${n.band} / ${n.leaf}<br>`
+      +`库内被引 <b>${n.indeg}</b> · 全局被引 <b>${(n.cc||0).toLocaleString()}</b>`
+      +` · PageRank <b>${n.pr}</b><br>上游 ${anc.size} / 下游 ${des.size} · 点击锁定</div>`;
     tip.style.opacity=1;});
   g.addEventListener("mousemove",e=>{
     tip.style.left=Math.min(e.clientX+14,innerWidth-346)+"px";
     tip.style.top=(e.clientY+14)+"px";});
   g.addEventListener("mouseleave",()=>{clr();tip.style.opacity=0;});
   g.addEventListener("click",ev=>{ev.stopPropagation();
+    /* 再点同一个 = 解锁;点别的 = 改锁到它 */
+    locked = (locked===k) ? null : k;
+    tip.style.opacity=0;
+    if(!locked){ card.style.display="none"; clr(); setLockHint(); return; }
+    paint(k); setLockHint(k);
     const ax=n.ax?`<a href="https://arxiv.org/abs/${n.ax}" target="_blank" rel="noopener">arXiv ${n.ax} ↗</a>`:"（无 arXiv 号）";
     card.innerHTML=`<span class="cx">✕</span><div class="ct">${n.zh||n.t}</div>`
       +`<div class="cm">${meta(n)}</div>`
@@ -555,9 +581,21 @@ for(const k in nEls){
     card.style.display="block";
     card.style.left=Math.min(ev.clientX+14,innerWidth-366)+"px";
     card.style.top=Math.min(ev.clientY+14,innerHeight-card.offsetHeight-12)+"px";
-    card.querySelector(".cx").onclick=e2=>{e2.stopPropagation();card.style.display="none";};});
+    card.querySelector(".cx").onclick=e2=>{e2.stopPropagation();
+      card.style.display="none"; locked=null; clr(); setLockHint();};});
 }
-document.addEventListener("click",()=>{card.style.display="none";});
+document.addEventListener("click",()=>{
+  card.style.display="none";
+  if(locked){ locked=null; clr(); setLockHint(); }
+});
+
+function setLockHint(k){
+  const el2=document.getElementById("lockhint");
+  if(!k){ el2.classList.remove("on"); el2.textContent=""; return; }
+  const n=L.nodes[k];
+  el2.textContent=`🔒 已锁定：${(n.nm||n.t).slice(0,26)} — 再点该点或点空白处解锁`;
+  el2.classList.add("on");
+}
 
 /* ── 控件 ── */
 function apply(){
@@ -583,6 +621,7 @@ document.getElementById("ck-rib").addEventListener("change",e=>{
 document.getElementById("f-reset").addEventListener("click",()=>{
   fb.value="";document.getElementById("f-tier").value="";
   offBands.clear();lg.querySelectorAll(".it.pf").forEach(x=>x.classList.remove("off"));
+  locked=null;setLockHint();card.style.display="none";
   _tx=0;_ty=0;_k=1;_apply();apply();});
 document.getElementById("ck-full").addEventListener("click",()=>{
   if(!document.fullscreenElement) gwrap.requestFullscreen&&gwrap.requestFullscreen();
