@@ -27,10 +27,10 @@ FOUNDATION = "0 公用基石"          # 第一层:顶部横带,内部按子分�
 # 库里有**两个**基石目录:顶层的 V55TE2QG,和自驾树下的 9ZZWDKCB。
 # 二者子分类 1:1 对应(「0.1 视觉与几何骨干」对「0.1 视觉骨干」…),按 0.x 前缀合并成一条带。
 FOUND_ROOTS = {"V55TE2QG", "9ZZWDKCB"}
-# 泳道显示名以顶层那套(更完整)为准
-FOUND_LANES = {"0.1": "0.1 视觉与几何骨干", "0.2": "0.2 语言模型与推理",
-               "0.3": "0.3 多模态基座", "0.4": "0.4 生成模型",
-               "0.5": "0.5 学习范式与数学工具"}
+# 2026-07 重组后的 6 大类(叶子是 0.x.y,这里按 0.x 前缀归到大类做色系分组)
+FOUND_LANES = {"0.1": "0.1 视觉", "0.2": "0.2 语言与序列",
+               "0.3": "0.3 多模态与具身", "0.4": "0.4 三维几何与渲染",
+               "0.5": "0.5 生成", "0.6": "0.6 学习理论与工具"}
 
 
 def all_collections(z):
@@ -151,7 +151,7 @@ def main():
             "month": m, "year": (d.get("date", "") or "")[:4],
             "band": deep["band"], "lane": deep["lane"], "leaf": deep["name"], "path": deep["path"],
             # 泳道下沉到**最深**一级:基石两棵树的叶子按 0.x 前缀合并回同一条道
-            "sub": (deep["lane"] if deep["found"] else deep["name"]),
+            "sub": deep["name"],
             "stars": stars, "tier": STAR2TIER.get(stars, ""), "ccf": ccf, "zh": zh,
             "arxiv": arxiv_of(d),
             "doi": (d.get("DOI") or "").strip(),   # S2 批量接口靠它定位,漏了会退化成慢的标题检索
