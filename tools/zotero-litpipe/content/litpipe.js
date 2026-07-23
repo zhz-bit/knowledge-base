@@ -1,4 +1,4 @@
-/* litpipe · 文献元数据即时校正(Zotero 7 插件,A 部分)
+/* litpipe · 文献元数据即时校正(Zotero 7/9 插件,A 部分)
  *
  * 作用:往「自动驾驶综述」树里加论文时,当场做两件确定性的事:
  *   1) 会议/期刊名规范化 —— 统一成规范全称,否则 easyScholar「期刊标签」按名字匹配不上
@@ -68,22 +68,51 @@ var LitPipe = {
   VENUE_FIELD: { conferencePaper: "proceedingsTitle", journalArticle: "publicationTitle" },
   SURVEY_ROOT_KEY: "I7T4VTBG",   // 「自动驾驶综述」根分类
 
-  log(msg) { Zotero.debug("[litpipe] " + msg); },
+  log(msg) { try { Zotero.debug("[litpipe] " + msg); } catch (e) {} },
+
+  logErr(where, e) {
+    const m = `[litpipe] ${where} 失败: ${e && (e.stack || e.message || e)}`;
+    try { Zotero.debug(m); } catch (_) {}
+    try { Zotero.logError(new Error(m)); } catch (_) {}
+  },
 
   async init({ id, rootURI }) {
     this.id = id;
     this.rootURI = rootURI;
     // 载入内置 CCF 库
+    // Zotero 9:File.getContentsAsync(URI) 已废弃(会抛),按官方提示改用 HTTP.request;再留 fetch 兜底
+    const url = rootURI + "content/ccf_db.json";
+    let txt = null;
     try {
-      const txt = await Zotero.File.getContentsAsync(rootURI + "content/ccf_db.json");
-      this.ccf = JSON.parse(txt);
-      this.log(`CCF 库载入 ${Object.keys(this.ccf).length} 条`);
-    } catch (e) {
-      this.log("CCF 库载入失败:" + e);
+      const resp = await Zotero.HTTP.request("GET", url, { responseType: "text" });
+      txt = resp.responseText !== undefined ? resp.responseText : resp.response;
+    } catch (e1) {
+      this.log("HTTP.request 读 CCF 库失败,改试 fetch:" + e1);
+      try {
+        txt = await (await fetch(url)).text();
+      } catch (e2) {
+        this.logErr("载入 CCF 库", e2);
+      }
     }
-    await this.refreshSurveyCollections();
-    this.notifierID = Zotero.Notifier.registerObserver(this.observer, ["item", "collection"], "litpipe");
-    this.log("已注册监听");
+    if (txt) {
+      try {
+        this.ccf = JSON.parse(txt);
+        this.log(`CCF 库载入 ${Object.keys(this.ccf).length} 条`);
+      } catch (e) {
+        this.logErr("解析 CCF 库", e);
+      }
+    }
+    try {
+      await this.refreshSurveyCollections();
+    } catch (e) {
+      this.logErr("收集综述分类", e);
+    }
+    try {
+      this.notifierID = Zotero.Notifier.registerObserver(this.observer, ["item", "collection"], "litpipe");
+      this.log("已注册监听 (id=" + this.notifierID + ")");
+    } catch (e) {
+      this.logErr("注册监听", e);
+    }
   },
 
   shutdown() {
