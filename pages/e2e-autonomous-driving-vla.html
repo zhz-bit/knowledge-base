@@ -173,6 +173,10 @@ td.c{text-align:center;}
 figure.pfig{margin:6px 0 6px;}
 figure.pfig .frame{background:#fff; border:1px solid var(--line); border-radius:12px;
   padding:12px; overflow:hidden;}
+figure.pfig .frame.figfail{background:var(--panel-2); border-style:dashed; min-height:64px;
+  display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px;}
+figure.pfig .frame.figfail::after{content:"框图加载失败：" attr(data-src) "（文件在仓库里，多半是本地预览服务器没提供静态资源）";
+  padding:14px 18px; text-align:center; line-height:1.6;}
 figure.pfig img{display:block; max-width:100%; height:auto; margin:0 auto;}
 figure.pfig figcaption{margin:7px 2px 12px; font-size:12.5px; color:var(--dim); text-align:right;
   font-family:var(--mono);}
@@ -823,6 +827,7 @@ const PAPERS = [
   '把 3D 神经重建的<span class="hi">三平面（triplane）表征</span>用于传感 token 化：token 数与相机数量、分辨率解耦，并显式编码自车周围几何；',
   '相比图像 patch token 化 <span class="hb">token 减少 72%、策略推理提速 50%</span>，为自回归 Transformer 策略上嵌入式硬件铺路；',
   '开环规划精度不降，闭环仿真 offroad 率反而改善。'],
+ fig:"../assets/e2e-ad/U5RKKDV2.png",
  dg:[["N 路相机","in"],["三平面投影编码","enc"],["紧凑传感 token","aux"],["自回归策略 Transformer","llm"],["规划轨迹","out"]],
  expr:{input:"环视多相机图像（token 化与相机数量/分辨率无关）",
    backbone:"Triplane 编码器 + 自回归 Transformer 驾驶策略",
@@ -954,6 +959,7 @@ const PAPERS = [
   '针对 VLA 在越野场景「空间感知不足、推理不稳」两大缺陷：<span class="hi">语义分割掩码作视觉提示</span>显式标注输入图像，增强预训练 VLM 对复杂地形的空间理解；',
   '<span class="hb">链式思维 + 自洽性（CoT-SC）</span>多路径推理投票，抑制离群推理对规划的干扰；',
   'RELLIS-3D 上较 Qwen 骨干基线 L2 误差降 13.3%、失败率从 16.52% 降至 6.56%。'],
+ fig:"../assets/e2e-ad/PSQLC2NZ.png",
  dg:[["越野图像","in"],["分割掩码视觉提示","aux"],["VLM（Qwen 系）","llm"],["CoT-SC 多路径推理","aux"],["轨迹","out"]],
  expr:{input:"越野场景图像 + 语义分割掩码视觉提示（显式标注可行驶区域）",
    backbone:"Qwen 系视觉-语言骨干 + 视觉提示模块 + CoT-SC 推理策略",
@@ -1006,6 +1012,7 @@ const PAPERS = [
  one:"200+ 篇统一视角：视觉中心 / VLM 中心 / 混合，同一 GE2E 问题的三种方言",
  loop:[], loopNote:"综述（含主流评测基准与性能对比整理）",
  data:["200+ 篇文献"],
+ fig:"../assets/e2e-ad/JJRGEFJ2.png",
  innov:[
   '提出「<span class="hi">通用端到端（GE2E）</span>」统一框架：视觉中心、VLM 中心与混合范式并非分岔路，而是同一问题的三种方言；',
   '系统对比三范式的架构、设计哲学与学习策略，并汇总主流评测基准与横向性能；',
@@ -1021,6 +1028,7 @@ const PAPERS = [
  one:"VLM × 自动驾驶全景：感知 / 导航规划 / 决策控制 / E2E / 数据生成",
  loop:[], loopNote:"综述（含语言增强数据集汇总）",
  data:["Awesome-VLM-AD-ITS 文献库"],
+ fig:"../assets/e2e-ad/32YWYGGD.png",
  innov:[
   '按<span class="hi">感知理解、导航规划、决策控制、端到端、数据生成</span>五大应用域组织 VLM-AD 文献，并整理主流任务与指标；',
   '系统汇总<span class="hb">语言增强的自动驾驶数据集</span>，指出研究空白与未来趋势；',
@@ -1036,6 +1044,7 @@ const PAPERS = [
  one:"从规则 → 优化 → 学习 → 知识驱动：LLM 领衔第三代 AD 的批判性回顾",
  loop:[], loopNote:"综述",
  data:["模块化与 E2E 两条线文献"],
+ fig:"../assets/e2e-ad/US2EBTVT.png",
  innov:[
   '把 AD 演进梳理为「规则/优化 → 学习 → <span class="hi">知识驱动（LLM 赋能）</span>」三代叙事，锚定「类人驾驶」目标；',
   '分别审视 LLM 在<span class="hb">模块化流水线与端到端系统</span>中的应用，批判性讨论实时推理、安全保障与部署成本三大拦路虎。'],
@@ -1129,6 +1138,7 @@ const PAPERS = [
   '用<span class="hi">无迹变换（UT）的 sigma 点</span>替代 EWA splatting 的线性化投影：任意非线性投影（鱼眼、卷帘快门等真实车载相机）都能精确处理；',
   '渲染公式与 tracing 系方法对齐，<span class="hb">同一 3D 表征内支持反射/折射等二次光线</span>，同时保持光栅化效率；',
   '对自动驾驶的意义：车载畸变相机 + 时间相关效应正是 <span class="ht">3DGS 闭环仿真（如 RAD）</span>落地的关键基建。'],
+ fig:"../assets/e2e-ad/ZRQAX229.png",
  dg:[["3D 高斯场景","in"],["UT sigma 点投影","enc"],["畸变相机 / 卷帘快门","aux"],["光栅化 + 二次光线","out"]],
  expr:{input:"多视角图像重建的 3D 高斯场景（渲染方法，与驾驶数据集无关）",
    backbone:"3DGS 管线中以 Unscented Transform 替换 EWA splatting",
@@ -1264,7 +1274,8 @@ document.getElementById("f-reset").addEventListener("click", () => {
     let html = `<p class="grpdesc">${esc(g.desc)}</p>`;
     for (const p of ps) {
       const figHtml = p.fig
-        ? `<figure class="pfig"><div class="frame"><img loading="lazy" src="${p.fig}" alt="${esc(p.name)} 模型框图（原论文）"></div>
+        ? `<figure class="pfig"><div class="frame"><img loading="lazy" src="${p.fig}" alt="${esc(p.name)} 模型框图（原论文）"
+               onerror="this.style.display='none';this.parentElement.classList.add('figfail');this.parentElement.dataset.src=this.getAttribute('src')"></div>
              <figcaption>框图截自原论文（<a href="${p.url||'#'}" target="_blank" rel="noopener">${esc(p.venueShort||p.venue||"原文")}</a>），版权归原作者所有</figcaption></figure>`
         : "";
       const pipe = (!p.fig && p.dg) ? `<div class="pipe">${p.dg.map(([t,c],i)=>

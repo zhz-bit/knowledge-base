@@ -62,15 +62,35 @@ def local_pdf(key):
     tmp = Path(tempfile.mkdtemp()) / "z.sqlite"
     shutil.copy(src, tmp)
     cur = sqlite3.connect(tmp).cursor()
-    cur.execute("""SELECT ai.key, ia.path FROM items i
+    cur.execute("""SELECT ai.key, ia.path, ia.linkMode FROM items i
         JOIN itemAttachments ia ON ia.parentItemID = i.itemID
         JOIN items ai ON ai.itemID = ia.itemID
         WHERE i.key = ? AND ia.contentType = 'application/pdf'""", (key,))
-    for akey, path in cur.fetchall():
-        if path and path.startswith("storage:"):
-            p = Path.home() / "Zotero/storage" / akey / path[len("storage:"):]
-            if p.exists():
-                return p
+    rows = cur.fetchall()          # 必须先取走:同一 cursor 再 execute 会冲掉上一个结果集
+    # 附件有三种存法,只认 storage: 会静默漏掉一大批(本库 235 个 PDF 是链接文件):
+    #   linkMode 0/1 导入 → path = "storage:文件名",实际在 ~/Zotero/storage/<附件key>/
+    #   linkMode 2 链接  → path = 绝对路径,或 "attachments:相对路径"(相对附件基础目录)
+    base = None
+    try:
+        cur.execute("SELECT value FROM settings WHERE setting='extensions.zotero' AND key='baseAttachmentPath'")
+        row = cur.fetchone()
+        if row:
+            base = Path(str(row[0]).strip('"'))
+    except Exception:
+        pass
+    for akey, path, _mode in rows:
+        if not path:
+            continue
+        if path.startswith("storage:"):
+            f = Path.home() / "Zotero/storage" / akey / path[len("storage:"):]
+        elif path.startswith("attachments:"):
+            if not base:
+                continue
+            f = base / path[len("attachments:"):]
+        else:
+            f = Path(path)
+        if f.exists():
+            return f
     return None
 
 
@@ -270,9 +290,11 @@ def figure_rect(page, cap_rect):
     rect = keep[0]
     for r in keep[1:]:
         rect |= r
-    # 略微外扩避免切到描边;但**下边不能越过题注顶边**,否则会把
-    # 「Figure 2. Framework of ...」那行文字裁进图里(页面自己会另配题注)
-    bottom = min(rect.y1 + 4, cap_rect.y0 - 2)
+    # 下边界向题注方向延伸,兜住图内底部的文字标签(如 3DGUT 图 2 底下的
+    # 「Monte Carlo Sampling / Linearization (EWA) / Unscented Transform」)——
+    # 这些是文字不在 get_drawings() 里,只到图形区就会被拦腰截断;
+    # 但**不能越过题注顶边**,否则「Figure 2. ...」那行会被裁进图里(页面另配题注)
+    bottom = min(cap_rect.y0 - 2, rect.y1 + 22)
     rect = fitz.Rect(rect.x0 - 4, rect.y0 - 4, rect.x1 + 4, bottom) & page.rect
     return rect
 
