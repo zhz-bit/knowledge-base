@@ -78,9 +78,24 @@ class Zot:
         """递归取 root 下所有子分类 {key: 名称}(自发现,不依赖过期清单)。"""
         return {k: v["name"] for k, v in self.collection_tree(root_key).items()}
 
-    def collection_tree(self, root_key=ROOT_COLLECTION) -> dict:
+    def collection_tree(self, root_key=ROOT_COLLECTION, ttl=3600) -> dict:
         """递归取 root 下所有子分类 {key: {"name":叶名, "path":"a / b / c"}}。
-        path 供 derive() 判定 track/para(要看到 '1 城区结构化'、'1.2' 这类层级)。"""
+        path 供 derive() 判定 track/para(要看到 '1 城区结构化'、'1.2' 这类层级)。
+
+        **本次运行内复用(方案甲)**:分类结构在一趟管线里不会被任何步骤修改
+        (四步只改条目的字段/标签,从不新建或移动分类),所以缓存它语义完全等价。
+        缓存落文件是因为四个步骤是**各自独立的进程**,内存缓存共享不了。
+        条目数据(会被改的 tags/version)**不缓存**,每步实时取——这是不出静默陈旧的关键。
+        pipeline.py 每次启动会删掉此缓存,保证一趟运行只取一次新鲜结构。
+        """
+        cache = STATE / "collections_cache.json"
+        if cache.exists() and ttl:
+            try:
+                blob = json.load(open(cache, encoding="utf-8"))
+                if blob.get("root") == root_key and (time.time() - blob.get("at", 0)) < ttl:
+                    return blob["tree"]
+            except Exception:
+                pass
         out = {}
 
         def walk(k, prefix):
@@ -90,6 +105,11 @@ class Zot:
                 out[c["key"]] = {"name": name, "path": path}
                 walk(c["key"], path)
         walk(root_key, "")
+        try:
+            json.dump({"root": root_key, "at": time.time(), "tree": out},
+                      open(cache, "w", encoding="utf-8"), ensure_ascii=False)
+        except Exception:
+            pass
         return out
 
     def items_in_collection(self, coll_key) -> list:

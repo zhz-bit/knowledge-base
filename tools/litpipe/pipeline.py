@@ -51,10 +51,10 @@ def acquire_lock():
                 except PermissionError: alive = True
                 except Exception: alive = False
             if alive:
-                print(f"⛔ 已有 pipeline 在跑(pid={pid}, 起于 {info.get('at')}),本次退出。")
+                print(f"⛔ 已有 pipeline 在跑(pid={pid}, 起于 {info.get('at')}),本次退出。", flush=True)
                 print("   同一时刻只允许一个写库流程,避免 Zotero 同步撞车。")
                 sys.exit(1)
-            print(f"⚠ 发现残留锁(pid={pid} 已不存在),接管。")
+            print(f"⚠ 发现残留锁(pid={pid} 已不存在),接管。", flush=True)
         except Exception:
             pass
     LOCK.parent.mkdir(exist_ok=True)
@@ -69,19 +69,19 @@ def release_lock():
 def run(name):
     script = SCRIPT[name]
     args = [sys.executable, str(HERE / script)] + (["--apply"] if APPLY else [])
-    print(f"\n{'='*66}\n▶ {name}  ({script} {'--apply' if APPLY else '干运行'})\n{'='*66}")
+    print(f"\n{'='*66}\n▶ {name}  ({script} {'--apply' if APPLY else '干运行'})\n{'='*66}", flush=True)
     t0 = time.time()
     r = subprocess.run(args, cwd=str(HERE))
     dt = time.time() - t0
     if r.returncode != 0:
-        print(f"✗ {name} 失败(exit {r.returncode}),中止后续步骤。")
+        print(f"✗ {name} 失败(exit {r.returncode}),中止后续步骤。", flush=True)
         return False
-    print(f"✓ {name} 完成,用时 {dt/60:.1f} 分钟")
+    print(f"✓ {name} 完成,用时 {dt/60:.1f} 分钟", flush=True)
     return True
 
 
 def publish():
-    print(f"\n{'='*66}\n▶ publish\n{'='*66}")
+    print(f"\n{'='*66}\n▶ publish\n{'='*66}", flush=True)
     chk = subprocess.run([sys.executable, str(REPO / "tools" / "check.py")], cwd=str(REPO))
     if chk.returncode != 0:
         print("✗ check.py 未通过,不提交。"); return
@@ -94,15 +94,22 @@ def publish():
         print("(无改动可提交)"); return
     if PUBLISH:
         subprocess.run(["git", "push", "origin", "main"], cwd=str(REPO))
-        print("✓ 已 push")
+        print("✓ 已 push", flush=True)
     else:
-        print("✓ 已 commit(未 push;加 --publish 推送)")
+        print("✓ 已 commit(未 push;加 --publish 推送)", flush=True)
 
 
 def main():
     acquire_lock()
     t0 = time.time()
-    print(f"litpipe 一条龙 · {'执行' if APPLY else '干运行'} · 步骤 {steps}")
+    # 方案甲:每趟运行开头清掉分类结构缓存 → 本趟第一个步骤取一次新鲜的,
+    # 后续步骤复用(结构不会被任何步骤修改,所以等价);条目数据仍每步实时取。
+    try:
+        (HERE / "state" / "collections_cache.json").unlink()
+        print("已清分类结构缓存(本趟将重新取一次)", flush=True)
+    except FileNotFoundError:
+        pass
+    print(f"litpipe 一条龙 · {'执行' if APPLY else '干运行'} · 步骤 {steps}", flush=True)
     try:
         for s in steps:
             if s not in SCRIPT:
@@ -112,7 +119,7 @@ def main():
             publish()
     finally:
         release_lock()
-    print(f"\n总用时 {(time.time()-t0)/60:.1f} 分钟")
+    print(f"\n总用时 {(time.time()-t0)/60:.1f} 分钟", flush=True)
 
 
 if __name__ == "__main__":
