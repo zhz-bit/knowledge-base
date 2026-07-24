@@ -33,12 +33,24 @@ FOUND_LANES = {"0.1": "0.1 视觉", "0.2": "0.2 语言与序列",
                "0.5": "0.5 生成", "0.6": "0.6 学习理论与工具"}
 
 
+def _api_get(z, url, tries=5):
+    """Zotero API 偶发 SSL UNEXPECTED_EOF(瞬时),不重试会把整趟跑打断。"""
+    import time as _t
+    for i in range(tries):
+        try:
+            return json.loads(urllib.request.urlopen(
+                urllib.request.Request(url, headers=z.hdr), timeout=60).read())
+        except Exception as e:
+            if i == tries - 1:
+                raise
+            _t.sleep(2 * (i + 1))
+
+
 def all_collections(z):
     """{key: {name, parent}} —— 全库,不限根。"""
     out, start = {}, 0
     while True:
-        d = json.loads(urllib.request.urlopen(urllib.request.Request(
-            f"{z.base}/collections?limit=100&start={start}", headers=z.hdr), timeout=60).read())
+        d = _api_get(z, f"{z.base}/collections?limit=100&start={start}")
         if not d:
             break
         for c in d:
@@ -82,8 +94,7 @@ def all_items(z):
     """整库顶层条目(不含附件/笔记),一次分页拉完。"""
     out, start = [], 0
     while True:
-        d = json.loads(urllib.request.urlopen(urllib.request.Request(
-            f"{z.base}/items/top?limit=100&start={start}", headers=z.hdr), timeout=90).read())
+        d = _api_get(z, f"{z.base}/items/top?limit=100&start={start}")
         if not d:
             break
         for it in d:
