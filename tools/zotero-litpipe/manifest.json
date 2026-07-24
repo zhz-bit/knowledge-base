@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "litpipe",
-  "version": "0.2.0",
-  "description": "Metadata correction (venue normalization + CCF tagging) plus a Tools menu to run the litpipe pipeline and configure the Semantic Scholar API key.",
+  "version": "0.3.0",
+  "description": "Metadata correction (venue normalization + CCF tagging), an open-source-code column in the item list, and a Tools menu to run the litpipe pipeline.",
   "author": "zhz",
   "applications": {
     "zotero": {

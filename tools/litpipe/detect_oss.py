@@ -47,9 +47,11 @@ def find_repo(*texts):
     for t in texts:
         for m in REPO_RE.finditer(t or ""):
             host, owner, repo = m.group(1).lower(), m.group(2), m.group(3)
-            if owner.lower() in BAD_OWNER or repo.lower() in BAD_REPO:
-                continue
-            if len(repo) < 2:
+            # 仓库名可以含点(如 GPT-4.V),但**句末标点不属于仓库名** ——
+            # 不剥掉的话 "…code at github.com/x/OccWorld." 会连句号一起当成名字,
+            # GitHub 返回 404,把一堆真开源的论文误判成没开源(踩过:22/33 全是这个)
+            repo = repo.rstrip(".,;:!?)")
+            if owner.lower() in BAD_OWNER or repo.lower() in BAD_REPO or len(repo) < 2:
                 continue
             return f"https://{host}/{owner}/{repo}"
     return ""
@@ -93,7 +95,11 @@ def repo_alive(url, tok=""):
                 "pushed": (d.get("pushed_at") or "")[:10],
                 "archived": d.get("archived", False)}
     except urllib.error.HTTPError as e:
-        return False if e.code == 404 else None
+        if e.code == 404:
+            return False
+        if e.code in (403, 429):
+            return "ratelimited"          # 限流不是"不存在",别误删
+        return None
     except Exception:
         return None
 
@@ -110,18 +116,30 @@ def main():
     print(f"范围 {SCOPE}:{len(pool)} 篇\n")
 
     # ── ① 本地信号:Zotero 已有的摘要 / extra / url ──
+    # **批量取**:逐条取会被偶发 SSL 打断,而 except:continue 会把失败的论文静默丢掉
+    # (上一版就是这么漏掉一百多篇的)。itemKey 一次可带 50 个。
+    data = {}
+    keys = list(pool)
+    for i in range(0, len(keys), 50):
+        chunk = keys[i:i + 50]
+        got = api(z, f"{z.base}/items?itemKey={','.join(chunk)}&limit=50")
+        for x in got:
+            data[x["key"]] = x["data"]
+        time.sleep(0.3)
+    missing = [k for k in keys if k not in data]
+    print(f"取回条目 {len(data)}/{len(keys)}" + (f"  ⚠ 缺 {len(missing)} 篇" if missing else ""))
+
     found, need_ax = {}, []
     for k, v in pool.items():
-        try:
-            d = api(z, f"{z.base}/items/{k}")["data"]
-        except Exception:
+        d = data.get(k)
+        if not d:
             continue
         r = find_repo(d.get("abstractNote", ""), d.get("extra", ""), d.get("url", ""))
         if r:
             found[k] = {"repo": r, "how": "摘要/元数据"}
         elif v.get("arxiv"):
             need_ax.append((k, v["arxiv"]))
-    print(f"① 摘要里直接带仓库链接:{len(found)} 篇")
+    print(f"① 摘要里直接带仓库链接:{len(found)} 篇 | 待查 arXiv comment {len(need_ax)} 篇")
 
     # ── ② arXiv comment ──
     if need_ax:
@@ -141,15 +159,27 @@ def main():
     tok = os.environ.get("GITHUB_TOKEN", "")
     dead = 0
     print("\n③ 验证仓库存在性 ...", flush=True)
+    limited = 0
     for k, info in list(found.items()):
         st = repo_alive(info["repo"], tok)
         if st is False:
             dead += 1
-            found.pop(k)
+            info["dead"] = True            # 先标记不删,最后统一报告
+        elif st == "ratelimited":
+            limited += 1
         elif isinstance(st, dict):
             info.update(st)
         time.sleep(0.9 if tok else 2.4)
+    if limited:
+        print(f"   ⚠ {limited} 篇因 GitHub 限流未验证(设 GITHUB_TOKEN 可提到 5000次/小时)")
+    dead_rows = [(k, found[k]) for k in found if found[k].get("dead")]
+    for k, _ in dead_rows:
+        found.pop(k)
     print(f"   仓库 404 剔除 {dead} 篇;确认开源 {len(found)} 篇 / {len(pool)}")
+    if dead_rows:
+        print("   404 的(多半是我从摘要里挖到的链接不准,已剔除):")
+        for k, v in dead_rows[:12]:
+            print(f"     {v['repo'][:56]}  ← {C[k]['title'][:40]}")
 
     rows = sorted(({"key": k, "title": C[k]["title"], "year": C[k]["year"],
                     "sub": C[k]["sub"], "indeg": C[k]["indeg"], **v}

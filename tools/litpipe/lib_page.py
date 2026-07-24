@@ -233,6 +233,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
         <option value="B">B</option><option value="C">C</option><option value="_none">未评</option>
       </select>
       <label class="chk"><input type="checkbox" id="ck-rib" checked> 显示范式河流</label>
+      <label class="chk"><input type="checkbox" id="ck-oss"> 只看开源</label>
       <button class="act" id="ck-full">⛶ 全屏</button>
       <button class="act" id="f-reset">重置</button>
       <span class="lockhint" id="lockhint"></span>
@@ -350,6 +351,8 @@ lg.innerHTML=L.bands.filter(b=>b.n).map(b=>
  +`<circle cx="23" cy="8" r="7" fill="#9aa6bf"/></svg>大小＝库内被引</span>`
  +`<span class="it"><svg width="22" height="16"><circle cx="11" cy="8" r="4" fill="#46d7cc"/>`
  +`<circle cx="11" cy="8" r="6.6" fill="none" stroke="#ff8a8a" stroke-width="2"/></svg>红环＝PageRank</span>`
+ +`<span class="it"><svg width="22" height="16"><circle cx="11" cy="8" r="4" fill="#6aa6ff"/>`
+ +`<circle cx="11" cy="8" r="6" fill="none" stroke="#9bce6b" stroke-width="1.6"/></svg>绿环＝代码开源</span>`
  +`<span class="it" style="color:#6b768f">泳道＝最深一级分类，同一个二级分类下的道共用一个色系</span>`;
 const offBands=new Set();
 
@@ -510,6 +513,9 @@ for(const k in L.nodes){
   const g=el("g",{class:"sknode"}); g.__k=k;
   if(n.pr>0.03) g.appendChild(el("circle",{cx:n.x,cy:n.y,r:n.r+2.4,fill:"none",stroke:"#ff8a8a",
     "stroke-width":(0.5+n.pr*5.5).toFixed(2),"stroke-opacity":(0.3+n.pr*0.7).toFixed(2)}));
+  /* 有代码仓库的多一圈绿描边 —— 扫一眼就知道哪些能跑起来 */
+  if(n.code) g.appendChild(el("circle",{cx:n.x,cy:n.y,r:n.r+1.6,fill:"none",
+    stroke:"#9bce6b","stroke-width":"1.5","stroke-opacity":".85"}));
   g.appendChild(el("circle",{class:"skc",cx:n.x,cy:n.y,r:n.r,fill:n.col,
     stroke:"#0e1320","stroke-width":"1.6"}));
   if(n.showl){
@@ -530,6 +536,7 @@ function vis(k){const n=L.nodes[k];
   if(band&&n.band!==band) return false;
   if(tier==="_none"&&n.tier) return false;
   if(tier&&tier!=="_none"&&n.tier!==tier) return false;
+  if(document.getElementById("ck-oss").checked && !n.code) return false;
   return true;}
 function edgeVis(){for(const p of eEls){
   const on=(eMode==="all")||(eMode==="tr"&&trSet.has(p.__a+">"+p.__b));
@@ -585,7 +592,9 @@ for(const k in nEls){
     card.innerHTML=`<span class="cx">✕</span><div class="ct">${n.zh||n.t}</div>`
       +`<div class="cm">${meta(n)}</div>`
       +`<div class="cb">${n.zh?n.t+"<br><br>":""}${n.band} / ${n.leaf}<br>`
-      +`库内被引 ${n.indeg} · 全局被引 ${(n.cc||0).toLocaleString()} · PageRank ${n.pr}<br>${ax}</div>`;
+      +`库内被引 ${n.indeg} · 全局被引 ${(n.cc||0).toLocaleString()} · PageRank ${n.pr}<br>${ax}`
+      +(n.code?`<br><a href="${n.code}" target="_blank" rel="noopener">⌥ 代码仓库 ${n.code.split("github.com/")[1]||""} ↗</a>`:"")
+      +`</div>`;
     card.style.display="block";
     card.style.left=Math.min(ev.clientX+14,innerWidth-366)+"px";
     card.style.top=Math.min(ev.clientY+14,innerHeight-card.offsetHeight-12)+"px";
@@ -625,11 +634,13 @@ lg.addEventListener("click",e=>{
   if(offBands.has(b)){offBands.delete(b);it.classList.remove("off");}
   else{offBands.add(b);it.classList.add("off");}
   apply();});
+document.getElementById("ck-oss").addEventListener("change",apply);
 document.getElementById("ck-rib").addEventListener("change",e=>{
   ribLayer.style.display=e.target.checked?"":"none";});
 document.getElementById("f-reset").addEventListener("click",()=>{
   fb.value="";document.getElementById("f-tier").value="";
   offBands.clear();lg.querySelectorAll(".it.pf").forEach(x=>x.classList.remove("off"));
+  document.getElementById("ck-oss").checked=false;
   locked=null;setLockHint();card.style.display="none";
   _tx=0;_ty=0;_k=1;_apply();apply();});
 document.getElementById("ck-full").addEventListener("click",()=>{

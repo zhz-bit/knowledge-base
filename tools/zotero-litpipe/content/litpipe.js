@@ -97,6 +97,11 @@ var LitPipe = {
       this.logErr("收集综述分类", e);
     }
     try {
+      this.registerColumn();
+    } catch (e) {
+      this.logErr("注册开源列", e);
+    }
+    try {
       this.notifierID = Zotero.Notifier.registerObserver(this.observer, ["item", "collection"], "litpipe");
       this.log("已注册监听 (id=" + this.notifierID + ")");
     } catch (e) {
@@ -105,6 +110,7 @@ var LitPipe = {
   },
 
   shutdown() {
+    this.unregisterColumn();
     if (this.notifierID) Zotero.Notifier.unregisterObserver(this.notifierID);
     this.notifierID = null;
   },
@@ -231,6 +237,8 @@ var LitPipe = {
       mk("立即更新(抓引用 → 评级 → 归类 → 重建页面)", this.runPipeline);
       mk("查看上次运行日志", this.showLog);
       sub.appendChild(doc.createXULElement("menuseparator"));
+      mk("打开选中条目的代码仓库", this.openRepo);
+      sub.appendChild(doc.createXULElement("menuseparator"));
       mk("设置 Semantic Scholar API Key…", this.setS2Key);
       mk("设置知识库仓库路径…", this.setRepo);
       menu.appendChild(sub);
@@ -346,6 +354,91 @@ var LitPipe = {
     pw.addDescription(body);
     pw.show();
     pw.startCloseTimer(4000);
+  },
+
+  // ==================== D 部分:开源列 ====================
+  // 在条目列表里加一列显示代码开源状态。数据来自 detect_oss.py 写回的:
+  //   · 标签 `开源` / `未见开源`
+  //   · extra 里的 `Code: <url>` 行(仓库地址)
+  // 这样插件不用自己联网,读的是已经核对过的结果。
+
+  COL_KEY: "litpipeOSS",
+
+  /** 读一个条目的开源状态 → {state, url} */
+  ossOf(item) {
+    try {
+      if (!item || !item.isRegularItem || !item.isRegularItem()) return null;
+      const tags = item.getTags().map(t => t.tag);
+      const m = /^Code:\s*(\S+)/m.exec(item.getField("extra") || "");
+      const url = m ? m[1] : "";
+      if (tags.includes("开源") || url) return { state: "open", url };
+      if (tags.includes("开源:疑似")) return { state: "maybe", url: "" };
+      if (tags.includes("未见开源")) return { state: "closed", url: "" };
+      return { state: "unknown", url: "" };     // 还没查过
+    } catch (e) {
+      return null;
+    }
+  },
+
+  registerColumn() {
+    try {
+      if (!Zotero.ItemTreeManager || !Zotero.ItemTreeManager.registerColumn) {
+        this.log("此 Zotero 版本没有 ItemTreeManager,跳过开源列");
+        return;
+      }
+      this.colKey = Zotero.ItemTreeManager.registerColumn({
+        dataKey: this.COL_KEY,
+        label: "代码",
+        pluginID: this.id,
+        enabledTreeIDs: ["main"],
+        width: 64,
+        minWidth: 44,
+        showInColumnPicker: true,
+        // dataProvider 的返回值同时用于**排序**,所以要能排出有意义的顺序:
+        // 开源 > 疑似 > 未见 > 未查
+        dataProvider: (item) => {
+          const o = Zotero.LitPipe.ossOf(item);
+          if (!o) return "";
+          return { open: "1 开源", maybe: "2 疑似", closed: "3 未见", unknown: "" }[o.state] || "";
+        },
+        renderCell: (index, data, column, isFirstColumn, doc) => {
+          const cell = doc.createElement("span");
+          cell.className = `cell ${column.className}`;
+          const s = (data || "").slice(2);         // 去掉排序用的数字前缀
+          cell.textContent = { "开源": "✓ 开源", "疑似": "~ 疑似", "未见": "—" }[s] || "";
+          cell.style.color = { "开源": "#3aa76d", "疑似": "#c9922e", "未见": "#8b95a5" }[s] || "";
+          cell.style.whiteSpace = "nowrap";
+          return cell;
+        },
+      });
+      this.log("开源列已注册 (" + this.colKey + ")");
+    } catch (e) {
+      this.logErr("注册开源列", e);
+    }
+  },
+
+  unregisterColumn() {
+    try {
+      if (this.colKey && Zotero.ItemTreeManager) {
+        Zotero.ItemTreeManager.unregisterColumn(this.colKey);
+        this.colKey = null;
+      }
+    } catch (e) { /* 关闭时忽略 */ }
+  },
+
+  /** 菜单项:选中条目 → 打开其代码仓库 */
+  openRepo(win) {
+    try {
+      const items = win.ZoteroPane.getSelectedItems();
+      const urls = items.map(i => (this.ossOf(i) || {}).url).filter(Boolean);
+      if (!urls.length) {
+        this.toast(win, "litpipe", "选中的条目没有记录代码仓库");
+        return;
+      }
+      for (const u of urls.slice(0, 8)) Zotero.launchURL(u);
+    } catch (e) {
+      this.logErr("打开仓库", e);
+    }
   },
 
   observer: {

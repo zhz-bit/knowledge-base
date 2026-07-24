@@ -190,7 +190,7 @@ def main():
                     "t": n["title"][:110], "zh": n.get("zh", ""), "y4": n["year"],
                     "pubyear": n.get("pubyear", ""),
                     "tier": n["tier"], "ccf": n["ccf"], "indeg": n["indeg"], "cc": n["cc"],
-                    "ax": n.get("arxiv", ""), "leaf": n["leaf"], "venue": (n.get("venue") or "")[:46]}
+                    "ax": n.get("arxiv", ""), "code": n.get("code", ""), "leaf": n["leaf"], "venue": (n.get("venue") or "")[:46]}
 
     # 基石区:与主河区**同一套**居中成簇算法,只是换自己的时间轴
     fclus = Counter((f'{n["band"]}|{n["sub"]}|{n["sub"]}', n["month"]) for n in found.values())
