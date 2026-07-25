@@ -78,7 +78,9 @@ def verify(repo, title, ax):
     if ax and ax.replace(".", "") in blob.replace(" ", "").replace(".", ""):
         return True, f"README/描述含 arXiv {ax}"
     head = norm(title.split(":")[0])
-    if len(head) > 10 and head in blob:
+    # 主标题太泛的不能用这条规则:有篇条目标题就叫「Autonomous Driving」,
+    # 它把百度 Apollo(★26754)匹配成了"官方实现"。要求主标题够长且实词够多。
+    if len(head) > 14 and len(words(head)) >= 2 and head in blob:
         return True, "含论文主标题"
     ws = words(title)
     if ws:

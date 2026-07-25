@@ -6,7 +6,9 @@
   ② build_edges  增量抓新论文的完整参考列表 → 全量重算引用边 + indeg + 收割 cc
   ③ enrich       Haiku 评级⭐ + 标题翻译(**必须在 ② 之后**,评级要用 indeg/cc 当锚)
   ④ classify     收件箱待分类条目 → Haiku 建议叶子(高置信自动归档,其余打建议标签)
-  ⑤ generate     从 Zotero 重建页面数据并注入(纯渲染;收件箱条目不进图)
+  ⑤ oss          开源检测四级(摘要→arXiv comment→PDF 正文→gh 搜索),增量
+  ⑥ generate     从 Zotero 重建自驾页数据并注入(纯渲染;收件箱条目不进图)
+  ⑦ lib_*        全库地图页:扫全库 → 排版 → 渲染
   ⑤ publish      check.py → git commit → push(GitHub Pages)
 
 并发保护:全程持 state/.pipeline.lock。**同一时刻只允许一个写库流程**——
@@ -25,7 +27,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 LOCK = HERE / "state" / ".pipeline.lock"
-STEPS_ALL = ["maintain", "edges", "enrich", "classify", "generate"]
+# atlas 三步(语料→布局→渲染)由 SCRIPT 里的 lib_* 串起来;oss 放在 atlas 之前,
+# 因为地图页要读 extra 里的 Code: 行画绿环
+STEPS_ALL = ["maintain", "edges", "enrich", "classify", "oss",
+             "generate", "lib_corpus", "lib_layout", "lib_page"]
 
 APPLY = "--apply" in sys.argv
 PUBLISH = "--publish" in sys.argv
@@ -34,7 +39,12 @@ for i, a in enumerate(sys.argv):
     if a == "--steps": steps = [s.strip() for s in sys.argv[i + 1].split(",")]
 
 SCRIPT = {"maintain": "maintain.py", "edges": "build_edges.py",
-          "enrich": "enrich.py", "classify": "classify.py", "generate": "generate.py"}
+          "enrich": "enrich.py", "classify": "classify.py", "oss": "oss.py",
+          "generate": "generate.py",
+          "lib_corpus": "lib_corpus.py", "lib_layout": "lib_layout.py",
+          "lib_page": "lib_page.py"}
+# 这几个脚本没有 --apply 语义(它们本来就是"重算并写文件")
+NO_APPLY = {"lib_corpus", "lib_layout", "lib_page"}
 
 
 def acquire_lock():
@@ -69,7 +79,9 @@ def release_lock():
 
 def run(name):
     script = SCRIPT[name]
-    args = [sys.executable, str(HERE / script)] + (["--apply"] if APPLY else [])
+    args = [sys.executable, str(HERE / script)]
+    if APPLY and name not in NO_APPLY:
+        args.append("--apply")
     print(f"\n{'='*66}\n▶ {name}  ({script} {'--apply' if APPLY else '干运行'})\n{'='*66}", flush=True)
     t0 = time.time()
     r = subprocess.run(args, cwd=str(HERE))

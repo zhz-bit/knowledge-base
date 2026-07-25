@@ -17,11 +17,16 @@ from lib_corpus import _api_get as api
 APPLY = "--apply" in sys.argv
 rows = json.load(open(HERE / "state" / "oss_all.json", encoding="utf-8"))
 C = load_state("lib_corpus.json", {})
-pool = {k for k, v in C.items()
-        if v["band"] == "5 自动驾驶综述"
-        and ("端到端" in v["sub"] or v["sub"] in ("VLM-VLA", "模块化E2E", "RL后训练"))}
+SCOPE = "all"
+for i, a in enumerate(sys.argv):
+    if a == "--scope":
+        SCOPE = sys.argv[i + 1]
+pool = ({k for k, v in C.items()
+         if v["band"] == "5 自动驾驶综述"
+         and ("端到端" in v["sub"] or v["sub"] in ("VLM-VLA", "模块化E2E", "RL后训练"))}
+        if SCOPE == "e2e" else set(C))
 oss = {r["key"]: r for r in rows}
-print(f"端到端 {len(pool)} 篇:开源 {len(oss)}、未见 {len(pool) - len(oss)}")
+print(f"范围 {SCOPE} {len(pool)} 篇:开源 {len(oss)}、未见 {len(pool) - len(oss)}")
 if not APPLY:
     print("(加 --apply 写回)"); raise SystemExit
 
@@ -44,8 +49,17 @@ for k in keys:
     tags = [t for t in d.get("tags", []) if t.get("tag") not in ("开源", "未见开源", "开源:疑似")]
     ex = re.sub(r"^Code:.*$\n?", "", d.get("extra", "") or "", flags=re.M)
     if k in oss:
+        o = oss[k]
         tags.append({"tag": "开源"})
-        d["extra"] = (f"Code: {oss[k]['repo']}\n" + ex).strip()
+        # star 与最后提交日一并写进 extra —— 插件列与页面都从这里读,不必联网
+        line = f"Code: {o['repo']}"
+        if isinstance(o.get("stars"), int) and o["stars"] >= 0:
+            line += f" | ★{o['stars']}"
+        if o.get("pushed"):
+            line += f" | 更新 {o['pushed']}"
+        if o.get("archived"):
+            line += " | 已归档"
+        d["extra"] = (line + "\n" + ex).strip()
         a += 1
     else:
         tags.append({"tag": "未见开源"})

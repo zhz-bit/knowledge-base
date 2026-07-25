@@ -352,7 +352,7 @@ lg.innerHTML=L.bands.filter(b=>b.n).map(b=>
  +`<span class="it"><svg width="22" height="16"><circle cx="11" cy="8" r="4" fill="#46d7cc"/>`
  +`<circle cx="11" cy="8" r="6.6" fill="none" stroke="#ff8a8a" stroke-width="2"/></svg>红环＝PageRank</span>`
  +`<span class="it"><svg width="22" height="16"><circle cx="11" cy="8" r="4" fill="#6aa6ff"/>`
- +`<circle cx="11" cy="8" r="6" fill="none" stroke="#9bce6b" stroke-width="1.6"/></svg>绿环＝代码开源</span>`
+ +`<circle cx="11" cy="8" r="6" fill="none" stroke="#9bce6b" stroke-width="1.6"/></svg>绿环＝代码开源（tip 里带 ★ 数）</span>`
  +`<span class="it" style="color:#6b768f">泳道＝最深一级分类，同一个二级分类下的道共用一个色系</span>`;
 const offBands=new Set();
 
@@ -593,7 +593,8 @@ for(const k in nEls){
       +`<div class="cm">${meta(n)}</div>`
       +`<div class="cb">${n.zh?n.t+"<br><br>":""}${n.band} / ${n.leaf}<br>`
       +`库内被引 ${n.indeg} · 全局被引 ${(n.cc||0).toLocaleString()} · PageRank ${n.pr}<br>${ax}`
-      +(n.code?`<br><a href="${n.code}" target="_blank" rel="noopener">⌥ 代码仓库 ${n.code.split("github.com/")[1]||""} ↗</a>`:"")
+      +(n.code?`<br><a href="${n.code}" target="_blank" rel="noopener">⌥ ${n.code.split("github.com/")[1]||"代码仓库"} ↗</a>`
+              +(n.gs!=null?` <span style="color:#9bce6b">★${n.gs.toLocaleString()}</span>`:""):"")
       +`</div>`;
     card.style.display="block";
     card.style.left=Math.min(ev.clientX+14,innerWidth-366)+"px";

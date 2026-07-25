@@ -171,9 +171,13 @@ def main():
         tags = [t.get("tag", "") for t in d.get("tags", [])]
         stars = max([len(t) for t in tags if t and set(t) == {"⭐"}] or [0])
         ccf = next((t.split("-")[1] for t in tags if re.match(r"^CCF-[ABC]$", t)), "")
-        # 开源仓库:detect_oss 写在 extra 的 `Code: <url>` 行
-        cm = re.search(r"^Code:\s*(\S+)", d.get("extra", "") or "", re.M)
+        # 开源仓库:detect_oss 写在 extra 的
+        # `Code: <url> | ★123 | 更新 2026-01-02 | 已归档` 行
+        cline = (re.search(r"^Code:\s*(.+)$", d.get("extra", "") or "", re.M) or [None, ""])[1]
+        cm = re.match(r"(\S+)", cline or "")
         code = cm.group(1) if cm else ""
+        sm = re.search(r"★\s*(\d+)", cline or "")
+        stars_gh = int(sm.group(1)) if sm else None
         zh = ""
         mm = re.search(r"titleTranslation:\s*(\S.*)", d.get("extra", "") or "")
         if mm:
@@ -187,7 +191,7 @@ def main():
             # 泳道下沉到**最深**一级:基石两棵树的叶子按 0.x 前缀合并回同一条道
             "sub": deep["name"],
             "stars": stars, "tier": STAR2TIER.get(stars, ""), "ccf": ccf, "zh": zh,
-            "arxiv": arxiv_of(d), "code": code,
+            "arxiv": arxiv_of(d), "code": code, "ghstars": stars_gh,
             "doi": (d.get("DOI") or "").strip(),   # S2 批量接口靠它定位,漏了会退化成慢的标题检索
             "indeg": st.get(k, {}).get("indeg", 0), "cc": st.get(k, {}).get("cc", 0),
             "venue": d.get("proceedingsTitle") or d.get("publicationTitle") or "",
