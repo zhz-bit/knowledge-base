@@ -364,20 +364,36 @@ var LitPipe = {
 
   COL_KEY: "litpipeOSS",
 
-  /** 读一个条目的开源状态 → {state, url} */
+  /** 读一个条目的开源状态 → {state, url, stars, pushed, archived}
+   *  extra 里的格式:`Code: <url> | ★123 | 更新 2026-01-02 | 已归档` */
   ossOf(item) {
     try {
       if (!item || !item.isRegularItem || !item.isRegularItem()) return null;
       const tags = item.getTags().map(t => t.tag);
-      const m = /^Code:\s*(\S+)/m.exec(item.getField("extra") || "");
-      const url = m ? m[1] : "";
-      if (tags.includes("开源") || url) return { state: "open", url };
-      if (tags.includes("开源:疑似")) return { state: "maybe", url: "" };
-      if (tags.includes("未见开源")) return { state: "closed", url: "" };
-      return { state: "unknown", url: "" };     // 还没查过
+      const line = (/^Code:\s*(.+)$/m.exec(item.getField("extra") || "") || [])[1] || "";
+      const url = (line.match(/^(\S+)/) || [])[1] || "";
+      const st = line.match(/★\s*(\d+)/);
+      const pu = line.match(/更新\s*([\d-]+)/);
+      const base = {
+        url,
+        stars: st ? parseInt(st[1], 10) : null,
+        pushed: pu ? pu[1] : "",
+        archived: /已归档/.test(line),
+      };
+      if (tags.includes("开源") || url) return { ...base, state: "open" };
+      if (tags.includes("开源:疑似")) return { ...base, state: "maybe" };
+      if (tags.includes("未见开源")) return { ...base, state: "closed" };
+      return { ...base, state: "unknown" };     // 还没查过
     } catch (e) {
       return null;
     }
+  },
+
+  /** star 数缩写:1345 → 1.3k */
+  fmtStars(n) {
+    if (n === null || n === undefined) return "";
+    return n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k"
+                     : String(n);
   },
 
   registerColumn() {
@@ -391,23 +407,36 @@ var LitPipe = {
         label: "代码",
         pluginID: this.id,
         enabledTreeIDs: ["main"],
-        width: 64,
-        minWidth: 44,
+        width: 92,
+        minWidth: 60,
         showInColumnPicker: true,
-        // dataProvider 的返回值同时用于**排序**,所以要能排出有意义的顺序:
-        // 开源 > 疑似 > 未见 > 未查
+        // dataProvider 的返回值同时用于**排序**。列表排序是字符串比较,
+        // 所以 star 数要**左补零到 7 位**,否则 "9" 会排在 "1345" 前面。
+        // 顺序:开源(star 多→少) > 疑似 > 未见 > 未查
         dataProvider: (item) => {
           const o = Zotero.LitPipe.ossOf(item);
           if (!o) return "";
-          return { open: "1 开源", maybe: "2 疑似", closed: "3 未见", unknown: "" }[o.state] || "";
+          if (o.state === "open") {
+            const inv = 9999999 - (o.stars || 0);        // 倒序:star 越多值越小,排越前
+            return "1" + String(inv).padStart(7, "0") + " " + Zotero.LitPipe.fmtStars(o.stars)
+                   + (o.archived ? " 归档" : "");
+          }
+          return { maybe: "2 疑似", closed: "3 未见", unknown: "" }[o.state] || "";
         },
         renderCell: (index, data, column, isFirstColumn, doc) => {
           const cell = doc.createElement("span");
           cell.className = `cell ${column.className}`;
-          const s = (data || "").slice(2);         // 去掉排序用的数字前缀
-          cell.textContent = { "开源": "✓ 开源", "疑似": "~ 疑似", "未见": "—" }[s] || "";
-          cell.style.color = { "开源": "#3aa76d", "疑似": "#c9922e", "未见": "#8b95a5" }[s] || "";
           cell.style.whiteSpace = "nowrap";
+          const d = data || "";
+          if (d.startsWith("1")) {                        // 开源
+            const rest = d.slice(9);                      // 跳过 "1"+7位排序键+空格
+            cell.textContent = rest ? `✓ ★${rest}` : "✓";
+            cell.style.color = /归档/.test(rest) ? "#8b8f5a" : "#3aa76d";
+          } else if (d.startsWith("2")) {
+            cell.textContent = "~ 疑似"; cell.style.color = "#c9922e";
+          } else if (d.startsWith("3")) {
+            cell.textContent = "—"; cell.style.color = "#8b95a5";
+          }
           return cell;
         },
       });
