@@ -407,7 +407,11 @@ var LitPipe = {
         label: "代码",
         pluginID: this.id,
         enabledTreeIDs: ["main"],
-        width: 92,
+        // ⚠ width 的类型定义是 **string**(minWidth 才是 number)。
+        // 传数字会让校验静默失败:registerColumn **返回 false 而不抛异常**,
+        // 列压根不注册,而日志还打印"已注册"。Zotero 自己的文档示例写的是
+        // width: 100(数字),文档与实现不一致。
+        width: "92",
         minWidth: 60,
         showInColumnPicker: true,
         // dataProvider 的返回值同时用于**排序**。列表排序是字符串比较,
@@ -440,6 +444,12 @@ var LitPipe = {
           return cell;
         },
       });
+      // 必须检查返回值:校验不过时它返回 false,不抛异常
+      if (!this.colKey) {
+        this.logErr("注册开源列", new Error("registerColumn 返回 " + this.colKey
+          + " —— 参数校验未通过,查 width 是否为 string、pluginID 是否有值"));
+        return;
+      }
       this.log("开源列已注册 (" + this.colKey + ")");
     } catch (e) {
       this.logErr("注册开源列", e);
