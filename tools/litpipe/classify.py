@@ -12,12 +12,14 @@
 用法: python classify.py [--apply] [--limit N]
 """
 import json, os, re, subprocess, sys, time
+from datetime import datetime
 from pathlib import Path
 from collections import Counter
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from zotero_io import Zot, ROOT_COLLECTION
+from zotero_io import Zot, ROOT_COLLECTION, STATE
+from lib_corpus import all_collections
 
 APPLY = "--apply" in sys.argv
 LIMIT = None
@@ -28,6 +30,8 @@ CLAUDE = os.path.expanduser("~/.local/bin/claude")
 MODEL = "claude-haiku-4-5"
 BATCH = 10
 INBOX_NAMES = ("_收件箱", "待分类")
+# 事务性目录不收文献
+SKIP_PATHS = ("7 学校事务",)
 
 
 def is_inbox(name):
@@ -44,11 +48,16 @@ def call_haiku(batch, leaves):
 
 {opts}
 
-分类原则:
-- 通用视觉/语言/多模态/生成模型等**非驾驶专属的基础模型** → 0 公用基石 下对应子类
-- 城区/结构化道路场景:按模块化(感知/建图/预测/占用/规划)或端到端(模块化E2E/VLM-VLA/RL后训练)归
-- 越野/非结构化/野外/地形/可通行性 → 2 非结构化越野 下对应子类
-- 数据集与基准 → 3 数据集与基准 下(城区/越野各自的子类)
+分类原则(库里有 8 个顶层桶,按论文的**主要贡献**归,不按它顺带提到什么):
+- 跨领域通用的骨干/语言模型/多模态基座/生成模型/学习范式 → 0 公用基石
+- 深度学习方法本体(架构、图网络、强化学习) → 1 深度学习
+- 通用计算机视觉(识别分割、三维渲染、低层视觉、域适应) → 2 计算机视觉
+- 自然语言处理本体 → 3 自然语言处理
+- 交通流量/轨迹/时空数据预测 → 4 时空序列预测
+- 自动驾驶:城区按模块化(感知/建图/预测/占用/规划)或端到端(模块化E2E/VLM-VLA/RL后训练);
+  越野/非结构化/地形/可通行性 → 2 非结构化越野 下的细分叶
+- 数据集与基准 → 6 数据集,或 5 自动驾驶综述 / 3 数据集与基准
+- 神经科学、脑网络、类脑智能 → 8 神经科学与类脑智能
 
 对每篇输出:
   leaf = 选中的叶子**全路径**(照抄上面列表里的字符串)
@@ -71,12 +80,21 @@ def call_haiku(batch, leaves):
 
 def main():
     z = Zot()
-    tree = z.collection_tree()
-    inbox_keys = {k for k, v in tree.items() if is_inbox(v["name"])}
+    # 扫**全库**分类,不只自驾树 —— 收件箱已移到库顶层,只扫自驾树会找不到它;
+    # 而且新论文可能属于任何桶(神经科学、时空预测…),候选叶不能限定在自驾树内。
+    cols = all_collections(z)
+    # 注意排除事务目录:「7 学校事务 / 9 待分类/杂项」名字里也含「待分类」,
+    # 不排掉会把里面 15 篇学校材料一起拖进来自动归类
+    inbox_keys = {k for k, v in cols.items()
+                  if is_inbox(v["name"]) and not any(x in v["path"] for x in SKIP_PATHS)}
     if not inbox_keys:
-        print("找不到收件箱分类"); return
-    # 可选叶子 = 树里除收件箱外的所有分类(用全路径,便于 Haiku 精确指认)
-    path2key = {v["path"]: k for k, v in tree.items() if k not in inbox_keys}
+        print("找不到收件箱分类(应有名字含「_收件箱」或「待分类」的分类)"); return
+
+    # 候选只给**叶子**分类(没有子分类的):有子分类的是中间层,论文不该挂在那儿。
+    parents = {v["parent"] for v in cols.values() if v["parent"]}
+    path2key = {v["path"]: k for k, v in cols.items()
+                if k not in parents and k not in inbox_keys
+                and not any(x in v["path"] for x in SKIP_PATHS)}
     leaves = sorted(path2key)
 
     # 收件箱里的条目
@@ -113,32 +131,63 @@ def main():
 
     hi = {k: v for k, v in results.items() if v["conf"] == "high"}
     lo = {k: v for k, v in results.items() if v["conf"] != "high"}
-    print(f"\n判定 {len(results)}/{len(items)} | 高置信自动归档 {len(hi)} | 待确认 {len(lo)}")
+    print(f"\n判定 {len(results)}/{len(items)} | 高置信将自动归档 {len(hi)} | 待确认 {len(lo)}")
     print("目标分布:", dict(Counter(v["leaf"].split(" / ")[-1] for v in results.values())))
     by_key = {x["key"]: x for x in items}
-    for k, v in list(results.items())[:12]:
-        print(f'  [{v["conf"]:6}] {by_key[k]["title"][:44]} → {v["leaf"].split(" / ")[-1]}')
     if not APPLY:
+        # 干运行:逐篇列出**打算**放哪(全部列,不截断;带完整路径,叶名会重复)
+        print("\n打算这样归档:")
+        for k, v in sorted(results.items(), key=lambda kv: kv[1]["conf"] != "high"):
+            print(f'  [{v["conf"]:6}] {by_key[k]["title"][:50]}')
+            print(f'            → {v["leaf"]}')
         print("\n(加 --apply 执行:高置信归档、其余打建议标签)"); return
 
-    ok_move, ok_tag = 0, 0
-    for k, v in results.items():
-        it = by_key[k]; cur = dict(it["data"])
-        target = path2key[v["leaf"]]
-        if v["conf"] == "high":
-            # 移出收件箱 → 放进目标叶子
-            cols = [c for c in cur.get("collections", []) if c not in inbox_keys]
-            if target not in cols: cols.append(target)
-            cur["collections"] = cols
-            cur["tags"] = [t for t in cur.get("tags", []) if not t.get("tag", "").startswith("建议分类:")]
-            if z.put_item(k, cur, it["version"]): ok_move += 1
-        else:
-            tags = [t for t in cur.get("tags", []) if not t.get("tag", "").startswith("建议分类:")]
-            tags.append({"tag": "建议分类:" + v["leaf"].split(" / ")[-1]})
-            cur["tags"] = tags
-            if z.put_item(k, cur, it["version"]): ok_tag += 1
-        time.sleep(0.32)
-    print(f"自动归档 {ok_move} | 打建议标签 {ok_tag}(仍留收件箱待你确认)")
+    # ── 执行,并逐篇记录**实际结果** ──
+    # 之前这里只打一行汇总数字,事后无从追溯"某篇被放到哪了";而干运行那份清单
+    # 是"打算",put_item 失败时日志照样显示了目标叶,看着像成功。
+    LOG = STATE / "classify_log.jsonl"
+    ok_move, ok_tag, failed = 0, 0, []
+    stamp = datetime.now().isoformat(timespec="seconds")
+    print(f"\n{'结果':<10} {'置信':<8} 论文 → 目标分类")
+    print("─" * 78)
+    with open(LOG, "a", encoding="utf-8") as lg:
+        for k, v in sorted(results.items(), key=lambda kv: kv[1]["conf"] != "high"):
+            it = by_key[k]; cur = dict(it["data"])
+            target = path2key[v["leaf"]]
+            title = it["title"]
+            if v["conf"] == "high":
+                cols = [c for c in cur.get("collections", []) if c not in inbox_keys]
+                if target not in cols: cols.append(target)
+                cur["collections"] = cols
+                cur["tags"] = [t for t in cur.get("tags", [])
+                               if not t.get("tag", "").startswith("建议分类:")]
+                done = z.put_item(k, cur, it["version"])
+                act = "已归档" if done else "移动失败"
+                ok_move += bool(done)
+            else:
+                tags = [t for t in cur.get("tags", [])
+                        if not t.get("tag", "").startswith("建议分类:")]
+                tags.append({"tag": "建议分类:" + v["leaf"].split(" / ")[-1]})
+                cur["tags"] = tags
+                done = z.put_item(k, cur, it["version"])
+                act = "留箱+建议标签" if done else "打标签失败"
+                ok_tag += bool(done)
+            if not done:
+                failed.append((k, title, v["leaf"]))
+            mark = "✓" if done else "✗"
+            print(f"{mark} {act:<9} {v['conf']:<8} {title[:44]}")
+            print(f"{'':11} {'':8} → {v['leaf']}")
+            # 持久审计:run.log 会被下一趟覆盖,这份 jsonl 是累加的
+            lg.write(json.dumps({"at": stamp, "key": k, "title": title,
+                                 "leaf": v["leaf"], "conf": v["conf"],
+                                 "action": act, "ok": bool(done)}, ensure_ascii=False) + "\n")
+            time.sleep(0.32)
+    print("─" * 78)
+    print(f"自动归档 {ok_move} | 留箱打建议标签 {ok_tag}(待你确认)"
+          + (f" | **失败 {len(failed)}**" if failed else ""))
+    for k, t, leaf in failed:
+        print(f"  ✗ {k} {t[:46]} → {leaf}")
+    print(f"逐篇记录已追加到 {LOG.relative_to(HERE)}(可 tail 查历史)")
 
 
 if __name__ == "__main__":
