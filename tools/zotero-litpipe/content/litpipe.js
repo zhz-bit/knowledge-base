@@ -363,6 +363,7 @@ var LitPipe = {
   // 这样插件不用自己联网,读的是已经核对过的结果。
 
   COL_KEY: "litpipeOSS",
+  COL_CCF: "litpipeCCF",
 
   /** 读一个条目的开源状态 → {state, url, stars, pushed, archived}
    *  extra 里的格式:`Code: <url> | ★123 | 更新 2026-01-02 | 已归档` */
@@ -396,12 +397,48 @@ var LitPipe = {
                      : String(n);
   },
 
+  /** 读 CCF 等级:maintain.py 打的 `CCF-A/B/C` 标签(与 ccfinfo 插件的子笔记是两套) */
+  ccfOf(item) {
+    try {
+      if (!item || !item.isRegularItem || !item.isRegularItem()) return "";
+      for (const t of item.getTags()) {
+        const m = /^CCF-([ABC])$/.exec(t.tag);
+        if (m) return m[1];
+      }
+      return "";
+    } catch (e) {
+      return "";
+    }
+  },
+
   registerColumn() {
     try {
       if (!Zotero.ItemTreeManager || !Zotero.ItemTreeManager.registerColumn) {
-        this.log("此 Zotero 版本没有 ItemTreeManager,跳过开源列");
+        this.log("此 Zotero 版本没有 ItemTreeManager,跳过自定义列");
         return;
       }
+      // ── CCF 等级列 ──
+      this.ccfKey = Zotero.ItemTreeManager.registerColumn({
+        dataKey: this.COL_CCF,
+        label: "CCF",
+        pluginID: this.id,
+        enabledTreeIDs: ["main"],
+        width: "50",              // ⚠ 必须是 string,详见下方开源列的注释
+        minWidth: 38,
+        showInColumnPicker: true,
+        dataProvider: (item) => Zotero.LitPipe.ccfOf(item),
+        renderCell: (index, data, column, isFirstColumn, doc) => {
+          const cell = doc.createElement("span");
+          cell.className = `cell ${column.className}`;
+          cell.textContent = data || "";
+          // 注意括号:+ 的优先级高于 ||,不加括号空值会拼出 "…;undefined"
+          const col = { A: "color:#c9302c", B: "color:#d58512", C: "color:#5a8f5a" }[data] || "";
+          cell.style.cssText = "white-space:nowrap;font-weight:700;" + col;
+          return cell;
+        },
+      });
+      if (!this.ccfKey) this.logErr("注册 CCF 列", new Error("返回 " + this.ccfKey));
+      else this.log("CCF 列已注册 (" + this.ccfKey + ")");
       this.colKey = Zotero.ItemTreeManager.registerColumn({
         dataKey: this.COL_KEY,
         label: "代码",
@@ -458,9 +495,11 @@ var LitPipe = {
 
   unregisterColumn() {
     try {
-      if (this.colKey && Zotero.ItemTreeManager) {
-        Zotero.ItemTreeManager.unregisterColumn(this.colKey);
-        this.colKey = null;
+      for (const f of ["colKey", "ccfKey"]) {
+        if (this[f] && Zotero.ItemTreeManager) {
+          Zotero.ItemTreeManager.unregisterColumn(this[f]);
+          this[f] = null;
+        }
       }
     } catch (e) { /* 关闭时忽略 */ }
   },

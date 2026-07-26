@@ -17,9 +17,14 @@ from collections import Counter
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+from lib_corpus import _api_get as api
 from zotero_io import Zot
 
 APPLY = "--apply" in sys.argv
+SCOPE = "all"                      # 默认全库;--scope e2e 只跑自驾树
+for _i, _a in enumerate(sys.argv):
+    if _a == "--scope":
+        SCOPE = sys.argv[_i + 1]
 CCF = json.load(open(HERE / "ccf_db.json", encoding="utf-8"))
 
 CANON = {
@@ -74,8 +79,25 @@ def rank_of(ab):
 
 def main():
     z = Zot()
-    print("扫描综述树 ...")
-    tree = z.scan_tree()
+    if SCOPE == "all":
+        # 扫**全库**:只扫自驾树会漏掉 500+ 篇有 venue 的论文(T-ITS/RA-L/AAAI/CVPR…),
+        # 它们的 CCF 等级本来就查得到,没理由不打
+        print("扫描全库 ...")
+        tree = {}
+        start = 0
+        while True:
+            d = api(z, f"{z.base}/items/top?limit=100&start={start}")
+            if not d:
+                break
+            for x in d:
+                if x["data"].get("itemType") not in ("attachment", "note"):
+                    tree[x["key"]] = {"data": x["data"], "version": x["version"]}
+            start += 100
+            if len(d) < 100:
+                break
+    else:
+        print("扫描综述树 ...")
+        tree = z.scan_tree()
     todo, stat = [], Counter()
     for k, v in tree.items():
         d = v["data"]
@@ -96,7 +118,7 @@ def main():
                               + [{"tag": f"CCF-{rk}"}]
                 changed = True; stat["打CCF标签"] += 1
         if changed: todo.append((k, cur, v["version"]))
-    print(f"树 {len(tree)} 条 | 需改 {len(todo)} | {dict(stat)}")
+    print(f"范围 {SCOPE} {len(tree)} 条 | 需改 {len(todo)} | {dict(stat)}")
     if not APPLY:
         print("(加 --apply 写回)"); return
     ok = 0
