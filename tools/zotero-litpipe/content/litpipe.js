@@ -154,7 +154,25 @@ var LitPipe = {
   rankOf(ab) {
     if (!ab) return null;
     const key = this.ALIAS[ab] || ab;
-    return (this.ccf[key] || {}).rank || null;
+    if (this.ccf[key]) return this.ccf[key].rank || null;
+    // **大小写不敏感回退**:CCF 官方库的键名保留原大小写(NeurIPS 而不是 NEURIPS),
+    // 而 fill_venue.py 写进 extra 的缩写是大写的,直接查会 miss。
+    if (!this._ccfUp) {
+      this._ccfUp = {};
+      for (const k in this.ccf) this._ccfUp[k.toUpperCase()] = k;
+    }
+    const canon = this._ccfUp[String(key).toUpperCase()];
+    return canon ? (this.ccf[canon].rank || null) : null;
+  },
+
+  /** 缩写的规范写法(用于显示):NEURIPS → NeurIPS */
+  canonAb(ab) {
+    if (!ab) return "";
+    if (!this._ccfUp) {
+      this._ccfUp = {};
+      for (const k in this.ccf) this._ccfUp[k.toUpperCase()] = k;
+    }
+    return this._ccfUp[String(ab).toUpperCase()] || ab;
   },
 
   /** 对单个条目做校正。返回改了什么(用于日志),没改返回 null。 */
@@ -397,15 +415,36 @@ var LitPipe = {
                      : String(n);
   },
 
-  /** 读 CCF 等级:maintain.py 打的 `CCF-A/B/C` 标签(与 ccfinfo 插件的子笔记是两套) */
+  /** CCF 等级 + 出处缩写,如 "A·CVPR"。
+   *
+   *  与另两个插件的分工:
+   *   · ccfinfo 靠**在线 DBLP** 按标题查,存子笔记
+   *   · ZoteroStyle 的「期刊标签」靠 **easyScholar 在线 API**,要 key,
+   *     且它的数据以**期刊**为主 —— 本库端到端那批 65% 是 arXiv 预印本、
+   *     会议又没有 IF/中科院分区,所以那一列大面积空白不是 bug 而是数据范围所限
+   *   · 这里:**离线查内置 575 条官方 CCF 库**,先读 maintain.py 打的标签,
+   *     没标签就**当场按 venue 算**(所以新条目不必等夜里跑管线就能看到) */
   ccfOf(item) {
     try {
       if (!item || !item.isRegularItem || !item.isRegularItem()) return "";
+      let rank = "";
       for (const t of item.getTags()) {
         const m = /^CCF-([ABC])$/.exec(t.tag);
-        if (m) return m[1];
+        if (m) { rank = m[1]; break; }
       }
-      return "";
+      const type = Zotero.ItemTypes.getName(item.itemTypeID);
+      const venue = item.getField(this.VENUE_FIELD[type] || "publicationTitle") || "";
+      let ab = this.detect(venue);                 // 会议/期刊缩写,如 CVPR
+      if (!ab) {
+        // **预印本的 venue 字段是空的** —— fill_venue.py 从 arXiv 的
+        // journal_ref/comment 挖到的真实出处写在 extra 的 `Venue: CVPR 2024` 行,
+        // 这里读它,否则 488 篇预印本这一列永远空白
+        const m = /^Venue:\s*([A-Za-z][A-Za-z0-9-]*)/m.exec(item.getField("extra") || "");
+        if (m) ab = m[1];
+      }
+      if (!rank && ab) rank = this.rankOf(ab) || "";   // 没打过标签也当场算
+      if (!rank && !ab) return "";
+      return (rank || "-") + (ab ? "·" + this.canonAb(ab) : "");
     } catch (e) {
       return "";
     }
@@ -423,17 +462,29 @@ var LitPipe = {
         label: "CCF",
         pluginID: this.id,
         enabledTreeIDs: ["main"],
-        width: "50",              // ⚠ 必须是 string,详见下方开源列的注释
-        minWidth: 38,
+        width: "96",              // ⚠ 必须是 string,详见下方开源列的注释
+        minWidth: 56,
         showInColumnPicker: true,
         dataProvider: (item) => Zotero.LitPipe.ccfOf(item),
         renderCell: (index, data, column, isFirstColumn, doc) => {
           const cell = doc.createElement("span");
           cell.className = `cell ${column.className}`;
-          cell.textContent = data || "";
-          // 注意括号:+ 的优先级高于 ||,不加括号空值会拼出 "…;undefined"
-          const col = { A: "color:#c9302c", B: "color:#d58512", C: "color:#5a8f5a" }[data] || "";
-          cell.style.cssText = "white-space:nowrap;font-weight:700;" + col;
+          cell.style.whiteSpace = "nowrap";
+          const [rank, ab] = String(data || "").split("·");
+          if (rank && rank !== "-") {
+            const b = doc.createElement("span");
+            b.textContent = rank;
+            b.style.cssText = "display:inline-block;min-width:14px;text-align:center;"
+              + "border-radius:3px;font-weight:700;font-size:10.5px;padding:0 3px;color:#fff;"
+              + "background:" + ({ A: "#c9302c", B: "#d58512", C: "#5a8f5a" }[rank] || "#888");
+            cell.appendChild(b);
+          }
+          if (ab) {
+            const t = doc.createElement("span");
+            t.textContent = (rank && rank !== "-" ? " " : "") + ab;
+            t.style.cssText = "color:#666;font-size:11px;";
+            cell.appendChild(t);
+          }
           return cell;
         },
       });

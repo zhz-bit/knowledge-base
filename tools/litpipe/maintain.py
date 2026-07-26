@@ -73,7 +73,12 @@ def detect(venue):
     return None
 
 
+_CCF_UP = None
+
+
 def rank_of(ab):
+    """CCF 等级。库键名保留原大小写(NeurIPS 而非 NEURIPS),故做大小写不敏感回退。"""
+    global _CCF_UP
     return CCF.get(ALIAS.get(ab, ab), {}).get("rank") if ab else None
 
 
@@ -102,11 +107,21 @@ def main():
     for k, v in tree.items():
         d = v["data"]
         ty = d.get("itemType")
-        if ty not in VF: continue
+        # preprint 没有 venue 字段,但 fill_venue.py 把真实出处写进了 extra 的
+        # `Venue:` 行 —— 不放它进来的话那 142 篇永远打不上 CCF(踩过)
+        if ty not in VF and not (ty == "preprint"
+                                 and re.search(r"^Venue:", d.get("extra", "") or "", re.M)):
+            continue
         cur = dict(d); changed = False
-        venue = cur.get(VF[ty], "")
+        venue = cur.get(VF[ty], "") if ty in VF else ""
         ab = detect(venue)
-        if ab and ab in CANON and venue.strip() != CANON[ab]:
+        if not ab:
+            # 预印本的 venue 字段是空的:读 fill_venue.py 从 arXiv journal_ref/comment
+            # 挖到并写进 extra 的 `Venue: CVPR 2024` 行(存的已经是缩写,不必再 detect)
+            m = re.search(r"^Venue:\s*([A-Za-z][A-Za-z0-9-]*)", cur.get("extra", "") or "", re.M)
+            if m:
+                ab = m.group(1)
+        if ty in VF and ab and ab in CANON and venue.strip() != CANON[ab]:
             cur[VF[ty]] = CANON[ab]
             if ty == "conferencePaper": cur["conferenceName"] = CANON[ab]
             changed = True; stat["规范venue"] += 1

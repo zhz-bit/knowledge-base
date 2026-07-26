@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "litpipe",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Metadata correction (venue normalization + CCF tagging), CCF and open-source-code columns in the item list, and a Tools menu to run the litpipe pipeline.",
   "author": "zhz",
   "applications": {
