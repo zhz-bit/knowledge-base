@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>DDPM · DDIM · Flow Matching · Rectified Flow · Energy Matching · 知识库</title>
+<meta name="description" content="DDPM / DDIM / Flow Matching / Rectified Flow / Energy Matching 放在同一个「把噪声搬到数据」的框架下系统对比，并对着五个官方仓库的源码逐行讲清训练循环与条件注入。" />
+
+<!-- 字体（沿用知识库统一字体：Spectral 衬线标题 + Inter 正文 + JetBrains Mono 等宽）-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  柔和暗色知识页 · 生成模型四讲                                   ║
+   ║  方法配色：DDPM 蓝 / DDIM 青 / Flow Matching 绿 / Energy 紫     ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+:root{
+  color-scheme: dark;
+
+  --bg:      #0e1320;
+  --bg-soft: #121829;
+  --panel:   #161d2e;
+  --panel-2: #1d2540;
+
+  --ink:    #e4ebf7;
+  --muted:  #9aa6bf;
+  --dim:    #6b768f;
+
+  --line:   #283248;
+  --line-2: #36425e;
+
+  --terra:  #f0a361;
+  --amber:  #f0bf4c;
+  --olive:  #9bce6b;
+  --teal:   #46d7cc;
+  --blue:   #6aa6ff;
+  --plum:   #b49bff;
+  --rust:   #ff8a8a;
+
+  --soft-terra: rgba(240,163,97,.14);
+  --soft-amber: rgba(240,191,76,.14);
+  --soft-olive: rgba(155,206,107,.13);
+  --soft-teal:  rgba(70,215,204,.13);
+  --soft-blue:  rgba(106,166,255,.14);
+  --soft-plum:  rgba(180,155,255,.14);
+
+  --shadow:    0 18px 46px rgba(0,0,0,.42);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,.30);
+  --radius: 16px;
+  --maxw: 820px;
+
+  --serif: "Spectral", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --sans:  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+           "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; min-height:100vh;
+  background:
+    radial-gradient(1200px 700px at 84% -12%, #16203a 0%, #111729 46%, var(--bg) 100%);
+  background-attachment:fixed;
+  color:var(--ink); font-family:var(--sans); line-height:1.72;
+  font-size:17.5px; -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(240,163,97,.30);}
+
+#progress{position:fixed; left:0; top:0; height:3px; width:0;
+  background:linear-gradient(90deg,var(--blue),var(--teal),var(--olive),var(--plum)); z-index:60; transition:width .12s;}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+/* ---------- 顶部：返回 + Hero ---------- */
+.topnav{padding:26px 0 0;}
+.back{font-family:var(--mono); font-size:13px; color:var(--muted);
+  display:inline-flex; align-items:center; gap:7px; transition:color .15s;}
+.back:hover{color:var(--terra);}
+a{color:var(--terra); text-decoration:none;}
+a:hover{text-decoration:underline; text-underline-offset:3px;}
+
+header.hero{padding:30px 0 26px; border-bottom:1px solid var(--line); margin-bottom:38px;}
+.eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--terra); display:flex; align-items:center; gap:11px; margin-bottom:18px;}
+.eyebrow::before{content:""; width:30px; height:1px; background:linear-gradient(90deg,var(--terra),transparent);}
+h1{font-family:var(--serif); font-weight:700; font-size:clamp(30px,5vw,46px);
+  line-height:1.14; letter-spacing:-.01em; margin:0 0 16px; color:var(--ink);}
+h1 em{font-style:italic; color:var(--terra);}
+.lede{font-size:clamp(17px,2vw,21px); color:var(--muted); margin:0; line-height:1.6;}
+.lede b{color:var(--ink); font-weight:600;}
+.byline{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:22px;
+  font-family:var(--mono); font-size:12.5px; color:var(--dim);}
+.byline .pill{background:var(--panel); border:1px solid var(--line);
+  padding:3px 11px; border-radius:999px;}
+
+/* ---------- 正文排版 ---------- */
+main{padding-bottom:30px;}
+section{margin:0 0 40px;}
+h2{font-family:var(--serif); font-weight:600; font-size:clamp(23px,3vw,30px);
+  line-height:1.25; margin:46px 0 16px; color:var(--ink);
+  padding-bottom:10px; border-bottom:1px solid var(--line);}
+h3{font-family:var(--serif); font-weight:600; font-size:21px; margin:30px 0 10px; color:var(--ink);}
+h4{font-family:var(--sans); font-weight:700; font-size:16px; margin:22px 0 8px; color:var(--ink);}
+p{margin:0 0 17px;}
+ul,ol{margin:0 0 18px; padding-left:1.3em;}
+li{margin:0 0 8px;}
+li::marker{color:var(--terra);}
+hr{border:0; border-top:1px solid var(--line); margin:38px 0;}
+
+b,strong{color:var(--ink); font-weight:700;}
+.hi  {color:var(--terra); font-weight:600;}
+.hb  {color:var(--blue);  font-weight:600;}
+.hg  {color:var(--olive); font-weight:600;}
+.ha  {color:var(--amber); font-weight:600;}
+.ht  {color:var(--teal);  font-weight:600;}
+.hp  {color:var(--plum);  font-weight:600;}
+.mark{background:linear-gradient(180deg,transparent 62%, rgba(240,191,76,.30) 0); padding:0 2px;}
+
+code{font-family:var(--mono); font-size:.9em; color:#ffb98a;
+  background:rgba(240,163,97,.13); padding:2px 6px; border-radius:5px;}
+pre{margin:0 0 20px; padding:18px 20px; overflow:auto; border-radius:var(--radius);
+  background:#0a0f1b; color:#d6deef; border:1px solid #1c2438; box-shadow:var(--shadow-sm);}
+pre code{background:none; color:inherit; padding:0; font-size:13.5px; line-height:1.62;}
+pre .cm{color:#6b768f;}
+pre .kw{color:#b49bff;}
+pre .st{color:#9bce6b;}
+pre .fn{color:#6aa6ff;}
+
+/* 代码块上方的来源路径标签 */
+.srcpath{font-family:var(--mono); font-size:11.5px; color:var(--dim);
+  background:var(--panel-2); border:1px solid var(--line); border-bottom:0;
+  padding:7px 14px; border-radius:12px 12px 0 0; display:block; overflow-x:auto; white-space:nowrap;}
+.srcpath b{color:var(--terra); font-weight:600;}
+.srcpath + pre{border-radius:0 0 var(--radius) var(--radius); margin-top:0;}
+
+/* ---------- 组件：Callout ---------- */
+.callout{display:flex; gap:13px; padding:16px 18px; margin:0 0 22px;
+  border:1px solid var(--line); border-left-width:4px; border-radius:12px;
+  background:var(--panel); box-shadow:var(--shadow-sm);}
+.callout .ic{font-size:20px; line-height:1.5; flex:0 0 auto;}
+.callout .ct{flex:1;} .callout .ct p:last-child{margin:0;}
+.callout .ct .t{font-weight:700; color:var(--ink); display:block; margin-bottom:3px;}
+.callout.note{border-left-color:var(--blue);  background:var(--soft-blue);}
+.callout.tip {border-left-color:var(--olive); background:var(--soft-olive);}
+.callout.warn{border-left-color:var(--rust);  background:var(--soft-terra);}
+.callout.key {border-left-color:var(--amber); background:var(--soft-amber);}
+
+/* ---------- 组件：公式框 ---------- */
+.mathbox{background:var(--panel); border:1px solid var(--line-2); border-radius:var(--radius);
+  padding:18px 22px; margin:0 0 22px; box-shadow:var(--shadow-sm); overflow-x:auto;}
+.mathbox .lbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dim); margin-bottom:8px;}
+.mathbox.center{text-align:center;}
+.mathbox.blue{border-left:4px solid var(--blue);}
+.mathbox.teal{border-left:4px solid var(--teal);}
+.mathbox.olive{border-left:4px solid var(--olive);}
+.mathbox.plum{border-left:4px solid var(--plum);}
+
+/* ---------- 组件：图示 + 题注 ---------- */
+figure{margin:0 0 24px;}
+figure .frame{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px; box-shadow:var(--shadow-sm); overflow-x:auto;}
+figure img, figure svg{display:block; max-width:100%; height:auto; margin:0 auto; border-radius:8px;}
+figcaption{margin-top:10px; font-size:14px; color:var(--muted); text-align:center;}
+figcaption b{color:var(--ink);}
+
+/* ---------- 组件：表格 ---------- */
+.tablewrap{overflow-x:auto; margin:0 0 24px; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);}
+table{width:100%; border-collapse:collapse; background:var(--panel); font-size:15px;}
+thead th{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--terra); text-align:left; padding:12px 14px; background:var(--panel-2);
+  border-bottom:1px solid var(--line-2); white-space:nowrap;}
+td{padding:11px 14px; border-bottom:1px solid var(--line); color:var(--muted); vertical-align:top;}
+td b{color:var(--ink);}
+tbody tr:last-child td{border-bottom:0;}
+tbody tr:hover td{background:var(--panel-2);}
+
+blockquote{margin:0 0 22px; padding:6px 0 6px 20px; border-left:3px solid var(--amber);
+  color:var(--muted); font-family:var(--serif); font-style:italic; font-size:19px;}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin:0 0 24px;}
+.cards .c{display:block; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:16px 17px; box-shadow:var(--shadow-sm); transition:transform .16s, box-shadow .16s;}
+.cards a.c:hover{transform:translateY(-3px); box-shadow:var(--shadow); text-decoration:none;}
+.cards .c .k{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--terra);}
+.cards .c h4{font-family:var(--serif); font-size:17px; margin:6px 0 5px; color:var(--ink);}
+.cards .c p{font-size:13.5px; color:var(--muted); margin:0;}
+
+/* ---------- 组件：目录 ---------- */
+.toc{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px 22px; margin:0 0 30px; box-shadow:var(--shadow-sm);}
+.toc .lbl{font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dim); margin-bottom:10px;}
+.toc ol{margin:0; padding-left:1.25em; columns:2; column-gap:30px;}
+.toc li{margin:0 0 6px; font-size:15px; break-inside:avoid;}
+.toc a{color:var(--muted);}
+.toc a:hover{color:var(--terra);}
+@media (max-width:560px){ .toc ol{columns:1;} }
+
+/* ---------- 组件：交互演示 ---------- */
+.demo{background:var(--panel); border:1px solid var(--line-2); border-radius:var(--radius);
+  padding:16px 16px 14px; margin:0 0 14px; box-shadow:var(--shadow-sm);}
+.demo canvas{display:block; width:100%; height:auto; border-radius:10px; background:#0a0f1b;}
+.dctl{display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center; margin-top:14px;
+  padding-top:13px; border-top:1px solid var(--line);}
+.dgrp{display:flex; align-items:center; gap:9px;}
+.dgrp .lb{font-family:var(--mono); font-size:11.5px; letter-spacing:.06em; color:var(--dim); white-space:nowrap;}
+.dgrp output{font-family:var(--mono); font-size:12.5px; color:var(--terra); min-width:44px;}
+.demo input[type=range]{-webkit-appearance:none; appearance:none; width:130px; height:4px;
+  background:var(--panel-2); border-radius:999px; outline:none;}
+.demo input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:15px; height:15px;
+  border-radius:50%; background:var(--terra); cursor:pointer; border:0;}
+.demo input[type=range]::-moz-range-thumb{width:15px; height:15px; border-radius:50%;
+  background:var(--terra); cursor:pointer; border:0;}
+.demo button{font-family:var(--sans); font-size:13.5px; font-weight:600; color:var(--ink);
+  background:var(--panel-2); border:1px solid var(--line-2); border-radius:9px;
+  padding:7px 15px; cursor:pointer; transition:all .15s;}
+.demo button:hover{border-color:var(--terra); color:var(--terra);}
+.demo button.pri{background:var(--soft-terra); border-color:var(--terra); color:var(--terra);}
+.demo label.ck{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer;}
+.demo label.ck input{accent-color:var(--terra); width:14px; height:14px;}
+.dnote{font-size:13px; color:var(--dim); margin:10px 0 0; line-height:1.6;}
+
+/* ---------- 组件：方法徽标（小节开头） ---------- */
+.badge{display:inline-flex; align-items:center; gap:9px; font-family:var(--mono);
+  font-size:12px; letter-spacing:.14em; text-transform:uppercase; padding:5px 13px;
+  border-radius:999px; border:1px solid var(--line-2); margin-bottom:14px;}
+.badge.b1{color:var(--blue);  background:var(--soft-blue);}
+.badge.b2{color:var(--teal);  background:var(--soft-teal);}
+.badge.b3{color:var(--olive); background:var(--soft-olive);}
+.badge.b4{color:var(--plum);  background:var(--soft-plum);}
+.badge.b5{color:var(--amber); background:var(--soft-amber);}
+
+footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
+  font-size:13.5px; color:var(--dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+
+@media (max-width:560px){
+  body{font-size:16.5px;}
+  .wrap{padding:0 18px;}
+  h2{margin-top:34px;}
+}
+</style>
+
+<script>
+  window.MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] }, svg:{ fontCache:'global' } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body>
+<div id="progress"></div>
+
+<div class="wrap">
+
+  <nav class="topnav"><a class="back" href="../index.html">← 返回知识库门户</a></nav>
+
+  <!-- ░░░ HERO ░░░ -->
+  <header class="hero">
+    <div class="eyebrow">生成模型 · Generative Models</div>
+    <h1>从 DDPM 到 Energy Matching：<em>把噪声搬到数据</em>的五种走法</h1>
+    <p class="lede">这几个方法看起来是几套不同的数学，其实是同一件事的不同版本：<b>造一条从易采样分布到数据分布的路，学一个「往哪儿挪」的场，然后沿路走完</b>。差别只在三个问题上——路径怎么定、网络学什么、怎么走完。本文按这三问逐个拆解，再<b>对着五个官方仓库的源码</b>把差异落到具体行号上，最后单列一节讲条件是怎么注入的。</p>
+    <div class="byline">
+      <span class="pill">2026-07-29</span>
+      <span class="pill">#扩散模型</span>
+      <span class="pill">#Flow Matching</span>
+      <span class="pill">#EBM</span>
+      <span class="pill">#源码解读</span>
+      <span class="pill">#交互演示</span>
+      <span class="pill">约 60 分钟</span>
+    </div>
+  </header>
+
+  <main>
+
+    <div class="toc">
+      <div class="lbl">目录</div>
+      <ol>
+        <li><a href="#s1">统一视角：三个问题</a></li>
+        <li><a href="#s2">DDPM：加噪与去噪</a></li>
+        <li><a href="#s3">DDIM：解绑训练与采样</a></li>
+        <li><a href="#s4">连续极限：SDE 与概率流 ODE</a></li>
+        <li><a href="#s5">Flow Matching：把路径拉直</a></li>
+        <li><a href="#s6"><b style="color:var(--terra)">Rectified Flow 与 reflow</b></a></li>
+        <li><a href="#s7">Energy Matching：收回标量势</a></li>
+        <li><a href="#s8"><b style="color:var(--terra)">交互演示：看着它去噪</b></a></li>
+        <li><a href="#s9"><b style="color:var(--terra)">对着代码看：训练循环并排</b></a></li>
+        <li><a href="#s10"><b style="color:var(--terra)">条件怎么注入</b></a></li>
+        <li><a href="#s11"><b style="color:var(--terra)">另一条轴：U-Net → DiT → JiT</b></a></li>
+        <li><a href="#s12">横向对比表</a></li>
+        <li><a href="#s13">选型建议与一条脉络</a></li>
+        <li><a href="#s14">延伸阅读</a></li>
+      </ol>
+    </div>
+
+    <!-- ══════════════ 1. 统一视角 ══════════════ -->
+    <section id="s1">
+      <h2>1. 统一视角：所有方法都在回答同样的三个问题</h2>
+
+      <p>生成建模的任务是从数据分布 \( p_{\text{data}} \) 里采样。高维空间直接建密度极难——归一化常数算不出来，直接 MCMC 又混合得太慢。现代方法的共识做法是<b>绕开密度，去构造一条路</b>：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">共同骨架</div>
+        \[ \underbrace{p_0 = \mathcal{N}(0, I)}_{\text{好采样}} \;\xrightarrow{\;\;\text{学一个场，沿它走}\;\;}\; \underbrace{p_1 = p_{\text{data}}}_{\text{想要的}} \]
+      </div>
+
+      <p>「场」的意思是：空间里每一点都告诉你下一步往哪儿挪。采样就退化成解一个（随机或确定的）微分方程。各方法的区别可以完全压缩进三个问题：</p>
+
+      <ul>
+        <li><b>路径怎么定？</b>DDPM/DDIM 用「逐步加高斯噪声」隐式定义；Flow Matching 直接<span class="hg">手工指定</span>（最常用是直线插值），<span class="ha">Rectified Flow</span> 更进一步，把「路径够不够直」变成可迭代校正的目标；Energy Matching 则让路径由<span class="hp">标量势的梯度</span>生成。</li>
+        <li><b>网络学什么？</b>DDPM 学噪声 \( \varepsilon_\theta \)（等价于分数 \( \nabla_x \log p_t \)）；Flow Matching 学速度场 \( v_\theta \)；Energy Matching 学一个<span class="hp">标量函数 \( V_\theta \)</span>，场是它的梯度。</li>
+        <li><b>怎么走完？</b>DDPM 走随机 SDE（步数多）；DDIM 走确定 ODE（可跳步）；Flow Matching 走更直的 ODE（步数更少）；Energy Matching 先传输、后用 Langevin 落进玻尔兹曼平衡。</li>
+      </ul>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 720 340" width="720" height="340" role="img" aria-label="四种方法从噪声到数据的路径风格对比">
+            <defs>
+              <marker id="ah" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+                <path d="M0 0 L8 4 L0 8 z" fill="#9aa6bf"/>
+              </marker>
+              <marker id="ahp" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+                <path d="M0 0 L8 4 L0 8 z" fill="#b49bff"/>
+              </marker>
+            </defs>
+
+            <!-- 两端标注 -->
+            <line x1="196" y1="42" x2="196" y2="322" stroke="#36425e" stroke-width="1" stroke-dasharray="4 5"/>
+            <line x1="662" y1="42" x2="662" y2="322" stroke="#36425e" stroke-width="1" stroke-dasharray="4 5"/>
+            <text x="196" y="30" text-anchor="middle" font-family="Inter" font-size="13" fill="#9aa6bf">噪声  N(0, I)</text>
+            <text x="662" y="30" text-anchor="middle" font-family="Inter" font-size="13" fill="#9aa6bf">数据流形</text>
+
+            <!-- DDPM -->
+            <text x="14" y="72" font-family="Inter" font-size="13.5" font-weight="600" fill="#6aa6ff">DDPM</text>
+            <text x="14" y="90" font-family="Inter" font-size="11.5" fill="#6b768f">随机链 · ~1000 步</text>
+            <polyline points="196,78 226,66 256,88 286,70 316,92 346,72 376,88 406,66 436,90 466,74 496,86 526,68 556,88 586,74 616,84 646,78"
+                      fill="none" stroke="#6aa6ff" stroke-width="2" marker-end="url(#ah)"/>
+            <g fill="#6aa6ff">
+              <circle cx="226" cy="66" r="2.6"/><circle cx="286" cy="70" r="2.6"/><circle cx="346" cy="72" r="2.6"/>
+              <circle cx="406" cy="66" r="2.6"/><circle cx="466" cy="74" r="2.6"/><circle cx="526" cy="68" r="2.6"/>
+              <circle cx="586" cy="74" r="2.6"/>
+            </g>
+
+            <!-- DDIM -->
+            <text x="14" y="150" font-family="Inter" font-size="13.5" font-weight="600" fill="#46d7cc">DDIM</text>
+            <text x="14" y="168" font-family="Inter" font-size="11.5" fill="#6b768f">确定 ODE · 20–50 步</text>
+            <path d="M196 156 C 300 116, 380 200, 470 158 S 600 140, 648 156" fill="none"
+                  stroke="#46d7cc" stroke-width="2" marker-end="url(#ah)"/>
+            <g fill="#46d7cc">
+              <circle cx="196" cy="156" r="3.4"/><circle cx="286" cy="140" r="3.4"/><circle cx="380" cy="177" r="3.4"/>
+              <circle cx="470" cy="158" r="3.4"/><circle cx="560" cy="143" r="3.4"/><circle cx="648" cy="156" r="3.4"/>
+            </g>
+
+            <!-- Flow Matching -->
+            <text x="14" y="228" font-family="Inter" font-size="13.5" font-weight="600" fill="#9bce6b">Flow Matching</text>
+            <text x="14" y="246" font-family="Inter" font-size="11.5" fill="#6b768f">近直线 · 10 步级</text>
+            <line x1="196" y1="238" x2="648" y2="234" stroke="#9bce6b" stroke-width="2" marker-end="url(#ah)"/>
+            <g fill="#9bce6b">
+              <circle cx="196" cy="238" r="3.4"/><circle cx="309" cy="237" r="3.4"/>
+              <circle cx="422" cy="236" r="3.4"/><circle cx="535" cy="235" r="3.4"/>
+            </g>
+
+            <!-- Energy Matching -->
+            <text x="14" y="306" font-family="Inter" font-size="13.5" font-weight="600" fill="#b49bff">Energy Matching</text>
+            <text x="14" y="324" font-family="Inter" font-size="11.5" fill="#6b768f">传输 + 平衡</text>
+            <line x1="196" y1="306" x2="548" y2="303" stroke="#b49bff" stroke-width="2" marker-end="url(#ahp)"/>
+            <ellipse cx="612" cy="303" rx="48" ry="24" fill="rgba(180,155,255,.13)" stroke="#b49bff" stroke-width="1.2" stroke-dasharray="3 4"/>
+            <g fill="#b49bff">
+              <circle cx="196" cy="306" r="3.4"/><circle cx="330" cy="305" r="3.4"/><circle cx="460" cy="304" r="3.4"/>
+              <circle cx="596" cy="296" r="2.4"/><circle cx="620" cy="311" r="2.4"/><circle cx="605" cy="309" r="2.4"/>
+              <circle cx="628" cy="297" r="2.4"/><circle cx="612" cy="303" r="2.4"/><circle cx="588" cy="308" r="2.4"/>
+            </g>
+            <text x="612" y="337" text-anchor="middle" font-family="Inter" font-size="11" fill="#b49bff">玻尔兹曼平衡</text>
+          </svg>
+        </div>
+        <figcaption><b>图 1.</b> 同一段旅程的四种走法。越往下路径越直、步数越少；Energy Matching 在终点额外加了一个「停在平衡分布上晃动」的阶段，换来显式的能量函数。Rectified Flow 走的是第三条（直线）那道，它的功夫花在把这条线<b>真正拉直</b>上，见第 6 节。</figcaption>
+      </figure>
+
+      <p>把这三个问题写成一个可以「填空」的模板，全部方法就落进了同一张表里。<b>这张表是本文的骨架</b>，后面每一节都在填其中一行：</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 406" width="700" height="406" role="img" aria-label="统一模板：所有方法都是三个槽的不同填法">
+            <defs>
+              <marker id="dn" markerWidth="7" markerHeight="7" refX="3.5" refY="6" orient="auto"><path d="M0 0 L7 0 L3.5 7 z" fill="#6b768f"/></marker>
+            </defs>
+
+            <!-- 模板框 -->
+            <rect x="150" y="30" width="534" height="80" rx="14" fill="rgba(240,163,97,.09)" stroke="#f0a361" stroke-width="1.4"/>
+            <line x1="340" y1="40" x2="340" y2="100" stroke="#36425e" stroke-width="1"/>
+            <line x1="480" y1="40" x2="480" y2="100" stroke="#36425e" stroke-width="1"/>
+            <text x="76" y="64" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#f0a361">统一模板</text>
+            <text x="76" y="84" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">三个可填的槽</text>
+
+            <text x="245" y="56" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#f0a361">① 路径</text>
+            <text x="245" y="82" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">x_t = α_t·x₁ + σ_t·x₀</text>
+            <text x="245" y="99" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#6b768f">x₁=数据　x₀=噪声</text>
+
+            <text x="410" y="56" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#f0a361">② 回归目标</text>
+            <text x="410" y="82" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">target(x_t, t)</text>
+            <text x="410" y="99" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#6b768f">网络输出什么</text>
+
+            <text x="582" y="56" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#f0a361">③ 采样噪声 ε(t)</text>
+            <text x="582" y="82" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">dx = v dt + √(2ε(t))·dw</text>
+            <text x="582" y="99" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#6b768f">ε=0 → ODE</text>
+
+            <!-- 填空箭头 -->
+            <g stroke="#6b768f" stroke-width="1.2" marker-end="url(#dn)">
+              <line x1="245" y1="112" x2="245" y2="136"/><line x1="410" y1="112" x2="410" y2="136"/><line x1="582" y1="112" x2="582" y2="136"/>
+            </g>
+            <text x="76" y="122" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">↓ 各方法只是</text>
+            <text x="76" y="136" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">把槽填成不同值</text>
+
+            <!-- 表头 -->
+            <line x1="16" y1="166" x2="684" y2="166" stroke="#36425e" stroke-width="1"/>
+            <g font-family="Inter" font-size="11" fill="#6b768f" text-anchor="middle">
+              <text x="76" y="160">方法</text><text x="245" y="160">(α_t , σ_t)</text>
+              <text x="410" y="160">回归目标</text><text x="582" y="160">ε(t)</text>
+            </g>
+
+            <!-- 行分隔 -->
+            <g stroke="#283248" stroke-width="1">
+              <line x1="16" y1="212" x2="684" y2="212"/><line x1="16" y1="256" x2="684" y2="256"/>
+              <line x1="16" y1="304" x2="684" y2="304"/><line x1="16" y1="348" x2="684" y2="348"/>
+            </g>
+
+            <!-- 行 1 DDPM -->
+            <text x="76" y="194" text-anchor="middle" font-family="Inter" font-size="13.5" font-weight="600" fill="#6aa6ff">DDPM</text>
+            <g font-family="Inter" font-size="13" fill="#e4ebf7" text-anchor="middle">
+              <text x="245" y="194">√ᾱ_t , √(1−ᾱ_t)</text><text x="410" y="194">ε（噪声）</text><text x="582" y="194">全额（祖先采样）</text>
+            </g>
+            <!-- 行 2 DDIM -->
+            <text x="76" y="238" text-anchor="middle" font-family="Inter" font-size="13.5" font-weight="600" fill="#46d7cc">DDIM</text>
+            <g font-family="Inter" font-size="13" fill="#e4ebf7" text-anchor="middle">
+              <text x="245" y="238">同上（不变）</text><text x="410" y="238">ε（直接复用）</text><text x="582" y="238">η × 全额，η=0 → 0</text>
+            </g>
+            <!-- 行 3 FM / RF -->
+            <text x="76" y="276" text-anchor="middle" font-family="Inter" font-size="12.5" font-weight="600" fill="#9bce6b">Flow Matching</text>
+            <text x="76" y="292" text-anchor="middle" font-family="Inter" font-size="12.5" font-weight="600" fill="#f0bf4c">Rectified Flow</text>
+            <g font-family="Inter" font-size="13" fill="#e4ebf7" text-anchor="middle">
+              <text x="245" y="284">t , 1−t</text><text x="410" y="284">v = x₁ − x₀</text><text x="582" y="284">0（纯 ODE）</text>
+            </g>
+            <!-- 行 4 EM -->
+            <text x="76" y="322" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#b49bff">Energy Matching</text>
+            <g font-family="Inter" font-size="13" fill="#e4ebf7" text-anchor="middle">
+              <text x="245" y="330">t , 1−t</text><text x="410" y="330">−∇V（标量势梯度）</text><text x="582" y="330">0 → ε_max（后段开）</text>
+            </g>
+            <!-- 行 5 JiT -->
+            <text x="76" y="374" text-anchor="middle" font-family="Inter" font-size="13.5" font-weight="600" fill="#46d7cc">JiT</text>
+            <g font-family="Inter" font-size="13" fill="#e4ebf7" text-anchor="middle">
+              <text x="245" y="374">t , 1−t</text><text x="410" y="374">x₁（干净图）</text><text x="582" y="374">0</text>
+            </g>
+            <text x="350" y="398" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">同一个模板 · 三处填空 · 五种方法</text>
+          </svg>
+        </div>
+        <figcaption><b>图 2.</b> 全文的骨架表。<b>①决定路径、②决定网络输出什么、③决定采样随不随机</b>——每一节都在填其中一行。第 9 节会用五个官方仓库的源码逐行验证这张表。</figcaption>
+      </figure>
+
+      <div class="callout note">
+        <div class="ic">🧭</div>
+        <div class="ct"><span class="t">先划清一条边界：架构不在这三个问题里</span>
+        <p><b>U-Net / DiT / JiT 属于另一根轴</b>——它们回答「谁来计算这个场」，而不是「学什么、怎么走」。DiT 第一版用的就是 DDPM 的目标函数，只是把骨干换成了 Transformer。这根轴单独放在<a href="#s10">第 10 节</a>讲，先把它从脑子里摘出去，前九节会清爽很多。</p></div>
+      </div>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">读全文的一根线</span><p>DDPM 把生成变成可训练的回归问题；DDIM 发现训练只锁住了「边缘分布」，采样因此可以解耦并确定化；SDE/ODE 视角说明路径本可自由选择；Flow Matching 顺势把路径拉直、目标简化成回归位移；Energy Matching 再把向量场收回成一个标量势，换回 EBM 的密度与可组合性。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 2. DDPM ══════════════ -->
+    <section id="s2">
+      <h2>2. DDPM：加噪是已知的，学去噪就够了</h2>
+      <div class="badge b1">Ho et al. 2020 · arXiv 2006.11239</div>
+
+      <p>DDPM（Denoising Diffusion Probabilistic Model）的出发点朴素得近乎笨拙：<b>既然从数据到噪声这条路我们完全知道怎么走（不断加高斯噪声），那就只学反过来那一步。</b></p>
+
+      <h3>2.1 前向过程：一条写死的马尔可夫链</h3>
+
+      <p>取一列很小的方差 \( \beta_1 \lt \beta_2 \lt \cdots \lt \beta_T \)（典型 \( T=1000 \)，\( \beta \) 从 1e-4 线性到 0.02），定义</p>
+
+      <div class="mathbox center blue">
+        <div class="lbl">前向（无参数，不需要学）</div>
+        \[ q(x_t \mid x_{t-1}) = \mathcal{N}\!\big(x_t;\ \sqrt{1-\beta_t}\,x_{t-1},\ \beta_t I \big) \]
+      </div>
+
+      <p>每步都做「缩一点 + 加一点噪声」。缩放系数取 \( \sqrt{1-\beta_t} \) 不是随手写的：它保证方差不爆炸，\( t\to T \) 时 \( x_T \) 收敛到标准高斯。记 \( \alpha_t = 1-\beta_t \)、\( \bar\alpha_t = \prod_{s\le t}\alpha_s \)，高斯的可加性给出<span class="hi">关键的闭式跳步公式</span>：</p>
+
+      <div class="mathbox center blue">
+        <div class="lbl">任意时刻一步到位</div>
+        \[ \begin{gathered}
+        q(x_t\mid x_0) = \mathcal{N}\!\big(x_t;\ \sqrt{\bar\alpha_t}\,x_0,\ (1-\bar\alpha_t)I\big) \\[6pt]
+        \Longleftrightarrow\quad x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\varepsilon,\qquad \varepsilon\sim\mathcal{N}(0,I)
+        \end{gathered} \]
+      </div>
+
+      <p>这条公式是整个方法能训起来的技术核心：训练时<b>不需要真的走 1000 步</b>，随机抽一个 \( t \)、抽一个 \( \varepsilon \)，一行代码就造出 \( x_t \)。这叫 <span class="mark">simulation-free 训练</span>。</p>
+
+      <h3>2.2 反向过程：学一个高斯的均值</h3>
+
+      <p>当 \( \beta_t \) 足够小，反向条件 \( q(x_{t-1}\mid x_t) \) 也近似是高斯，于是用网络参数化：</p>
+
+      <div class="mathbox center">
+        \[ p_\theta(x_{t-1}\mid x_t) = \mathcal{N}\!\big(x_{t-1};\ \mu_\theta(x_t,t),\ \sigma_t^2 I\big) \]
+      </div>
+
+      <p>训练目标来自变分下界（ELBO）。把 ELBO 拆开，主体是一串 KL：</p>
+
+      <div class="mathbox center">
+        \[ \begin{aligned}
+        \mathcal{L} = \mathbb{E}_q\Big[\ & \underbrace{D_{\mathrm{KL}}\big(q(x_T|x_0)\,\|\,p(x_T)\big)}_{\text{常数，无参数}} \\[4pt]
+        &+ \sum_{t\gt 1}\underbrace{D_{\mathrm{KL}}\big(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t)\big)}_{\text{真正要优化的}}\ -\ \log p_\theta(x_0|x_1)\Big]
+        \end{aligned} \]
+      </div>
+
+      <p>好在 <b>以 \( x_0 \) 为条件</b>的反向后验有解析解（贝叶斯 + 高斯共轭）：</p>
+
+      <div class="mathbox center">
+        \[ \begin{gathered}
+        q(x_{t-1}\mid x_t, x_0) = \mathcal{N}\big(\tilde\mu_t(x_t,x_0),\ \tilde\beta_t I\big) \\[8pt]
+        \tilde\mu_t = \frac{\sqrt{\bar\alpha_{t-1}}\beta_t}{1-\bar\alpha_t}\,x_0 + \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})}{1-\bar\alpha_t}\,x_t,
+        \qquad \tilde\beta_t = \frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}\beta_t
+        \end{gathered} \]
+      </div>
+
+      <p>两个高斯之间的 KL 就是均值差的平方。再用跳步公式把 \( x_0 \) 换成 \( \varepsilon \)（\( x_0 = (x_t - \sqrt{1-\bar\alpha_t}\varepsilon)/\sqrt{\bar\alpha_t} \)），均值的最优形式变成：</p>
+
+      <div class="mathbox center blue">
+        <div class="lbl">ε-参数化</div>
+        \[ \mu_\theta(x_t,t) = \frac{1}{\sqrt{\alpha_t}}\Big(x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\,\varepsilon_\theta(x_t,t)\Big) \]
+      </div>
+
+      <p>代回去，再丢掉每项前面的加权系数（Ho 等人发现<b>不加权反而效果更好</b>——等价于给高噪声段更大权重），得到那个著名的、朴素到不像变分推断的损失：</p>
+
+      <div class="mathbox center blue">
+        <div class="lbl">DDPM 的全部训练目标</div>
+        \[ \mathcal{L}_{\text{simple}} = \mathbb{E}_{t\sim\mathcal{U}[1,T],\ x_0\sim p_{\text{data}},\ \varepsilon\sim\mathcal{N}(0,I)} \Big\| \varepsilon - \varepsilon_\theta\big(\sqrt{\bar\alpha_t}x_0 + \sqrt{1-\bar\alpha_t}\varepsilon,\ t\big) \Big\|^2 \]
+      </div>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">ε 就是分数（score）</span><p>由高斯密度求导可得 \( \nabla_{x}\log q(x_t\mid x_0) = -\dfrac{\varepsilon}{\sqrt{1-\bar\alpha_t}} \)。所以「预测噪声」与「预测分数 \( \nabla_x\log p_t(x) \)」只差一个已知系数——<b>DDPM 和 score-based 模型是同一件事的两种记号</b>。后来常用的 \( x_0 \)-预测、\( v \)-预测也都是这个量的线性重参数化。</p></div>
+      </div>
+
+      <h3>2.3 训练与采样：十行伪代码</h3>
+
+      <pre><code><span class="cm"># ---- 训练 ----</span>
+<span class="kw">for</span> x0 <span class="kw">in</span> dataloader:
+    t   = randint(1, T)                       <span class="cm"># 每个样本独立抽一个时刻</span>
+    eps = randn_like(x0)
+    xt  = sqrt(abar[t]) * x0 + sqrt(1 - abar[t]) * eps   <span class="cm"># 闭式跳步，不用模拟</span>
+    loss = mse(eps, eps_theta(xt, t))
+    loss.backward(); opt.step()
+
+<span class="cm"># ---- 采样（祖先采样 / ancestral sampling）----</span>
+x = randn(shape)
+<span class="kw">for</span> t <span class="kw">in</span> reversed(range(1, T + 1)):
+    z = randn_like(x) <span class="kw">if</span> t &gt; 1 <span class="kw">else</span> 0
+    x = (x - (1 - a[t]) / sqrt(1 - abar[t]) * eps_theta(x, t)) / sqrt(a[t]) + sigma[t] * z</code></pre>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 220" width="700" height="220" role="img" aria-label="DDPM 前向加噪与反向去噪链">
+            <defs>
+              <marker id="fw" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6aa6ff"/></marker>
+              <marker id="bw" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#f0a361"/></marker>
+            </defs>
+            <g>
+              <rect x="24"  y="76" width="96" height="66" rx="10" fill="rgba(155,206,107,.14)" stroke="#9bce6b"/>
+              <rect x="164" y="76" width="96" height="66" rx="10" fill="rgba(155,206,107,.10)" stroke="#5f7f8f"/>
+              <rect x="304" y="76" width="96" height="66" rx="10" fill="rgba(106,166,255,.10)" stroke="#5f7f8f"/>
+              <rect x="444" y="76" width="96" height="66" rx="10" fill="rgba(106,166,255,.13)" stroke="#5f7f8f"/>
+              <rect x="584" y="76" width="96" height="66" rx="10" fill="rgba(106,166,255,.16)" stroke="#6aa6ff"/>
+            </g>
+            <g fill="#9aa6bf">
+              <circle cx="196" cy="100" r="1.8"/><circle cx="228" cy="126" r="1.8"/><circle cx="210" cy="112" r="1.8"/>
+              <circle cx="330" cy="96" r="1.8"/><circle cx="356" cy="120" r="1.8"/><circle cx="376" cy="102" r="1.8"/>
+              <circle cx="318" cy="128" r="1.8"/><circle cx="350" cy="108" r="1.8"/>
+              <circle cx="462" cy="94" r="1.8"/><circle cx="486" cy="118" r="1.8"/><circle cx="512" cy="100" r="1.8"/>
+              <circle cx="470" cy="128" r="1.8"/><circle cx="500" cy="112" r="1.8"/><circle cx="524" cy="126" r="1.8"/>
+              <circle cx="452" cy="110" r="1.8"/>
+              <circle cx="600" cy="92" r="1.8"/><circle cx="624" cy="116" r="1.8"/><circle cx="650" cy="98" r="1.8"/>
+              <circle cx="608" cy="128" r="1.8"/><circle cx="640" cy="110" r="1.8"/><circle cx="662" cy="128" r="1.8"/>
+              <circle cx="592" cy="112" r="1.8"/><circle cx="668" cy="94" r="1.8"/><circle cx="616" cy="102" r="1.8"/>
+              <circle cx="636" cy="130" r="1.8"/>
+            </g>
+            <g font-family="Inter" font-size="14" fill="#e4ebf7" text-anchor="middle">
+              <text x="72"  y="114">x₀</text><text x="212" y="114">x₁</text><text x="352" y="66">⋯</text>
+              <text x="492" y="114">x_{T−1}</text><text x="632" y="66">⋯</text>
+            </g>
+            <g font-family="Inter" font-size="11.5" fill="#6b768f" text-anchor="middle">
+              <text x="72" y="160">数据</text><text x="632" y="160">≈ N(0, I)</text>
+            </g>
+            <text x="352" y="114" text-anchor="middle" font-family="Inter" font-size="14" fill="#e4ebf7">x_t</text>
+            <text x="632" y="114" text-anchor="middle" font-family="Inter" font-size="14" fill="#e4ebf7">x_T</text>
+
+            <g stroke="#6aa6ff" stroke-width="1.8" marker-end="url(#fw)" fill="none">
+              <path d="M124 92 H160"/><path d="M264 92 H300"/><path d="M404 92 H440"/><path d="M544 92 H580"/>
+            </g>
+            <g stroke="#f0a361" stroke-width="1.8" marker-end="url(#bw)" fill="none">
+              <path d="M580 128 H544"/><path d="M440 128 H404"/><path d="M300 128 H264"/><path d="M160 128 H124"/>
+            </g>
+            <text x="352" y="34" text-anchor="middle" font-family="Inter" font-size="13" fill="#6aa6ff">前向 q(x_t | x_{t−1})：固定的加噪，无需学习</text>
+            <text x="352" y="196" text-anchor="middle" font-family="Inter" font-size="13" fill="#f0a361">反向 p_θ(x_{t−1} | x_t)：网络要学的去噪，一步一次前向</text>
+          </svg>
+        </div>
+        <figcaption><b>图 3.</b> DDPM 的双向链。上行免费，下行昂贵——每去噪一步就要调一次网络，这正是 DDIM 要攻的痛点。</figcaption>
+      </figure>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">代价</span><p>反向链与前向链<b>步数绑死</b>：训练时定了 \( T=1000 \)，采样就得跑 1000 次网络前向。生成一张图要几十秒。而且每步注入的随机性使得步子不能迈大——大步走会累积可见的误差。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 3. DDIM ══════════════ -->
+    <section id="s3">
+      <h2>3. DDIM：训练锁的只是边缘分布</h2>
+      <div class="badge b2">Song, Meng &amp; Ermon 2021 · arXiv 2010.02502</div>
+
+      <p>DDIM（Denoising Diffusion <b>Implicit</b> Model）的洞察极其漂亮，值得单独拎出来一句话说清：</p>
+
+      <blockquote>\( \mathcal{L}_{\text{simple}} \) 只用到了边缘分布 \( q(x_t\mid x_0) \)，从头到尾没用到前向过程是马尔可夫的。</blockquote>
+
+      <p>换句话说，训练好的 \( \varepsilon_\theta \) 并不属于某一条特定的链，它属于<b>所有共享同样边缘的过程构成的一整族</b>。于是可以构造一族<span class="ht">非马尔可夫</span>前向过程，用一个自由参数 \( \sigma_t \) 索引：</p>
+
+      <div class="mathbox center teal">
+        <div class="lbl">同边缘的非马尔可夫族</div>
+        \[ q_\sigma(x_{t-1}\mid x_t, x_0) = \mathcal{N}\Big(\sqrt{\bar\alpha_{t-1}}\,x_0 + \sqrt{1-\bar\alpha_{t-1}-\sigma_t^2}\cdot\tfrac{x_t-\sqrt{\bar\alpha_t}x_0}{\sqrt{1-\bar\alpha_t}},\ \sigma_t^2 I\Big) \]
+      </div>
+
+      <p>可以验证：无论 \( \sigma_t \) 取什么，它诱导出的 \( q_\sigma(x_t\mid x_0) \) 都还是那个 \( \mathcal{N}(\sqrt{\bar\alpha_t}x_0, (1-\bar\alpha_t)I) \)。<b>所以旧模型直接拿来用，一个字都不用重训。</b></p>
+
+      <h3>3.1 采样公式：预测 → 重新加噪</h3>
+
+      <p>把 \( x_0 \) 换成网络给出的估计 \( \hat{x}_0 \)，得到 DDIM 的更新式。它有非常直白的三段结构：</p>
+
+      <div class="mathbox teal">
+        <div class="lbl">DDIM 一步</div>
+        \[ \hat{x}_0^{(t)} = \frac{x_t - \sqrt{1-\bar\alpha_t}\,\varepsilon_\theta(x_t,t)}{\sqrt{\bar\alpha_t}} \]
+        \[ x_{t-1} = \underbrace{\sqrt{\bar\alpha_{t-1}}\,\hat{x}_0^{(t)}}_{\text{① 指向预测的干净图}} + \underbrace{\sqrt{1-\bar\alpha_{t-1}-\sigma_t^2}\,\varepsilon_\theta(x_t,t)}_{\text{② 沿原噪声方向退回去}} + \underbrace{\sigma_t z}_{\text{③ 新注入的随机性}} \]
+      </div>
+
+      <p>第 ③ 项的强度是个可调旋钮。取</p>
+
+      <div class="mathbox center">
+        \[ \sigma_t(\eta) = \eta\sqrt{\frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}}\sqrt{1-\frac{\bar\alpha_t}{\bar\alpha_{t-1}}} \]
+      </div>
+
+      <ul>
+        <li><b>\( \eta = 1 \)</b> → 完全还原成 DDPM 的祖先采样。</li>
+        <li><b>\( \eta = 0 \)</b> → 第 ③ 项消失，<span class="ht">整个采样过程完全确定</span>：给定 \( x_T \)，输出唯一。这就是狭义的 DDIM。</li>
+      </ul>
+
+      <h3>3.2 为什么能跳步</h3>
+
+      <p>因为没有了随机性，更新式不再依赖「相邻」这个概念——它只依赖 \( \bar\alpha \) 的两个值。于是可以任选一个递减子序列 \( \tau_1 \lt \tau_2 \lt \cdots \lt \tau_S \subset \{1,\dots,T\} \)（比如 1000 步里等间隔取 50 个），把公式里的 \( t, t-1 \) 换成 \( \tau_i, \tau_{i-1} \) 直接用。<b>网络调用次数从 1000 降到 20–50，质量损失很小。</b></p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 265" width="700" height="265" role="img" aria-label="DDIM 跳步与 η 旋钮">
+            <defs>
+              <marker id="ah2" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="#46d7cc"/></marker>
+            </defs>
+            <!-- Panel A -->
+            <text x="176" y="26" text-anchor="middle" font-family="Inter" font-size="13" fill="#9aa6bf">全步长：每一小步都调一次网络</text>
+            <path d="M40 120 C 110 60, 150 168, 220 110 S 290 78, 316 104" fill="none" stroke="#36425e" stroke-width="1.6"/>
+            <g fill="#46d7cc">
+              <circle cx="40" cy="120" r="2.4"/><circle cx="58" cy="102" r="2.4"/><circle cx="76" cy="88" r="2.4"/>
+              <circle cx="94" cy="80" r="2.4"/><circle cx="112" cy="80" r="2.4"/><circle cx="130" cy="88" r="2.4"/>
+              <circle cx="148" cy="102" r="2.4"/><circle cx="166" cy="118" r="2.4"/><circle cx="184" cy="132" r="2.4"/>
+              <circle cx="202" cy="136" r="2.4"/><circle cx="220" cy="110" r="2.4"/><circle cx="240" cy="98" r="2.4"/>
+              <circle cx="262" cy="90" r="2.4"/><circle cx="286" cy="92" r="2.4"/><circle cx="316" cy="104" r="2.4"/>
+            </g>
+            <text x="176" y="172" text-anchor="middle" font-family="Inter" font-size="12" fill="#6b768f">NFE ≈ 1000，路径贴合但极慢</text>
+
+            <!-- Panel B -->
+            <text x="524" y="26" text-anchor="middle" font-family="Inter" font-size="13" fill="#9aa6bf">跳步：只在子序列上落脚</text>
+            <path d="M388 120 C 458 60, 498 168, 568 110 S 638 78, 664 104" fill="none" stroke="#36425e" stroke-width="1.6" stroke-dasharray="4 4"/>
+            <polyline points="388,120 442,80 496,132 568,110 610,90 664,104" fill="none" stroke="#46d7cc" stroke-width="2" marker-end="url(#ah2)"/>
+            <g fill="#46d7cc">
+              <circle cx="388" cy="120" r="4"/><circle cx="442" cy="80" r="4"/><circle cx="496" cy="132" r="4"/>
+              <circle cx="568" cy="110" r="4"/><circle cx="610" cy="90" r="4"/>
+            </g>
+            <text x="524" y="172" text-anchor="middle" font-family="Inter" font-size="12" fill="#6b768f">NFE ≈ 20–50，弦割掉的部分＝离散化误差</text>
+
+            <!-- η bar -->
+            <line x1="60" y1="222" x2="640" y2="222" stroke="#36425e" stroke-width="6" stroke-linecap="round"/>
+            <line x1="60" y1="222" x2="640" y2="222" stroke="url(#g1)" stroke-width="6" stroke-linecap="round"/>
+            <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#46d7cc"/><stop offset="1" stop-color="#6aa6ff"/></linearGradient></defs>
+            <circle cx="60" cy="222" r="7" fill="#46d7cc"/><circle cx="640" cy="222" r="7" fill="#6aa6ff"/>
+            <text x="60"  y="250" text-anchor="middle" font-family="Inter" font-size="12" fill="#46d7cc">η = 0 · 确定 ODE（DDIM）</text>
+            <text x="640" y="250" text-anchor="middle" font-family="Inter" font-size="12" fill="#6aa6ff">η = 1 · 随机 SDE（DDPM）</text>
+            <text x="350" y="250" text-anchor="middle" font-family="Inter" font-size="12" fill="#6b768f">同一个 ε_θ，一个旋钮连续插值</text>
+          </svg>
+        </div>
+        <figcaption><b>图 4.</b> DDIM 把「训练」和「采样」解绑：\( \eta \) 旋钮在确定与随机之间连续滑动，而跳步的可行性来自确定性。</figcaption>
+      </figure>
+
+      <h3>3.3 确定性带来的三个副产品</h3>
+
+      <ul>
+        <li><b>ODE 结构。</b>令 \( \eta=0 \)，做重参数化 \( \bar{x} = x/\sqrt{\bar\alpha} \)、\( \lambda = \sqrt{1-\bar\alpha}/\sqrt{\bar\alpha} \)，更新式恰好是 \( \mathrm{d}\bar{x} = \varepsilon_\theta\,\mathrm{d}\lambda \) 的<span class="ht">欧拉离散</span>。所以 DDIM 不是启发式加速，而是某个 ODE 的一阶求解器——DPM-Solver、DEIS 这些后续工作就是换更高阶的求解器，把步数再压到 10 步级。</li>
+        <li><b>可逆（DDIM inversion）。</b>ODE 反着积分能把一张真实图片映回它对应的 \( x_T \)，改一改再正向积回来，就得到可控编辑。这是 prompt-to-prompt、图像编辑一大类方法的地基。</li>
+        <li><b>隐空间有语义。</b>\( x_T \) 到样本是双射，对两个 \( x_T \) 做球面插值，生成结果也平滑过渡；DDPM 由于每步都注入新噪声，做不到这点。</li>
+      </ul>
+
+      <div class="callout tip">
+        <div class="ic">💡</div>
+        <div class="ct"><span class="t">一句话</span><p>DDPM 决定了<b>学什么</b>，DDIM 说明了<b>怎么走可以另说</b>。这是「训练目标」与「采样器」正式分家的时刻，此后二者独立演进。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 4. SDE / ODE ══════════════ -->
+    <section id="s4">
+      <h2>4. 中场：连续极限把上面两者归位</h2>
+
+      <h3>4.1 先把 DDPM 写成一条 SDE</h3>
+
+      <p>Song 等人 2021 年（arXiv 2011.13456）指出，\( T\to\infty \) 时 DDPM 的前向链就是一条随机微分方程（VP-SDE）：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">一般形式 / DDPM 的取值</div>
+        \[ \mathrm{d}x = \underbrace{f(x,t)}_{\text{漂移}}\,\mathrm{d}t + \underbrace{g(t)}_{\text{扩散}}\,\mathrm{d}w
+        \qquad\Longrightarrow\qquad
+        \mathrm{d}x = -\tfrac12\beta(t)\,x\,\mathrm{d}t + \sqrt{\beta(t)}\,\mathrm{d}w \]
+      </div>
+
+      <p>它的时间反演也是 SDE，且需要的唯一未知量就是分数 \( \nabla_x\log p_t(x) \)。更关键的是，存在一条<b>确定性的常微分方程</b>，它在每个时刻的边缘分布与反向 SDE 完全相同：</p>
+
+      <div class="mathbox center">
+        <div class="lbl">概率流 ODE（Probability Flow ODE）</div>
+        \[ \frac{\mathrm{d}x}{\mathrm{d}t} = f(x,t) - \tfrac12 g(t)^2\,\nabla_x\log p_t(x) \]
+      </div>
+
+      <h3>4.2 逐项拆开</h3>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>符号</th><th>是什么</th><th>DDPM 里取什么</th></tr></thead>
+          <tbody>
+            <tr><td>\( \mathrm{d}x/\mathrm{d}t \)</td><td>一个样本点的<b>速度</b>——这一步该往哪儿挪</td><td>—</td></tr>
+            <tr><td>\( f(x,t) \)</td><td><b>漂移项</b>，确定性的那部分拉扯</td><td>\( -\tfrac12\beta(t)x \)，即「往原点缩」</td></tr>
+            <tr><td>\( g(t) \)</td><td><b>扩散系数</b>，每单位时间注入多少噪声</td><td>\( \sqrt{\beta(t)} \)</td></tr>
+            <tr><td>\( \nabla_x\log p_t(x) \)</td><td><b>分数</b>，指向密度更高的方向。<span class="hi">全式唯一的未知量</span></td><td>网络学的就是它：\( \approx -\varepsilon_\theta/\sqrt{1-\bar\alpha_t} \)（§2.2）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>4.3 那个 ½ 是从 Fokker–Planck 掉出来的</h3>
+
+      <p>它不是「近似地把噪声减半」，而是一步精确改写。SDE 的密度演化服从 Fokker–Planck 方程：</p>
+
+      <div class="mathbox center">
+        \[ \frac{\partial p_t}{\partial t} = -\nabla\!\cdot\!\big(f\,p_t\big) + \tfrac12 g^2\,\Delta p_t \]
+      </div>
+
+      <p>用恒等式 \( \nabla p = p\,\nabla\log p \)，把那个<b>二阶</b>的扩散项改写成一阶的散度形式：</p>
+
+      <div class="mathbox center">
+        \[ \tfrac12 g^2\,\Delta p_t \;=\; \nabla\!\cdot\!\Big(\tfrac12 g^2\,\nabla p_t\Big) \;=\; \nabla\!\cdot\!\Big(\tfrac12 g^2\,p_t\,\nabla\log p_t\Big) \]
+      </div>
+
+      <p>代回去，两项合并成一个散度：</p>
+
+      <div class="mathbox center">
+        \[ \frac{\partial p_t}{\partial t} = -\nabla\!\cdot\!\Big[\underbrace{\Big(f-\tfrac12 g^2\nabla\log p_t\Big)}_{\displaystyle v(x,t)}\ p_t\Big] \]
+      </div>
+
+      <p>这已经是纯粹的<b>连续性方程</b> \( \partial_t p = -\nabla\!\cdot\!(vp) \)——描述一群粒子以速度场 \( v \) 被搬运时密度怎么变，里面<b>没有任何随机性</b>。而 \( v \) 正是那条 ODE 的右边。<span class="mark">所以概率流 ODE 不是「扔掉噪声的近似」，而是把扩散项精确翻译成了一个搬运项。</span>那个 \( \tfrac12 \) 直接来自 Itô 公式里的 \( \tfrac12 g^2 \)。</p>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">和反向 SDE 对照，系数差一半</span>
+        <p>反向 SDE 是 \( \mathrm{d}x = \big[f - g^2\nabla_x\log p_t\big]\mathrm{d}t + g\,\mathrm{d}\bar w \)，分数前面是 \( g^2 \)；概率流 ODE 是 \( \tfrac12 g^2 \)，但没有噪声项。<b>多出来的那半份确定性漂移，恰好换掉了整个随机项。</b>§3.1 里 DDIM 的 \( \eta \) 旋钮，走的就是这两端之间的连续插值。</p></div>
+      </div>
+
+      <h3>4.4 直觉：散开这件事，不一定要靠随机</h3>
+
+      <p>噪声让点云散开。但「散开」也可以完全确定地做到——让每个粒子沿着密度梯度的反方向挪一点，云团照样以<b>一模一样</b>的方式摊平。单条轨迹截然不同（SDE 抖、ODE 光滑且互不相交），但每个时刻的直方图重合。</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 300" width="700" height="300" role="img" aria-label="SDE 与概率流 ODE 轨迹不同但边缘分布相同">
+            <defs>
+              <marker id="as" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="#6aa6ff"/></marker>
+              <marker id="ao" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="#46d7cc"/></marker>
+            </defs>
+
+            <text x="20" y="30" font-family="Inter" font-size="13" font-weight="600" fill="#6aa6ff">反向 SDE</text>
+            <text x="20" y="48" font-family="Inter" font-size="11" fill="#6b768f">每步注入噪声</text>
+            <g fill="none" stroke="#6aa6ff" stroke-width="1.6" opacity=".85">
+              <polyline points="120,95 160,84 200,97 240,78 280,88 320,68 360,78 400,60 440,70 480,52 520,62 556,50" marker-end="url(#as)"/>
+              <polyline points="120,95 160,101 200,92 240,104 280,95 320,107 360,98 400,110 440,101 480,113 520,104 556,112" marker-end="url(#as)"/>
+              <polyline points="120,95 160,92 200,98 240,90 280,99 320,91 360,101 400,93 440,103 480,95 520,101 556,96" marker-end="url(#as)"/>
+              <polyline points="120,95 160,104 200,114 240,109 280,121 320,116 360,128 400,122 440,133 480,127 520,138 556,134" marker-end="url(#as)"/>
+            </g>
+            <circle cx="120" cy="95" r="5" fill="#9aa6bf"/>
+
+            <text x="20" y="205" font-family="Inter" font-size="13" font-weight="600" fill="#46d7cc">概率流 ODE</text>
+            <text x="20" y="223" font-family="Inter" font-size="11" fill="#6b768f">完全确定，轨迹不交</text>
+            <g fill="none" stroke="#46d7cc" stroke-width="1.6" opacity=".9">
+              <path d="M120 225 Q 330 225 556 180" marker-end="url(#ao)"/>
+              <path d="M120 225 Q 330 225 556 208" marker-end="url(#ao)"/>
+              <path d="M120 225 Q 330 225 556 226" marker-end="url(#ao)"/>
+              <path d="M120 225 Q 330 225 556 264" marker-end="url(#ao)"/>
+            </g>
+            <circle cx="120" cy="225" r="5" fill="#9aa6bf"/>
+
+            <!-- 两条相同的密度曲线 -->
+            <line x1="570" y1="20" x2="570" y2="285" stroke="#283248" stroke-width="1" stroke-dasharray="4 5"/>
+            <path d="M574 40 C 606 56, 612 78, 632 95 C 612 112, 606 134, 574 150" fill="rgba(106,166,255,.16)" stroke="#6aa6ff" stroke-width="1.6"/>
+            <path d="M574 170 C 606 186, 612 208, 632 225 C 612 242, 606 264, 574 280" fill="rgba(70,215,204,.16)" stroke="#46d7cc" stroke-width="1.6"/>
+            <text x="648" y="160" text-anchor="middle" font-family="Inter" font-size="26" fill="#f0a361">=</text>
+            <text x="612" y="296" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#f0a361">同一个 p_t</text>
+            <text x="338" y="163" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">轨迹完全不同 · 每个时刻的分布逐点相同</text>
+          </svg>
+        </div>
+        <figcaption><b>图 5.</b> 同一族边缘分布的两种走法。这正是「随机性是可选项」的图形版，也是 DDIM 能确定化、能跳步、能做 inversion 的根源。</figcaption>
+      </figure>
+
+      <h3>4.5 代进 DDPM 看看长什么样</h3>
+
+      <p>把 \( f=-\tfrac12\beta(t)x \)、\( g=\sqrt{\beta(t)} \) 代入，再把分数换成网络输出：</p>
+
+      <div class="mathbox center">
+        \[ \frac{\mathrm{d}x}{\mathrm{d}t} = -\tfrac12\beta(t)\Big[x + \nabla_x\log p_t(x)\Big]
+        \;\approx\; -\tfrac12\beta(t)\Big[x - \frac{\varepsilon_\theta(x,t)}{\sqrt{1-\bar\alpha_t}}\Big] \]
+      </div>
+
+      <p>右边只剩已知量和网络的一次前向——<b>这就是一个可以直接丢给任意 ODE 求解器的东西</b>。DDIM 是它的一阶欧拉离散，DPM-Solver / DEIS 则是换用更高阶的求解器。</p>
+
+      <h3>4.6 这个视角一落地，两件事立刻显然</h3>
+
+      <ol>
+        <li>采样的随机性是<b>可选项</b>，不是必需品——同样的边缘可以用确定的流走出来。</li>
+        <li>既然最终需要的只是「一个能把 \( \mathcal{N}(0,I) \) 输运到 \( p_{\text{data}} \) 的 ODE」，<span class="mark">那为什么非得走「加高斯噪声」这条特定的路？</span></li>
+      </ol>
+
+      <p>第二个问题就是 Flow Matching 的起点。</p>
+    </section>
+
+    <!-- ══════════════ 5. Flow Matching ══════════════ -->
+    <section id="s5">
+      <h2>5. Flow Matching：路径可以自己指定，而且最好是直的</h2>
+      <div class="badge b3">Lipman et al. 2023 · arXiv 2210.02747</div>
+
+      <h3>5.1 老问题：CNF 训不动</h3>
+
+      <p>连续归一化流（CNF）本来就把生成写成 ODE：\( \frac{\mathrm{d}x}{\mathrm{d}t} = v_\theta(x,t) \)，从 \( p_0 \) 推到 \( p_1 \)。理论完美，但传统训法是最大似然，要在<b>训练循环里反复解 ODE 并算散度</b>（simulation-based），慢且不稳，一直没能 scale。</p>
+
+      <h3>5.2 新思路与它的障碍</h3>
+
+      <p>Flow Matching 的想法直白：如果我们<b>事先指定</b>一条概率路径 \( p_t \) 及其对应的向量场 \( u_t \)，那训练就退化成一个回归：</p>
+
+      <div class="mathbox center">
+        \[ \mathcal{L}_{\text{FM}}(\theta) = \mathbb{E}_{t\sim\mathcal{U}[0,1],\ x\sim p_t}\big\| v_\theta(x,t) - u_t(x) \big\|^2 \]
+      </div>
+
+      <p>障碍在于：能生成「混合分布」\( p_t \) 的边缘场 \( u_t(x) \) 是个积分，写不出来也算不了。</p>
+
+      <h3>5.3 破局：条件 Flow Matching（CFM）</h3>
+
+      <p>解法与 DDPM 用的是同一招——<b>把目标条件化到单个数据点上</b>。给每个数据样本 \( x_1 \) 配一条条件路径 \( p_t(x\mid x_1) \) 和条件场 \( u_t(x\mid x_1) \)（这两者可以随手设计成闭式的），边缘就是它们的混合：\( p_t(x) = \int p_t(x\mid x_1)q(x_1)\mathrm{d}x_1 \)。核心定理是：</p>
+
+      <div class="mathbox center olive">
+        <div class="lbl">CFM 定理：两个损失的梯度相同</div>
+        \[ \nabla_\theta \mathcal{L}_{\text{FM}} = \nabla_\theta \mathcal{L}_{\text{CFM}},\qquad
+        \mathcal{L}_{\text{CFM}} = \mathbb{E}_{t,\ x_1\sim q,\ x\sim p_t(\cdot\mid x_1)}\big\| v_\theta(x,t) - u_t(x\mid x_1) \big\|^2 \]
+      </div>
+
+      <p>直觉是最小二乘的老性质：同一个 \( (x,t) \) 会被来自不同 \( x_1 \) 的条件目标反复拉扯，平方损失的最优解自动是<b>条件期望</b>，而这个条件期望恰好就是边缘场 \( u_t(x) \)。<span class="hg">你回归一个算得出的量，收敛到一个算不出的量。</span></p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 300" width="700" height="300" role="img" aria-label="条件流匹配：条件场平均成边缘场">
+            <defs>
+              <marker id="thin" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="#6b768f"/></marker>
+              <marker id="bold" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#f0a361"/></marker>
+            </defs>
+            <text x="80"  y="28" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9aa6bf">噪声 x₀</text>
+            <text x="620" y="28" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9aa6bf">数据 x₁</text>
+
+            <line x1="80" y1="70"  x2="620" y2="110" stroke="#9bce6b" stroke-width="1.5" opacity=".55"/>
+            <line x1="80" y1="152" x2="620" y2="186" stroke="#9bce6b" stroke-width="1.5" opacity=".55"/>
+            <line x1="80" y1="238" x2="620" y2="150" stroke="#9bce6b" stroke-width="1.5" opacity=".55"/>
+
+            <g fill="#6b768f">
+              <circle cx="80" cy="70" r="5"/><circle cx="80" cy="152" r="5"/><circle cx="80" cy="238" r="5"/>
+            </g>
+            <g fill="#9bce6b">
+              <circle cx="620" cy="110" r="6"/><circle cx="620" cy="186" r="6"/><circle cx="620" cy="150" r="6"/>
+            </g>
+
+            <!-- query point -->
+            <circle cx="330" cy="150" r="7" fill="#f0a361"/>
+            <text x="330" y="132" text-anchor="middle" font-family="Inter" font-size="13" fill="#f0a361">x</text>
+
+            <!-- conditional directions (thin) -->
+            <g stroke="#6b768f" stroke-width="1.6" marker-end="url(#thin)" fill="none">
+              <path d="M338 148 L 414 154"/>
+              <path d="M338 152 L 414 157"/>
+              <path d="M338 146 L 412 134"/>
+            </g>
+            <!-- marginal (bold) -->
+            <path d="M338 150 L 470 151" stroke="#f0a361" stroke-width="3" marker-end="url(#bold)" fill="none"/>
+
+            <text x="430" y="196" font-family="Inter" font-size="12" fill="#6b768f">细箭头：各条件场 u_t(x | x₁)，闭式可算</text>
+            <text x="430" y="216" font-family="Inter" font-size="12" fill="#f0a361">粗箭头：它们的条件期望 ＝ 边缘场 u_t(x)</text>
+            <text x="330" y="272" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9aa6bf">网络在同一点被多个条件目标拉扯，L2 最优解自动落在平均方向上</text>
+          </svg>
+        </div>
+        <figcaption><b>图 6.</b> CFM 的全部魔法。DDPM 的「回归 ε」正是这套机制在高斯扩散路径下的特例。</figcaption>
+      </figure>
+
+      <h3>5.4 选路径：高斯族与它的两个特例</h3>
+
+      <p>取条件路径为高斯 \( p_t(x\mid x_1)=\mathcal{N}(\mu_t(x_1),\sigma_t(x_1)^2 I) \)，则唯一对应的条件场有闭式：</p>
+
+      <div class="mathbox center">
+        \[ u_t(x\mid x_1) = \frac{\sigma_t'(x_1)}{\sigma_t(x_1)}\big(x-\mu_t(x_1)\big) + \mu_t'(x_1) \]
+      </div>
+
+      <p>不同的 \( (\mu_t,\sigma_t) \) 给出不同方法：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>路径</th><th>\( \mu_t,\ \sigma_t \)</th><th>性质</th></tr></thead>
+          <tbody>
+            <tr><td><b>扩散路径（VP）</b></td><td>由 \( \bar\alpha_t \) 决定的 schedule</td><td>回到 score/diffusion；轨迹弯曲，且 \( t\to 0 \) 只在极限意义上接近 \( \mathcal{N}(0,I) \)</td></tr>
+            <tr><td><b>OT / 线性路径</b></td><td>\( \mu_t = t x_1,\ \sigma_t = 1-t \)</td><td>条件轨迹是<b>直线</b>，端点严格是 \( \mathcal{N}(0,I) \) 与数据</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>线性路径下一切化简到近乎不可思议的地步：\( x_t = (1-t)x_0 + t x_1 \)，\( u_t = x_1 - x_0 \)，于是</p>
+
+      <div class="mathbox center olive">
+        <div class="lbl">Rectified Flow / OT-CFM 的完整损失</div>
+        \[ \mathcal{L} = \mathbb{E}_{t\sim\mathcal{U}[0,1],\,x_0\sim\mathcal{N}(0,I),\,x_1\sim p_{\text{data}}}\Big\| v_\theta\big((1-t)x_0 + t x_1,\ t\big) - (x_1-x_0) \Big\|^2 \]
+      </div>
+
+      <pre><code><span class="cm"># ---- 训练：比 DDPM 还短 ----</span>
+<span class="kw">for</span> x1 <span class="kw">in</span> dataloader:
+    x0 = randn_like(x1)
+    t  = rand(x1.shape[0])                    <span class="cm"># t ~ U[0,1]，无需 α/β schedule</span>
+    xt = (1 - t) * x0 + t * x1                <span class="cm"># 直线插值</span>
+    loss = mse(v_theta(xt, t), x1 - x0)       <span class="cm"># 目标就是位移，常数向量</span>
+
+<span class="cm"># ---- 采样：解 ODE，欧拉法即可 ----</span>
+x, dt = randn(shape), 1.0 / N
+<span class="kw">for</span> i <span class="kw">in</span> range(N):
+    x = x + v_theta(x, i * dt) * dt</code></pre>
+
+      <h3>5.5 为什么「直」这么值钱</h3>
+
+      <p>欧拉法的局部误差正比于轨迹的曲率。<b>路径越直，用大步长走完的代价越小</b>：扩散路径要 50 步的地方，rectified flow 常常 10 步以内就够。进一步的拉直手段：</p>
+
+      <ul>
+        <li><b>mini-batch OT 配对</b>：不随机配 \( (x_0,x_1) \)，而在每个 batch 内解一个小型最优传输问题再配对，让条件直线之间少交叉，边缘场因此更直。</li>
+        <li><b>Reflow</b>：用训好的模型生成配对 \( (x_0, \text{模型输出}) \)，再训一遍，把 ODE 拉到接近直线，逼近 <span class="hg">1–4 步生成</span>。这是 Rectified Flow 的招牌操作，下一节单独讲。</li>
+      </ul>
+
+      <div class="callout tip">
+        <div class="ic">💡</div>
+        <div class="ct"><span class="t">额外的自由度</span><p>Flow Matching 不要求起点是高斯。\( p_0 \) 可以是任意能采样的分布——低清图、另一种模态、某个物理初态。这让它天然适合超分、图像翻译、蛋白结构等「分布到分布」的搬运任务，而扩散模型必须绕道噪声。工业界 Stable Diffusion 3、FLUX 等已经全面转向 rectified flow。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 6. Rectified Flow ══════════════ -->
+    <section id="s6">
+      <h2>6. Rectified Flow：把「拉直」本身当成一个可迭代的操作</h2>
+      <div class="badge b5">Liu, Gong &amp; Liu 2022 · arXiv 2209.03003</div>
+
+      <h3>6.1 它和 Flow Matching 到底什么关系</h3>
+
+      <p>三篇同期独立工作——Rectified Flow（2022.09）、Flow Matching（2022.10）、Stochastic Interpolants（2023.03）——在<b>训练损失上收敛到了同一个式子</b>。区别在出发点，而出发点决定了各自多做了什么：</p>
+
+      <ul>
+        <li><span class="hg">Flow Matching</span> 从「CNF 怎样才能 simulation-free 地训」出发，先建<b>一般框架</b>（任意概率路径 + 条件化技巧），线性路径只是其中一个漂亮的特例。</li>
+        <li><span class="ha">Rectified Flow</span> 从「两个分布之间最省事的搬运方式就是<b>走直线</b>」出发，一上来只研究线性插值，然后把重心放在一个 FM 没有的操作上：<b>reflow（再校正）</b>。</li>
+      </ul>
+
+      <div class="mathbox center">
+        <div class="lbl">最短的关系式</div>
+        \[ \text{线性路径的 Flow Matching}\ \equiv\ \text{1-Rectified Flow} \]
+      </div>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">命名坑</span><p>论文里跑一次 rectify 得到的流叫 <b>1-rectified flow</b>，拿它的输出再训一次叫 <b>2-rectified flow</b>，依此类推。而工业界（SD3、FLUX）说的 "rectified flow" 通常<b>只指 1-rectified flow</b>，也就是线性路径的 FM——它们并没有真的做 reflow。看到这个词先确认是哪一层含义。</p></div>
+      </div>
+
+      <h3>6.2 第一步：损失和 FM 逐字相同</h3>
+
+      <span class="srcpath">gnobitab/RectifiedFlow · <b>ImageGeneration/losses.py:100-114</b></span>
+      <pre><code><span class="cm">### standard rectified flow loss</span>
+t = torch.rand(batch.shape[0], device=batch.device) * (sde.T - eps) + eps
+t_expand = t.view(-1, 1, 1, 1).repeat(1, batch.shape[1], batch.shape[2], batch.shape[3])
+
+perturbed_data = t_expand * batch + (1.-t_expand) * z0   <span class="cm"># x_t = t·x₁ + (1−t)·x₀</span>
+target = batch - z0                                      <span class="cm"># 目标速度 = x₁ − x₀</span>
+
+score  = model_fn(perturbed_data, t*999)
+losses = torch.square(score - target)</code></pre>
+
+      <p>与 §5.4 的公式、§9.2 里 flow_matching 库的那两行，是同一个东西（此处约定 \( t=0 \) 是噪声、\( t=1 \) 是数据）。<code>t*999</code> 只是把 \( [0,1] \) 映射回旧 DDPM 网络习惯的 0–999 时间刻度，纯工程适配，无数学含义。</p>
+
+      <h3>6.3 关键认识：条件路径是直的，ODE 轨迹却是弯的</h3>
+
+      <p>这一点极易混淆，但它是理解 reflow 存在意义的<b>唯一前提</b>：</p>
+
+      <ul>
+        <li>给定一对 \( (x_0,x_1) \)，<b>条件路径</b>是直线——按定义如此，没什么可讨论的。</li>
+        <li>但网络学到的是<b>边缘场</b>：经过点 \( x \) 的所有条件直线的平均方向（§5.3 的图 6）。</li>
+        <li>随机配对的条件直线在空间中会<span class="ha">大量交叉</span>。交叉处的平均方向，不等于任何一条原直线的方向。</li>
+        <li>于是<b>真实的 ODE 轨迹是弯的</b>，哪怕每条条件路径都笔直。</li>
+      </ul>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 290" width="700" height="290" role="img" aria-label="reflow 前后条件路径的交叉情况对比">
+            <defs>
+              <marker id="ar" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#f0bf4c"/></marker>
+            </defs>
+            <!-- Panel A: 随机配对 -->
+            <text x="180" y="28" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">随机配对（1-Rectified Flow）</text>
+            <line x1="50" y1="60"  x2="310" y2="200" stroke="#9bce6b" stroke-width="1.5" opacity=".5"/>
+            <line x1="50" y1="140" x2="310" y2="80"  stroke="#9bce6b" stroke-width="1.5" opacity=".5"/>
+            <line x1="50" y1="220" x2="310" y2="140" stroke="#9bce6b" stroke-width="1.5" opacity=".5"/>
+            <circle cx="152" cy="115" r="9" fill="none" stroke="#ff8a8a" stroke-width="1.6"/>
+            <circle cx="206" cy="144" r="9" fill="none" stroke="#ff8a8a" stroke-width="1.6"/>
+            <text x="180" y="188" text-anchor="middle" font-family="Inter" font-size="11" fill="#ff8a8a">红圈＝交叉点，平均方向被拉偏</text>
+            <path d="M50 140 C 110 132, 150 168, 200 150 S 270 96, 308 82" fill="none" stroke="#f0bf4c" stroke-width="2.6" marker-end="url(#ar)"/>
+            <g fill="#6b768f"><circle cx="50" cy="60" r="4.5"/><circle cx="50" cy="140" r="4.5"/><circle cx="50" cy="220" r="4.5"/></g>
+            <g fill="#9bce6b"><circle cx="310" cy="200" r="5"/><circle cx="310" cy="80" r="5"/><circle cx="310" cy="140" r="5"/></g>
+            <text x="180" y="234" text-anchor="middle" font-family="Inter" font-size="12" fill="#f0bf4c">实际 ODE 轨迹是弯的 → 少步误差大</text>
+
+            <!-- Panel B: reflow 配对 -->
+            <text x="520" y="28" text-anchor="middle" font-family="Inter" font-size="13.5" fill="#e4ebf7">用模型自己走出的配对（reflow 后）</text>
+            <line x1="390" y1="60"  x2="650" y2="80"  stroke="#9bce6b" stroke-width="1.5" opacity=".5"/>
+            <line x1="390" y1="140" x2="650" y2="140" stroke="#9bce6b" stroke-width="1.5" opacity=".5"/>
+            <line x1="390" y1="220" x2="650" y2="200" stroke="#9bce6b" stroke-width="1.5" opacity=".5"/>
+            <text x="520" y="188" text-anchor="middle" font-family="Inter" font-size="11" fill="#9bce6b">同一 ODE 的轨迹互不相交 → 无交叉点</text>
+            <path d="M390 140 L 646 140" fill="none" stroke="#f0bf4c" stroke-width="2.6" marker-end="url(#ar)"/>
+            <g fill="#6b768f"><circle cx="390" cy="60" r="4.5"/><circle cx="390" cy="140" r="4.5"/><circle cx="390" cy="220" r="4.5"/></g>
+            <g fill="#9bce6b"><circle cx="650" cy="80" r="5"/><circle cx="650" cy="140" r="5"/><circle cx="650" cy="200" r="5"/></g>
+            <text x="520" y="234" text-anchor="middle" font-family="Inter" font-size="12" fill="#f0bf4c">轨迹被拉直 → 大步长也走得准</text>
+
+            <line x1="350" y1="46" x2="350" y2="250" stroke="#283248" stroke-width="1" stroke-dasharray="4 5"/>
+            <text x="350" y="276" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">左：条件路径直，边缘轨迹弯　　右：两者都直</text>
+          </svg>
+        </div>
+        <figcaption><b>图 7.</b> reflow 的全部动机：随机配对造成条件路径交叉，交叉处的平均把边缘轨迹弄弯了。这也是 1-rectified flow 仍需十几步而非一步的原因。</figcaption>
+      </figure>
+
+      <h3>6.4 Reflow：用模型自己的输出解开交叉</h3>
+
+      <p>核心观察一句话：<b>同一个 ODE 的两条轨迹永远不会相交</b>（否则解不唯一）。所以如果不再随机配对，而是用<span class="ha">已训好的模型真实走出来的配对</span> \( (x_0,\ \text{ODE}(x_0)) \)，这批配对天然不交叉，拿它重训，边缘场自然更直。</p>
+
+      <p>代码里就是两个独立的 config，跑两遍。<b>第一步，生成配对数据集：</b></p>
+
+      <span class="srcpath">gnobitab/RectifiedFlow · <b>ImageGeneration/run_lib_reflow.py:148-165</b></span>
+      <pre><code><span class="kw">for</span> data_step <span class="kw">in</span> range(config.reflow.total_number_of_samples // config.training.batch_size):
+    z0    = sde.get_z0(...)               <span class="cm"># 采一批噪声</span>
+    batch = sde.ode(z0, score_model)      <span class="cm"># 用当前模型完整解一遍 ODE</span>
+    z0_cllt.append(z0.cpu())
+    data_cllt.append(batch.cpu())
+
+np.save(os.path.join(data_root, str(config.seed), <span class="st">'z0.npy'</span>), z0_cllt.numpy())    <span class="cm"># 噪声</span>
+np.save(os.path.join(data_root, str(config.seed), <span class="st">'z1.npy'</span>), data_cllt.numpy())  <span class="cm"># 它对应的生成图</span></code></pre>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">这一步是真的贵</span><p>要为几百万个噪声<b>各解一次完整 ODE</b>。reflow 的成本本质上是「先用慢模型跑一遍全量推理」，再加一轮完整训练。少步生成不是免费的，只是把代价从推理期挪到了训练期。</p></div>
+      </div>
+
+      <p><b>第二步，用这些配对重训</b>——只改数据来源，损失一个字不动：</p>
+
+      <span class="srcpath">gnobitab/RectifiedFlow · <b>ImageGeneration/losses.py:80-83</b></span>
+      <pre><code><span class="kw">if</span> sde.reflow_flag:
+    z0   = batch[0]      <span class="cm"># 不再是现采的随机噪声</span>
+    data = batch[1]      <span class="cm"># 而是与它成对的生成结果</span>
+    batch = data.detach().clone()</code></pre>
+
+      <p>训出来的就是 2-rectified flow。理论上可以一直迭代下去，实践中做一到两次就够——每一轮都要付上面那份推理成本，而且模型误差会累积。</p>
+
+      <h3>6.5 从 reflow 到蒸馏：只改 t 的采样分布</h3>
+
+      <p>同一份代码里，把 \( t \) 的采样方式一换，就从「重训一个更直的流」变成「蒸馏成一步模型」：</p>
+
+      <span class="srcpath">gnobitab/RectifiedFlow · <b>ImageGeneration/losses.py:88-98</b></span>
+      <pre><code><span class="kw">if</span> sde.reflow_t_schedule == <span class="st">'uniform'</span>:      <span class="cm"># 训练新的 rectified flow（真正的 reflow）</span>
+    t = torch.rand(batch.shape[0], device=...) * (sde.T - eps) + eps
+<span class="kw">elif</span> sde.reflow_t_schedule == <span class="st">'t0'</span>:         <span class="cm"># k=1 蒸馏：只在 t=0 这一个时刻学</span>
+    t = torch.zeros(batch.shape[0], device=...) * (sde.T - eps) + eps
+<span class="kw">elif</span> type(sde.reflow_t_schedule) == int:    <span class="cm"># k 步蒸馏：只在 k 个离散时刻学</span>
+    t = torch.randint(0, sde.reflow_t_schedule, (batch.shape[0],), device=...) \
+        * (sde.T - eps) / sde.reflow_t_schedule + eps</code></pre>
+
+      <p><code>'t0'</code> 那一支的含义是：<b>只训 \( t=0 \) 这一个时刻</b>，逼网络在起点就一步预测出整段位移。既然不再需要中间时刻的物理正确性，损失甚至可以换成感知损失：</p>
+
+      <span class="srcpath">gnobitab/RectifiedFlow · <b>ImageGeneration/losses.py:110-118</b></span>
+      <pre><code><span class="kw">if</span> sde.reflow_loss == <span class="st">'l2'</span>:
+    losses = torch.square(score - target)
+<span class="kw">elif</span> sde.reflow_loss == <span class="st">'lpips'</span>:
+    <span class="cm"># 作者注：k=1 蒸馏时 LPIPS 效果最好</span></code></pre>
+
+      <div class="callout tip">
+        <div class="ic">💡</div>
+        <div class="ct"><span class="t">少步生成的第一条完整链路</span><p>1-RF（数十步）→ reflow 得 2-RF（~10 步）→ 蒸馏（1 步）。这是「一步生成」最早被完整跑通的路线之一。后来的 consistency models、对抗蒸馏用的是不同技术，但目标与这里一致。</p></div>
+      </div>
+
+      <h3>6.6 采样器：一个 for 循环，顺带再证一次「随机性可选」</h3>
+
+      <span class="srcpath">gnobitab/RectifiedFlow · <b>ImageGeneration/sampling.py:86-99</b></span>
+      <pre><code>dt = 1./sde.sample_N
+<span class="kw">for</span> i <span class="kw">in</span> range(sde.sample_N):
+    num_t = i / sde.sample_N * (sde.T - eps) + eps
+    t = torch.ones(shape[0], device=device) * num_t
+    pred = model_fn(x, t*999)
+
+    sigma_t = sde.sigma_t(num_t)                <span class="cm"># sigma_t = (1−t) * sigma_var</span>
+    pred_sigma = pred + (sigma_t**2)/(2*(sde.noise_scale**2)*((1.-num_t)**2)) * (...)
+
+    x = x + pred_sigma * dt + sigma_t * np.sqrt(dt) * torch.randn_like(pred_sigma)</code></pre>
+
+      <p><code>sample_N</code> 就是步数，设成 1 就是一步生成。而 <code>sigma_var=0</code> 时 \( \sigma_t\equiv 0 \)，整个式子退化成纯欧拉 ODE；把它调大，就在<b>保持边缘分布不变</b>的前提下变回一个 SDE——第 4 节那个「随机性是可选项」的结论，在这里又被实现了一遍。</p>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">实践细节：t 其实不是均匀采的</span>
+        <p>论文里 \( t\sim\mathcal{U}[0,1] \)，但真跑大模型时几乎都会把 \( t \) 往中间偏——中间时刻的任务最难、信息量最大。SD3 用 logit-normal 分布；Meta 的 flow_matching 库提供 <code>skewed_timestep_sample</code>（<code>examples/image/training/train_loop.py:26-33</code>），先采对数正态的 \( \sigma \) 再映射成 \( t = 1/(1+\sigma) \)。<b>这是从论文到能出好图之间最关键的一个未写进公式的超参。</b></p></div>
+      </div>
+
+      <h3>6.7 三种用法的账</h3>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>维度</th><th>1-Rectified Flow</th><th>2-Rectified Flow</th><th>k=1 蒸馏</th></tr></thead>
+          <tbody>
+            <tr><td><b>训练配对</b></td><td>随机 (噪声, 真图)</td><td>模型 ODE 走出的 (噪声, 生成图)</td><td>同左</td></tr>
+            <tr><td><b>t 的采样</b></td><td>\( \mathcal{U}[0,1] \)（实践中偏中间）</td><td>\( \mathcal{U}[0,1] \)</td><td>恒为 0</td></tr>
+            <tr><td><b>损失</b></td><td>L2</td><td>L2</td><td>LPIPS 更优</td></tr>
+            <tr><td><b>典型步数</b></td><td>数十</td><td>~10 或更少</td><td>1</td></tr>
+            <tr><td><b>额外成本</b></td><td>无</td><td>全量 ODE 推理造数据集 + 一轮训练</td><td>同左</td></tr>
+            <tr><td><b>质量</b></td><td>基准</td><td>持平或略降</td><td>明显下降但可用</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">Rectified Flow 的真正贡献</span>
+        <p>不是「用线性路径」——那部分和 Flow Matching 撞车了。而是指出：<b>路径直不直是可以被反复「校正」的，而校正的燃料是模型自己的生成结果。</b>这个「拿自己的输出当训练配对」的思路，后来在几乎所有少步蒸馏方法里都能看到影子。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 7. Energy Matching ══════════════ -->
+    <section id="s7">
+      <h2>7. Energy Matching：把向量场收回成一个标量势</h2>
+      <div class="badge b4">Balcerak et al. · NeurIPS 2025 · arXiv 2504.10612</div>
+
+      <h3>7.1 前面几种方法丢掉了什么</h3>
+
+      <p>Diffusion 和 Flow Matching 学的都是<b>向量场</b>。而一般的向量场<span class="hp">不是任何标量函数的梯度</span>（有旋量），因此模型手里没有显式的 \( \log p(x) \) 或能量。这带来几个实际缺口：</p>
+
+      <ul>
+        <li>做逆问题（去模糊、CT 重建、缺失补全）时，想把「数据先验」作为一个能量项加进优化目标——没有能量就只能靠各种引导（guidance）近似替代。</li>
+        <li>想把多个约束<b>相加组合</b>（能量可加，向量场不能随便加）。</li>
+        <li>想拿未归一化的似然做比较或退火采样。</li>
+      </ul>
+
+      <p>能量模型（EBM）本来就有这些能力，但训练出了名地难：需要长链 MCMC 采负样本，不稳定、易发散，生成质量一直落后扩散一大截。<b>Energy Matching 的目标就是两头兼得。</b></p>
+
+      <h3>7.2 核心设计：一个时间无关的标量场</h3>
+
+      <p>它只学一个网络 \( V_\theta: \mathbb{R}^d \to \mathbb{R} \)，<span class="hp">没有时间条件、没有辅助生成器、没有第二个网络</span>——这与近年多数 EBM 方法的做法是明显分道。理论支架是 Wasserstein 空间中的 JKO 梯度流格式：</p>
+
+      <div class="mathbox center plum">
+        <div class="lbl">JKO 格式</div>
+        \[ \rho_{k+1} = \arg\min_{\rho}\ \Big\{ \frac{W_2^2(\rho,\rho_k)}{2\Delta t} + \int V(x)\rho(x)\,\mathrm{d}x + \varepsilon(t)\int \rho(x)\log\rho(x)\,\mathrm{d}x \Big\} \]
+      </div>
+
+      <p>关键在于让熵项系数 \( \varepsilon(t) \) 随时间变化，于是同一个 \( V_\theta \) 产生<b>两个截然不同的阶段</b>：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>阶段</th><th>条件</th><th>动力学</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>传输相</b><br><span style="color:#6b768f">远离数据流形</span></td>
+              <td>\( \varepsilon(t)\approx 0 \)</td>
+              <td>\( \dot{x} = -\nabla_x V_\theta(x) \)</td>
+              <td>无旋（curl-free）、近似最优传输的直线路径，把噪声搬到数据附近</td>
+            </tr>
+            <tr>
+              <td><b>平衡相</b><br><span style="color:#6b768f">靠近数据流形</span></td>
+              <td>\( \varepsilon(t)=\varepsilon_{\max} \)</td>
+              <td>Langevin 动力学</td>
+              <td>落入玻尔兹曼平衡 \( \rho_{\text{eq}}(x)\propto e^{-V_\theta(x)/\varepsilon_{\max}} \)，显式刻画似然结构</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 300" width="700" height="300" role="img" aria-label="Energy Matching 的能量景观：传输相与平衡相">
+            <defs>
+              <marker id="ap" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#b49bff"/></marker>
+            </defs>
+            <!-- axes -->
+            <line x1="46" y1="256" x2="668" y2="256" stroke="#283248" stroke-width="1"/>
+            <text x="668" y="276" text-anchor="end" font-family="Inter" font-size="12" fill="#6b768f">x</text>
+            <text x="30" y="60" font-family="Inter" font-size="12" fill="#6b768f">V(x)</text>
+
+            <!-- energy landscape -->
+            <path d="M46 62 C 150 92, 210 176, 280 214 C 320 236, 340 240, 366 236
+                     C 392 230, 404 206, 424 208 C 446 210, 452 236, 486 240
+                     C 520 244, 560 214, 600 160 C 630 120, 650 88, 668 66"
+                  fill="none" stroke="#b49bff" stroke-width="2.4"/>
+            <path d="M46 62 C 150 92, 210 176, 280 214 C 320 236, 340 240, 366 236
+                     C 392 230, 404 206, 424 208 C 446 210, 452 236, 486 240
+                     C 520 244, 560 214, 600 160 C 630 120, 650 88, 668 66 L668 256 L46 256 Z"
+                  fill="rgba(180,155,255,.07)" stroke="none"/>
+
+            <!-- transport arrows on slopes -->
+            <g stroke="#b49bff" stroke-width="1.8" marker-end="url(#ap)" fill="none" opacity=".85">
+              <path d="M92 84 L 132 100"/>
+              <path d="M170 118 L 206 148"/>
+              <path d="M636 96 L 604 132"/>
+              <path d="M576 168 L 542 196"/>
+            </g>
+            <text x="150" y="70" font-family="Inter" font-size="12" fill="#b49bff">传输相：v = −∇V，无旋 · 最优传输</text>
+            <text x="470" y="86" font-family="Inter" font-size="12" fill="#b49bff">simulation-free 训练</text>
+
+            <!-- basin particles -->
+            <g fill="#f0a361">
+              <circle cx="352" cy="228" r="2.6"/><circle cx="366" cy="222" r="2.6"/><circle cx="378" cy="226" r="2.6"/>
+              <circle cx="360" cy="212" r="2.6"/><circle cx="372" cy="234" r="2.6"/>
+              <circle cx="474" cy="232" r="2.6"/><circle cx="486" cy="226" r="2.6"/><circle cx="496" cy="234" r="2.6"/>
+              <circle cx="482" cy="216" r="2.6"/><circle cx="468" cy="222" r="2.6"/>
+            </g>
+            <line x1="300" y1="252" x2="540" y2="252" stroke="#f0a361" stroke-width="1.4" stroke-dasharray="4 4"/>
+            <text x="420" y="284" text-anchor="middle" font-family="Inter" font-size="12" fill="#f0a361">平衡相：熵项开启，Langevin 采样 → ρ ∝ exp(−V/ε_max)</text>
+            <text x="366" y="196" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#9aa6bf">模式 A</text>
+            <text x="486" y="204" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#9aa6bf">模式 B</text>
+          </svg>
+        </div>
+        <figcaption><b>图 8.</b> 一个标量势同时干两件事：远处是把概率质量往下推的漏斗，近处是让样本按玻尔兹曼分布停留的盆地。</figcaption>
+      </figure>
+
+      <h3>7.3 训练目标：回归 + 对比散度</h3>
+
+      <p>训练分两个阶段，损失是两项之和：</p>
+
+      <div class="mathbox plum">
+        <div class="lbl">总损失</div>
+        \[ \mathcal{L}(\theta) = \mathcal{L}_{\text{OT}} + \lambda_{\text{CD}}\,\mathcal{L}_{\text{CD}} \]
+        <p style="font-size:15px;color:var(--muted);margin:14px 0 6px;">① <b>传输项</b>（热身期单独训，之后保留）：在最优传输耦合 \( \pi_{\text{OT}} \) 下把 \( -\nabla V_\theta \) 回归到 rectified-flow 的位移目标</p>
+        \[ \mathcal{L}_{\text{OT}} = \mathbb{E}_{t,\ (x_0,x_1)\sim\pi_{\text{OT}}}\Big\| \nabla_x V_\theta(x_t) + (x_1 - x_0) \Big\|^2 \]
+        <p style="font-size:15px;color:var(--muted);margin:14px 0 6px;">② <b>对比散度项</b>（主训练期加入）：压低真实数据的能量、抬高负样本的能量</p>
+        \[ \mathcal{L}_{\text{CD}} = \mathbb{E}_{x\sim p_{\text{data}}}\Big[\frac{V_\theta(x)}{\varepsilon_{\max}}\Big] - \mathbb{E}_{x\sim p_{\text{neg}}}\Big[\frac{V_\theta(x)}{\varepsilon_{\max}}\Big] \]
+      </div>
+
+      <p>负样本 \( p_{\text{neg}} \) 由 Langevin MCMC 产生，且<b>同时从数据端和噪声端初始化</b>——前者稳住局部盆地形状，后者防止能量在远处塌掉。注意第 ① 项的符号：因为速度场是 \( v=-\nabla V \)，回归目标写成 \( \nabla V \approx -(x_1-x_0) \)，等价于 \( v \approx x_1-x_0 \)，与第 6 节的 Rectified Flow 完全一致。<span class="hp">Energy Matching 在传输段就是一个「被约束成梯度场」的 Flow Matching。</span></p>
+
+      <h3>7.4 效果与代价</h3>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>数据集</th><th>Energy Matching</th><th>此前最好 EBM</th></tr></thead>
+          <tbody>
+            <tr><td><b>CIFAR-10</b>（无条件，50M 参数）</td><td><span class="hp">FID 3.97</span></td><td>FID 8.61</td></tr>
+            <tr><td><b>ImageNet 32×32</b></td><td><span class="hp">FID 7.67</span></td><td>显著更差</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>把 EBM 的生成质量直接砍半到扩散模型的可比区间，同时保留了能量带来的能力：论文进一步在受控的蛋白质生成上加了一个<b>交互能量</b>项来鼓励模式多样性——这种「往目标里加一项」的操作，在纯向量场模型里是没有对应物的。</p>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">代价要说清</span><p>① 采样含 MCMC 阶段，比纯 ODE 求解慢；② 学到的仍是<b>未归一化</b>能量，绝对似然仍需额外估计；③ 训练要跑 Langevin 采负样本，比 Flow Matching 的纯回归复杂，超参（\( \varepsilon_{\max} \)、\( \lambda_{\text{CD}} \)、链长）更敏感。这是「换取灵活性」的账单。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 8. 交互演示 ══════════════ -->
+    <section id="s8">
+      <h2>8. 交互演示：并排看着它们去噪</h2>
+
+      <p>前面七节的差别写在公式里，但「<b>同样给 10 步，谁能出图、谁糊成一团</b>」这种事只有看才有体感。下面四个面板<b>共用同一批初始噪声</b>、<b>同一个步数预算</b>，同时从 \( \mathcal{N}(0,I) \) 往一个八模态的环形分布走。</p>
+
+      <div class="callout note">
+        <div class="ic">🔬</div>
+        <div class="ct"><span class="t">这里没有训练任何网络</span>
+        <p>目标分布是二维高斯混合，它的<b>分数 \( \nabla\log p_t \) 与边缘速度场 \( u_t \) 都有闭式解</b>（高斯卷高斯还是高斯）。演示直接用这个解析 oracle 驱动四个采样器。<span class="mark">所以看到的差异 100% 来自路径与采样器本身，不掺任何训练质量因素。</span></p></div>
+      </div>
+
+      <div class="demo">
+        <canvas id="dz" width="1360" height="740" aria-label="四种采样器并排去噪演示"></canvas>
+        <div class="dctl">
+          <div class="dgrp">
+            <button id="dz-play" class="pri">▶ 播放</button>
+            <button id="dz-step">单步</button>
+            <button id="dz-reset">重置</button>
+          </div>
+          <div class="dgrp">
+            <span class="lb">步数 N</span>
+            <input id="dz-n" type="range" min="3" max="120" value="12" step="1">
+            <output id="dz-nv">12</output>
+          </div>
+          <div class="dgrp">
+            <span class="lb">DDIM η</span>
+            <input id="dz-eta" type="range" min="0" max="1" value="0" step="0.05">
+            <output id="dz-etav">0.00</output>
+          </div>
+          <div class="dgrp">
+            <label class="ck"><input id="dz-trail" type="checkbox" checked> 轨迹尾迹</label>
+            <label class="ck"><input id="dz-target" type="checkbox" checked> 目标分布</label>
+          </div>
+        </div>
+        <p class="dnote">灰色虚圈是目标的 8 个模态。改动 <b>步数 N</b> 会自动重置——建议依次试 <b>N=5 → 12 → 40 → 120</b>，看谁在小预算下先崩。</p>
+      </div>
+
+      <h3>8.1 该看什么</h3>
+
+      <ul>
+        <li><b>N = 5</b>：<span class="hb">DDPM</span> 几乎必然糊成一团——祖先采样每步都注入噪声，步子一大，后面已经没有足够的步数把它消化掉。<span class="hg">Flow Matching</span> 此时已能把点送到模态附近，因为它的路径最直。</li>
+        <li><b>N = 12</b>：<span class="ht">DDIM（η=0）</span>开始追上来。把 <b>η 从 0 拉到 1</b>，能看到它<b>连续地退化成 DDPM</b>——这就是 §3.1 那个旋钮的手感。</li>
+        <li><b>N = 120</b>：四者都收敛，此时该看的是<b>分布形状</b>而非清晰度——每个模态的点数是否均匀，有没有整片模态被漏掉。</li>
+        <li><span class="hp">Energy Matching</span> 的独特之处在<b>结尾</b>：其余三个到点就停，它在模态里<span class="mark">持续抖动</span>——那是玻尔兹曼平衡相，样本在 \( \exp(-V/\varepsilon_{\max}) \) 里游走而不是停在一点。这正是它能给出密度的来源与代价。</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">三处必须说明的简化</span>
+        <p>① <b>Rectified Flow 没有单独面板</b>：它与 Flow Matching 共用同一个速度场，而 oracle 给的已经是<b>精确</b>边缘场——reflow 的收益来自修正「学出来的场不够直」，解析解演示不出来。它的效果请看 §6.3 的图 7。<br>
+        ② <b>Energy Matching 用的是 oracle 势</b> \( V=-\log p_{\text{data}} \)，传输段借用 FM 的速度场；真方法是<b>一个学出来的标量场同时干两件事</b>。<br>
+        ③ 平衡段的 Langevin 步长做了稳定性夹取，否则大 N 时离散化会发散。</p></div>
+      </div>
+
+      <p>顺带一提：DDPM 与 DDIM 两个面板的更新式，是照着 §9.4 里 <code>ermongroup/ddim</code> 的 <code>ddpm_steps</code> 与 <code>generalized_steps</code> 逐行搬的（含 <code>c1</code>/<code>c2</code> 的写法与子序列跳步），可以对照着读。</p>
+    </section>
+
+    <!-- ══════════════ 9. 代码 ══════════════ -->
+    <section id="s9">
+      <h2>9. 对着代码看：把几份训练循环并排</h2>
+
+      <div class="callout note">
+        <div class="ic">📦</div>
+        <div class="ct"><span class="t">本节与下一节引用的官方仓库</span>
+        <p><code>ermongroup/ddim</code>（DDPM + DDIM 采样器）· <code>facebookresearch/flow_matching</code>（Meta 官方 FM 库）· <code>m1balcerak/EnergyMatching</code>（NeurIPS 2025 官方实现）· <code>facebookresearch/DiT</code>（条件注入的范本）。Rectified Flow 的代码已在第 6 节读过。行号对应 2026-07 的 main 分支，克隆下来可逐行对照。</p></div>
+      </div>
+
+      <p>先给结论：<b>这几份训练代码的差别，比公式看起来小得多。</b>把核心 loss 摘出来并排放，实质不同的只有三行。</p>
+
+      <h3>9.1 DDPM：整个训练就 4 行</h3>
+
+      <span class="srcpath">ermongroup/ddim · <b>functions/losses.py:4-15</b></span>
+      <pre><code><span class="kw">def</span> <span class="fn">noise_estimation_loss</span>(model, x0, t, e, b, keepdim=False):
+    a = (1-b).cumprod(dim=0).index_select(0, t).view(-1, 1, 1, 1)   <span class="cm"># ᾱ_t</span>
+    x = x0 * a.sqrt() + e * (1.0 - a).sqrt()                        <span class="cm"># x_t = √ᾱ·x₀ + √(1−ᾱ)·ε</span>
+    output = model(x, t.float())
+    <span class="kw">return</span> (e - output).square().sum(dim=(1, 2, 3)).mean(dim=0)     <span class="cm"># ‖ε − ε_θ‖²</span></code></pre>
+
+      <p>第 2 行是 §2.1 的闭式跳步，第 4 行是 \( \mathcal{L}_{\text{simple}} \)。注意 <code>loss_registry = {'simple': ...}</code>——这个仓库里<b>只注册了这一个损失</b>，DDPM 全部的训练信号就在这儿。</p>
+
+      <h3>9.2 Flow Matching：路径与损失被拆成两块</h3>
+
+      <p>Meta 的库把「路径」抽象成 <code>ProbPath</code>。核心两行在 <code>AffineProbPath.sample</code> 里：</p>
+
+      <span class="srcpath">facebookresearch/flow_matching · <b>flow_matching/path/affine.py:89-90</b></span>
+      <pre><code>x_t  = sigma_t * x_0 + alpha_t * x_1        <span class="cm"># 插值点</span>
+dx_t = d_sigma_t * x_0 + d_alpha_t * x_1    <span class="cm"># 条件速度 = 对 t 求导，闭式</span></code></pre>
+
+      <p>而 <code>CondOTProbPath</code> 只是把 scheduler 定成 \( \alpha_t=t,\ \sigma_t=1-t \)（affine.py:247-260），代入即得 \( x_t=(1-t)x_0+tx_1 \)、\( \dot{x}_t = x_1-x_0 \)。训练侧：</p>
+
+      <span class="srcpath">facebookresearch/flow_matching · <b>examples/image/training/train_loop.py:96-101</b></span>
+      <pre><code>path_sample = path.sample(t=t, x_0=noise, x_1=samples)
+x_t = path_sample.x_t
+u_t = path_sample.dx_t
+
+<span class="kw">with</span> torch.cuda.amp.autocast():
+    loss = torch.pow(model(x_t, t, extra=conditioning) - u_t, 2).mean()</code></pre>
+
+      <h3>9.3 两者是同一个模板——库里直接写着换算函数</h3>
+
+      <p>这是最能说明「异同」的一处代码。<code>AffineProbPath</code> 提供了 6 个方法，把 \( \varepsilon \) / \( x_1 \) / \( v \) 三种预测目标互相换算，比如：</p>
+
+      <span class="srcpath">facebookresearch/flow_matching · <b>flow_matching/path/affine.py:120-144</b></span>
+      <pre><code><span class="kw">def</span> <span class="fn">epsilon_to_velocity</span>(self, epsilon, x_t, t):
+    a_t = d_alpha_t / alpha_t
+    b_t = (d_sigma_t * alpha_t - d_alpha_t * sigma_t) / alpha_t
+    <span class="kw">return</span> a_t * x_t + b_t * epsilon</code></pre>
+
+      <p>全是 <code>x_t</code> 与目标的<b>线性组合</b>，系数只依赖 schedule。把 DDPM 的 \( \alpha_t=\sqrt{\bar\alpha_t},\ \sigma_t=\sqrt{1-\bar\alpha_t} \) 代进去，它就落在同一个 <code>AffineProbPath</code> 家族里。</p>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">「DDPM 和 Flow Matching 到底差在哪」的最短回答</span>
+        <p>差在 <b>schedule 的选择</b>和<b>回归目标的记号</b>，不差在框架。同一个 \( x_t=\alpha_t x_1+\sigma_t x_0 \) 模板：DDPM 选带噪扩散那组 \( (\alpha,\sigma) \) 并回归 \( \varepsilon \)；FM 选 \( (t,1-t) \) 并回归 \( v \)。两者之间隔着上面那个可逆线性变换——库里把它当工具函数提供，就是承认了这一点。</p></div>
+      </div>
+
+      <h3>9.4 采样器：DDPM 和 DDIM 在同一个函数里</h3>
+
+      <span class="srcpath">ermongroup/ddim · <b>functions/denoising.py:22-29</b>（<code>generalized_steps</code>）</span>
+      <pre><code>et   = model(xt, t)
+x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()                          <span class="cm"># ① 预测 x̂₀</span>
+c1 = kwargs.get(<span class="st">"eta"</span>, 0) * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()   <span class="cm"># σ_t(η)</span>
+c2 = ((1 - at_next) - c1 ** 2).sqrt()
+xt_next = at_next.sqrt() * x0_t + c1 * torch.randn_like(x) + c2 * et    <span class="cm"># ① + ③ + ②</span></code></pre>
+
+      <p>逐项对上 §3.1 的三段式公式：<code>at_next.sqrt() * x0_t</code> 是①，<code>c2 * et</code> 是②，<code>c1 * randn</code> 是③。<code>eta=0</code> 时 <code>c1=0</code>，随机项整个消失。</p>
+
+      <p>而<b>跳步</b>在代码里根本不是一个功能——<code>seq</code> 是外部传进来的时刻列表，传一个长度 50 的子序列进去就是 50 步采样，函数体一个字不用改。仓库里另有 <code>ddpm_steps</code>（denoising.py:35-67）显式实现祖先采样，可以对照着看它多算了一个 <code>mean_eps</code>（就是 §2.2 的 \( \tilde\mu_t \)）。</p>
+
+      <h3>9.5 Energy Matching：velocity 是 potential 的自动微分</h3>
+
+      <p>这是几种方法里唯一一处<b>结构性</b>的不同，而且代码写得极其直白：</p>
+
+      <span class="srcpath">m1balcerak/EnergyMatching · <b>experiments/cifar10/network_transformer_vit.py:177-223</b></span>
+      <pre><code><span class="kw">def</span> <span class="fn">potential</span>(self, x, t):
+    t_dummy = dummy_time(x, value=0.5)      <span class="cm"># ← 时间被忽略，永远喂 0.5</span>
+    unet_out = super().forward(t_dummy, x)
+    tokens   = self.patch_embed(unet_out)
+    pooled   = self.transformer_encoder(tokens).mean(dim=1)
+    V = self.final_linear(pooled).view(-1) * self.output_scale
+    <span class="kw">return</span> V                                <span class="cm"># (B,) 一个标量</span>
+
+<span class="kw">def</span> <span class="fn">velocity</span>(self, x, t):
+    <span class="kw">with</span> torch.enable_grad():
+        x = x.clone().detach().requires_grad_(True)
+        V = self.potential(x, t)
+        dVdx = torch.autograd.grad(V, x, grad_outputs=torch.ones_like(V),
+                                   create_graph=True)[0]
+        <span class="kw">return</span> -dVdx                        <span class="cm"># v = −∇V</span>
+
+<span class="kw">def</span> <span class="fn">forward</span>(self, t, x, return_potential=False, *args, **kwargs):
+    <span class="kw">return</span> self.potential(x, t) <span class="kw">if</span> return_potential <span class="kw">else</span> self.velocity(x, t)</code></pre>
+
+      <p><code>dummy_time(x, value=0.5)</code> 那一行，就是论文里「<b>时间无关</b>的标量场」在代码中的样子——函数签名里有 <code>t</code>，但从头到尾没被用过。再看训练损失：</p>
+
+      <span class="srcpath">m1balcerak/EnergyMatching · <b>experiments/cifar10/train_cifar_multigpu.py:85-91, 144-154</b></span>
+      <pre><code>x0_flow   = torch.randn_like(x_real_flow)
+t, xt, ut = flow_matcher.sample_location_and_conditional_flow(x0_flow, x_real_flow)
+
+vt        = model(t, xt)                    <span class="cm"># ← 这里返回的其实是 −∇V</span>
+flow_mse  = (vt - ut).square()
+w_flow    = flow_weight(t, cutoff=time_cutoff)
+flow_loss = torch.mean(w_flow * flow_mse.mean(dim=[1, 2, 3]))
+<span class="cm">...</span>
+cd_val     = pos_energy.mean() - neg_stat   <span class="cm"># CD：压低真实样本能量，抬高负样本</span>
+total_loss = flow_loss + lambda_cd * cd_val</code></pre>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">Energy Matching = 梯度场版的 Flow Matching</span>
+        <p>把这段的 <code>(vt - ut).square()</code> 和 §9.2 的 <code>torch.pow(model(x_t,t) - u_t, 2)</code> 对比：<b>一模一样</b>。唯一的区别是 <code>model(t, xt)</code> 内部多走了一次 <code>autograd.grad</code>，把网络输出<b>约束成某个标量函数的梯度</b>（即无旋场）。加上的 CD 项则负责让这个标量在数据附近长成一个合法的对数密度。</p></div>
+      </div>
+
+      <p>两个权重函数解释了两相是怎么在时间轴上分开的（<code>utils_cifar_imagenet.py:464-489</code>）：<code>flow_weight</code> 在 \( t \lt 0.8 \) 恒为 1、之后线性降到 0；<code>cd_weight</code> 完全反过来。也就是<span class="hp">前 80% 的时间学传输，后 20% 学能量</span>。</p>
+
+      <h3>9.6 EM 的采样：不是两段拼接，是一条 SDE 把噪声开大</h3>
+
+      <p>我原本以为是「先跑 ODE 再切换到 Langevin」，读了代码发现更优雅——<b>始终是同一条 SDE，只是扩散系数 \( g(t)=\sqrt{2\varepsilon(t)} \) 从 0 涨起来</b>：</p>
+
+      <span class="srcpath">m1balcerak/EnergyMatching · <b>utils_cifar_imagenet.py:183-205</b> + <b>experiments/cifar10/sample_cifar_heun_1gpu.py:59-66</b></span>
+      <pre><code><span class="kw">def</span> <span class="fn">plot_epsilon</span>(t, at_data=False):
+    <span class="kw">if</span>   t &lt; cutoff: <span class="kw">return</span> 0.0                                  <span class="cm"># 传输相：g=0，退化成纯 ODE</span>
+    <span class="kw">elif</span> t &lt; 1.0:    <span class="kw">return</span> (t - cutoff)/(1.0 - cutoff) * eps_max  <span class="cm"># 过渡：噪声线性升起</span>
+    <span class="kw">else</span>:            <span class="kw">return</span> eps_max                              <span class="cm"># 平衡相：满噪 Langevin</span>
+
+<span class="kw">def</span> <span class="fn">g</span>(self, t, y):                 <span class="cm"># torchsde 的扩散项</span>
+    e_val = plot_epsilon(float(t))
+    <span class="kw">if</span> e_val &lt;= 0: <span class="kw">return</span> torch.zeros_like(y)
+    <span class="kw">return</span> torch.sqrt(2.0 * e_val).expand_as(y)</code></pre>
+
+      <p>默认从 \( t=0 \) 一路积到 <code>t_end = 3.25</code>（sample_cifar_heun_1gpu.py:30-31）。<b>注意 t 跑过了 1</b>——超出 1 的那 2.25 个时间单位里 \( \varepsilon \) 恒为 \( \varepsilon_{\max} \)，模型不再「前进」，纯粹是在玻尔兹曼分布里晃动。这 2.25 就是 §7.2 那张能量景观图里「盆地内抖动」的部分。</p>
+
+      <h3>9.7 一张表收束</h3>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>同一件事</th><th style="color:#6aa6ff">DDPM / DDIM</th><th style="color:#9bce6b">Flow Matching</th><th style="color:#b49bff">Energy Matching</th></tr></thead>
+          <tbody>
+            <tr><td><b>造训练样本</b></td><td><code>x0*√ᾱ + e*√(1-ᾱ)</code></td><td><code>sigma_t*x_0 + alpha_t*x_1</code></td><td>同左（复用 FM 的 matcher）</td></tr>
+            <tr><td><b>回归目标</b></td><td><code>e</code>（噪声）</td><td><code>dx_t</code>（条件速度）</td><td><code>ut</code>（同 FM）</td></tr>
+            <tr><td><b>网络输出</b></td><td>与 x 同形张量</td><td>与 x 同形张量</td><td><b>标量</b>，再 autograd 取 −∇</td></tr>
+            <tr><td><b>额外损失项</b></td><td>无</td><td>无</td><td><code>+ lambda_cd * (E_pos − E_neg)</code></td></tr>
+            <tr><td><b>采样器</b></td><td><code>generalized_steps(eta)</code></td><td><code>ODESolver</code> 欧拉/中点</td><td><code>torchsde</code> Heun，g(t) 变噪声</td></tr>
+            <tr><td><b>负样本 MCMC</b></td><td>不需要</td><td>不需要</td><td>需要（<code>gibbs_sampling_time_sweep</code>）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════ 8. 条件注入 ══════════════ -->
+    <section id="s10">
+      <h2>10. 条件怎么注入</h2>
+
+      <p>这是与前面几种方法<b>正交</b>的一个维度：条件注入机制基本不关心你用的是扩散还是流匹配，同一套写法可以直接搬。总共就三种机制（前两种可叠加），外加 Energy Matching 独有的第四种。</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 300" width="700" height="300" role="img" aria-label="三种条件注入机制">
+            <defs>
+              <marker id="ac" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#9aa6bf"/></marker>
+            </defs>
+            <!-- 中央 block -->
+            <rect x="270" y="96" width="160" height="112" rx="14" fill="var(--panel-2)" stroke="#36425e" stroke-width="1.5"/>
+            <text x="350" y="140" text-anchor="middle" font-family="Inter" font-size="14" fill="#e4ebf7">网络 block</text>
+            <text x="350" y="162" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">Norm → Attn → MLP</text>
+            <text x="350" y="184" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">×N 层</text>
+
+            <!-- ① 向量调制 -->
+            <rect x="24" y="40" width="146" height="52" rx="10" fill="rgba(106,166,255,.14)" stroke="#6aa6ff"/>
+            <text x="97" y="62" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#6aa6ff">① 时间 t ＋ 类别 y</text>
+            <text x="97" y="80" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">emb 相加 → 一个向量</text>
+            <path d="M170 66 C 230 66, 240 108, 268 118" fill="none" stroke="#6aa6ff" stroke-width="1.8" marker-end="url(#ac)"/>
+            <text x="222" y="52" text-anchor="middle" font-family="Inter" font-size="11" fill="#6aa6ff">FiLM / adaLN</text>
+
+            <!-- ② cross attention -->
+            <rect x="24" y="128" width="146" height="52" rx="10" fill="rgba(155,206,107,.14)" stroke="#9bce6b"/>
+            <text x="97" y="150" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9bce6b">② 文本 / 变长条件</text>
+            <text x="97" y="168" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">编码成 token 序列</text>
+            <path d="M170 154 H 266" fill="none" stroke="#9bce6b" stroke-width="1.8" marker-end="url(#ac)"/>
+            <text x="218" y="144" text-anchor="middle" font-family="Inter" font-size="11" fill="#9bce6b">K/V 走 cross-attn</text>
+
+            <!-- ③ CFG -->
+            <rect x="24" y="216" width="146" height="52" rx="10" fill="rgba(240,163,97,.14)" stroke="#f0a361"/>
+            <text x="97" y="238" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#f0a361">③ CFG</text>
+            <text x="97" y="256" text-anchor="middle" font-family="Inter" font-size="11" fill="#9aa6bf">训练丢条件 · 推理外推</text>
+            <path d="M170 242 C 230 242, 240 200, 268 190" fill="none" stroke="#f0a361" stroke-width="1.8" marker-end="url(#ac)"/>
+            <text x="228" y="264" text-anchor="middle" font-family="Inter" font-size="11" fill="#f0a361">2× NFE 放大条件</text>
+
+            <!-- 输出 -->
+            <path d="M432 152 H 496" fill="none" stroke="#9aa6bf" stroke-width="1.8" marker-end="url(#ac)"/>
+            <text x="562" y="140" text-anchor="middle" font-family="Inter" font-size="13" fill="#e4ebf7">向量场 v / ε</text>
+            <text x="562" y="160" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">（扩散 · FM 走这条）</text>
+
+            <!-- ④ 能量相加 -->
+            <line x1="500" y1="196" x2="660" y2="196" stroke="#283248" stroke-width="1" stroke-dasharray="4 4"/>
+            <text x="562" y="222" text-anchor="middle" font-family="Inter" font-size="13" fill="#b49bff">④ 标量能量 V</text>
+            <text x="562" y="242" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#b49bff">u = V + 观测项 − 排斥项</text>
+            <text x="562" y="262" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">采样期任意叠加，不用训练</text>
+          </svg>
+        </div>
+        <figcaption><b>图 9.</b> 条件注入的四条通路。①②③ 对扩散和 Flow Matching 通用；④ 是 Energy Matching 独有的——因为它的输出是标量。</figcaption>
+      </figure>
+
+      <h3>10.1 机制一：条件 → 一个向量 → 调制归一化层</h3>
+
+      <p>最常见的一种，而且有个容易被忽略的事实：<b>类别条件走的是和时间 t 完全相同的通道</b>。</p>
+
+      <span class="srcpath">facebookresearch/flow_matching · <b>examples/image/models/unet.py:678-695</b></span>
+      <pre><code>emb = self.time_embed(timestep_embedding(timesteps, self.model_channels).to(x))
+
+<span class="kw">if</span> self.num_classes <span class="kw">is not</span> None <span class="kw">and</span> <span class="st">"label"</span> <span class="kw">in</span> extra:
+    y = extra[<span class="st">"label"</span>]
+    emb = emb + self.label_emb(y)        <span class="cm"># ← 类别就这么加进去，一行</span></code></pre>
+
+      <p>这个 <code>emb</code> 一路传给每个 ResBlock，做 FiLM 式的 scale / shift：</p>
+
+      <span class="srcpath">facebookresearch/flow_matching · <b>examples/image/models/unet.py:274-283</b></span>
+      <pre><code>emb_out = self.emb_layers(emb).type(h.dtype)
+<span class="kw">if</span> self.use_scale_shift_norm:
+    scale, shift = torch.chunk(emb_out, 2, dim=1)
+    h = out_norm(h) * (1 + scale) + shift     <span class="cm"># 条件去缩放/平移归一化后的特征</span>
+<span class="kw">else</span>:
+    h = h + emb_out                           <span class="cm"># 退化写法：直接加偏置</span></code></pre>
+
+      <p>DiT 是同一思想的 Transformer 版，写得更干净：</p>
+
+      <span class="srcpath">facebookresearch/DiT · <b>models.py:240-246</b></span>
+      <pre><code>x = self.x_embedder(x) + self.pos_embed
+t = self.t_embedder(t)                   <span class="cm"># (N, D)</span>
+y = self.y_embedder(y, self.training)    <span class="cm"># (N, D)</span>
+c = t + y                                <span class="cm"># ← 时间与条件合成一个向量</span>
+<span class="kw">for</span> block <span class="kw">in</span> self.blocks:
+    x = block(x, c)</code></pre>
+
+      <span class="srcpath">facebookresearch/DiT · <b>models.py:118-122</b>（adaLN-Zero）</span>
+      <pre><code>shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = \
+    self.adaLN_modulation(c).chunk(6, dim=1)
+x = x + gate_msa.unsqueeze(1) * self.attn(modulate(self.norm1(x), shift_msa, scale_msa))
+x = x + gate_mlp.unsqueeze(1) * self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp))</code></pre>
+
+      <p>一个条件向量产出 <b>6 组</b>参数：两处 shift、两处 scale、两处 gate。<code>gate</code> 的输出层初始化为 0（这就是「-Zero」的来历），训练伊始每个 block 都是恒等映射，条件的影响从零缓慢长出来——DiT 稳定训练的关键技巧之一。</p>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">为什么加条件几乎不用改架构</span><p>因为网络<b>本来就已经在被一个标量（时间）调制</b>了。<code>c = t + y</code> 这一行的意思是：类别只是往同一个插座里又插了一个向量。想加第三个条件（比如美学分数、分辨率），继续 <code>c = t + y + s</code> 即可——SDXL 的 size/crop conditioning 正是这么做的。</p></div>
+      </div>
+
+      <h3>10.2 机制二：变长条件走 cross-attention</h3>
+
+      <p>文本 prompt 这类压不进单个向量的条件，编码成 token 序列 \( c_{1..L} \)，在 block 里加一层交叉注意力：Q 来自图像 token，K/V 来自条件 token。Stable Diffusion 的文本通路即是如此。它与机制一<b>叠加使用</b>而非替代——时间仍走 FiLM/adaLN，文本走 cross-attn。上面两个仓库的图像示例都是类别条件，所以只用了机制一。</p>
+
+      <h3>10.3 机制三：Classifier-Free Guidance</h3>
+
+      <p>前两种机制只负责「把条件送进去」。要让条件<b>足够强</b>，还得靠 CFG。它分训练、推理两半。</p>
+
+      <h4>先说清 CFG 在做什么，空条件的位置才好理解</h4>
+
+      <p>条件生成要的分数，可以按贝叶斯拆成两块：</p>
+
+      <div class="mathbox center">
+        \[ \underbrace{\nabla_x\log p(x\mid y)}_{\text{条件分数}} = \underbrace{\nabla_x\log p(x)}_{\text{无条件分数}} + \underbrace{\nabla_x\log p(y\mid x)}_{\text{「更像 }y\text{」的方向}} \]
+      </div>
+
+      <p>第二项是「隐式分类器」的梯度——它指向<b>更符合条件</b>的方向。CFG 的想法就是把这一项<b>放大 \( s \) 倍</b>（贴合条件更紧，代价是多样性下降）：</p>
+
+      <div class="mathbox center">
+        \[ \begin{aligned}
+        \tilde{\nabla} \;&=\; \nabla_x\log p(x) \;+\; s\cdot\nabla_x\log p(y\mid x) \\[8pt]
+        &=\; \nabla_x\log p(x) \;+\; s\cdot\Big[\underbrace{\nabla_x\log p(x\mid y)}_{\text{条件那一支}} \;-\; \underbrace{\nabla_x\log p(x)}_{\text{无条件那一支}}\Big]
+        \end{aligned} \]
+      </div>
+
+      <p>对应采样的分布是 \( p(x)\,p(y|x)^{s} \propto p(x|y)\,p(y|x)^{s-1} \)，也就是把条件后验<b>锐化</b>。</p>
+
+      <p>盯住最后一行：要算出这个式子，必须<b>同时</b>拿到 \( \nabla\log p(x\mid y) \) 和 \( \nabla\log p(x) \)。前者是条件模型，后者就是<span class="hi">无条件模型</span>——而一个从头到尾只见过带标签样本的网络，是给不出后者的。</p>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">空条件的作用：它是减法的基准点</span>
+        <p>空条件<b>不是占位符</b>。CFG 的核心是一个减法，减法就需要一个基准；这个基准正是「什么条件都没给」时网络的预测。训练时按概率把条件替换成 null，就是在<b>用同一套权重额外训练出无条件那一支</b>，好让推理时减得出来。没有它，CFG 的括号里只有一项，整个方法不成立。</p></div>
+      </div>
+
+      <p>由此有三个推论，都很实用：</p>
+
+      <ul>
+        <li><b>「Classifier-<u>Free</u>」的 free 指的就是这件事。</b>更早的 classifier guidance（Dhariwal &amp; Nichol）要<b>单独训一个分类器</b> \( p(y|x_t) \) 来提供 \( \nabla\log p(y|x) \)——而且得能在各个噪声水平上工作，又贵又容易被对抗梯度骗。CFG 用一行 label dropout 把无条件模型<b>免费</b>塞进同一个网络，隐式分类器由两支相减自动得到，<span class="mark">根本不用真的训分类器</span>。</li>
+        <li><b>null 必须是网络见过的、有含义的输入。</b>DiT 给它一行专属的<b>可学习 embedding</b>（索引 = <code>num_classes</code>）；flow_matching 把 dict 清空后由 UNet 填 padding index。不能随手喂零向量或噪声——那是网络没训过的输入，输出没有意义，减出来的方向自然也没有意义。</li>
+        <li><b>dropout 比例是个权衡。</b>太低，无条件那支学不好、基准点不准；太高，又挤占了条件建模本身的训练量。常用 <b>10%</b>（DiT 的 <code>--class-dropout-prob 0.1</code>）。</li>
+      </ul>
+
+      <h4>训练侧：随机把条件替换成「空条件」</h4>
+
+      <p>DiT 的做法是在 embedding 表里多留一行当 null token：</p>
+
+      <span class="srcpath">facebookresearch/DiT · <b>models.py:78-87</b></span>
+      <pre><code><span class="kw">def</span> <span class="fn">token_drop</span>(self, labels, force_drop_ids=None):
+    drop_ids = torch.rand(labels.shape[0], device=labels.device) &lt; self.dropout_prob
+    labels = torch.where(drop_ids, self.num_classes, labels)   <span class="cm"># num_classes = null 的索引</span>
+    <span class="kw">return</span> labels</code></pre>
+
+      <p>flow_matching 更朴素，直接把整个 conditioning 字典清空：</p>
+
+      <span class="srcpath">facebookresearch/flow_matching · <b>examples/image/training/train_loop.py:68-71</b></span>
+      <pre><code><span class="kw">if</span> torch.rand(1) &lt; args.class_drop_prob:
+    conditioning = {}
+<span class="kw">else</span>:
+    conditioning = {<span class="st">"label"</span>: labels}</code></pre>
+
+      <p>（UNet 在 label 缺失时会自动填 padding index，见 unet.py:683-688。）一次训练同时得到条件模型与无条件模型，代价只是若干比例的样本没看到标签。</p>
+
+      <h4>推理侧：两次前向 + 外推</h4>
+
+      <span class="srcpath">facebookresearch/flow_matching · <b>examples/image/training/eval_loop.py:57-61</b></span>
+      <pre><code>conditional    = self.model(x, t, extra={<span class="st">"label"</span>: label})
+condition_free = self.model(x, t, extra={})
+result = (1.0 + cfg_scale) * conditional - cfg_scale * condition_free</code></pre>
+
+      <span class="srcpath">facebookresearch/DiT · <b>models.py:263-264</b></span>
+      <pre><code>cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
+half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)</code></pre>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">同一个公式，但 cfg_scale 的含义差 1</span>
+        <p>DiT 的 <code>uncond + s·(cond − uncond)</code> 展开是 \( s\cdot\text{cond} + (1-s)\cdot\text{uncond} \)；flow_matching 的 <code>(1+w)·cond − w·uncond</code> 要令 \( s = 1+w \) 才等价。<b>DiT 里 s=1 表示「无引导」，flow_matching 里 w=0 才表示「无引导」。</b>跨仓库搬 guidance scale 时这是最常踩的坑（DiT 常用 s=1.5，对应 flow_matching 的 w=0.5）。</p></div>
+      </div>
+
+      <p>另一个工程细节：DiT 把 batch 的前后半拼成 <code>[half, half]</code> 一次前向就同时拿到条件与无条件两支（models.py:255-257）。这省了一次 kernel 启动，但<b>算力仍是 2 倍</b>——CFG 的 NFE 代价躲不掉。</p>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">为什么 CFG 能直接搬到 Flow Matching 上</span>
+        <p>CFG 原本是从分数推出来的（\( \nabla\log p(x|y) \) 的外推）。但由 §9.3 那组换算函数，速度场与分数之间是<b>仿射关系</b>，对两支输出做同样的线性外推，等价于对分数做外推。所以公式一个字不用改——这正是 flow_matching 库敢直接对 <code>velocity</code> 做 CFG 的依据。</p></div>
+      </div>
+
+      <div class="callout tip">
+        <div class="ic">💡</div>
+        <div class="ct"><span class="t">顺带解释了 negative prompt</span>
+        <p>既然无条件那一支的角色只是<b>减法的基准点</b>，那把它换成「别的条件」会怎样？</p>
+        <p style="margin:10px 0 8px;">\[ \tilde{\varepsilon} = \varepsilon(x, y_{\text{neg}}) + s\cdot\big[\varepsilon(x, y_{\text{pos}}) - \varepsilon(x, y_{\text{neg}})\big] \]</p>
+        <p>外推方向从「无条件 → 条件」变成「\( y_{\text{neg}} \) → \( y_{\text{pos}} \)」，样本于是被<b>推离</b> \( y_{\text{neg}} \)。这就是 Stable Diffusion 里 <b>negative prompt 的全部原理</b>——它没有新增任何机制，只是把 CFG 空条件那一支替换成了你想远离的东西。空字符串 <code>""</code> 只是它的默认取值。</p></div>
+      </div>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">基准点太差会带偏方向</span>
+        <p>无条件那一支的<b>绝对</b>质量不重要（它只提供参考方向），但它在某些时刻可能很不可靠——尤其 \( t \) 极大或极小时两支几乎重合，相减放大的主要是噪声。实践中的对策是<b>只在一段时间区间里开 CFG</b>，区间外把 scale 置回 1.0。JiT 的实现就是这么做的，见 §11.5。</p></div>
+      </div>
+
+      <h3>10.4 机制四：Energy Matching 把条件加成能量项</h3>
+
+      <p>这里才出现真正的机制差异。因为模型输出是标量，条件<b>不必进网络</b>——采样时把额外能量项加到 \( V \) 上，再求一次梯度就行。论文的蛋白质实验就是这么做后验采样的：</p>
+
+      <span class="srcpath">m1balcerak/EnergyMatching · <b>experiments/proteins/sampling.py:112-132</b></span>
+      <pre><code>x.requires_grad_(True)
+v = model.potential(x, t_val.unsqueeze(0)).sum()               <span class="cm"># 学到的数据能量</span>
+
+<span class="cm"># ① 观测似然 → 能量项（classifier guidance 的能量写法）</span>
+y_pred = (pred.forward_soft(vae_model.decode(x.squeeze())) - y_min) / (y_max - y_min)
+likelihood = 0.5 * ((y_pred - y_gt.squeeze()) ** 2)
+cg = (e_t / zeta**2) * likelihood.sum()
+
+<span class="cm"># ② 样本之间的排斥 → 能量项（鼓励多样性）</span>
+diffs = ((x_flat.unsqueeze(1) - x_flat.unsqueeze(0))**2).sum(-1)
+W = 0.5 * diffs[mask].sum() * (e_t / sigma_W**2)
+
+u = v + cg - W                                                 <span class="cm"># ← 标量直接相加</span>
+grad_x = torch.autograd.grad(u, x)[0]
+
+<span class="kw">with</span> torch.no_grad():
+    x = (x - dt_t * grad_x + sigma * noise).clamp(-1, 1)        <span class="cm"># 一次 Langevin 更新</span></code></pre>
+
+      <p><code>u = v + cg - W</code> 这一行就是全部。对比一下两种路线的代价：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>维度</th><th style="color:#f0a361">CFG（扩散 / FM）</th><th style="color:#b49bff">能量相加（EM）</th></tr></thead>
+          <tbody>
+            <tr><td><b>要不要改训练</b></td><td>要：训练期按概率丢条件</td><td>不要，采样期临时加</td></tr>
+            <tr><td><b>每步 NFE</b></td><td>2×</td><td>1× ＋ 条件项自身的梯度</td></tr>
+            <tr><td><b>加第二个条件</b></td><td>需重新设计（多条件权重难调）</td><td>再加一项：<code>u = v + c₁ + c₂</code></td></tr>
+            <tr><td><b>条件的形式要求</b></td><td>要么编进网络，要么单独训 classifier</td><td>只要对 x 可微即可</td></tr>
+            <tr><td><b>跨样本约束</b></td><td>写不出来（每个样本速度独立算）</td><td>可以：上面的排斥项 W</td></tr>
+            <tr><td><b>条件强度可控性</b></td><td>成熟、经验丰富</td><td>要调温度 \( \varepsilon \) 与各项系数，更敏感</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>特别注意②那个<b>排斥项</b>：它是 batch 内样本<b>两两之间</b>的相互作用能，让同一批样本互相推开以提升多样性。这种跨样本约束在纯向量场模型里<b>根本没有对应写法</b>，因为那里每个样本的速度是各算各的。</p>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">条件注入的一句话总结</span>
+        <p>扩散 / Flow Matching 的条件必须<b>在训练期编进网络</b>（然后靠 CFG 在推理期放大）；Energy Matching 的条件可以<b>在采样期以能量项的形式任意叠加</b>，不动模型。这就是论文说的「EBM 的灵活性」在代码里的确切含义。代价是采样端要跑 Langevin，且多了一组温度超参要调。</p></div>
+      </div>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">一个诚实的限定</span>
+        <p>EnergyMatching 仓库的 CIFAR-10 / ImageNet 实验是<b>无条件</b>生成（<code>class_cond=False</code>），机制四的完整演示只在蛋白质实验里。所以「EM 的类别条件图像生成效果如何」这个问题，目前还没有公开数据可比——上表比的是机制的性质，不是已验证的图像生成效果。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 10. 架构轴 ══════════════ -->
+    <section id="s11">
+      <h2>11. 另一条正交轴：U-Net → DiT → JiT</h2>
+
+      <p>前面九节讲的全是<b>目标函数与采样动力学</b>，网络长什么样一直当黑盒处理。而 DiT、JiT 这两个名字属于<b>另一根轴</b>。把轴分清楚，很多困惑会自动消解。</p>
+
+      <h3>11.1 先把三根轴摆开</h3>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>轴</th><th>在问什么</th><th>取值举例</th></tr></thead>
+          <tbody>
+            <tr><td><b>① 路径 / 目标</b><br><span style="color:#6b768f">前 9 节</span></td><td>怎么定义从噪声到数据的路？网络回归什么？</td><td>DDPM · DDIM · Flow Matching · Rectified Flow · Energy Matching</td></tr>
+            <tr><td><b>② 架构</b><br><span style="color:#6b768f">本节</span></td><td>谁来计算这个场？</td><td>U-Net · <span class="hb">DiT</span> · <span class="ht">JiT</span> · UViT</td></tr>
+            <tr><td><b>③ 表示空间</b></td><td>在什么空间上做扩散？</td><td>原始像素 · VAE latent · 离散 token</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>三根轴可以自由组合，且基本互不干涉：</p>
+
+      <ul>
+        <li><b>DiT 原论文</b> ＝ DDPM（①）+ Transformer（②）+ VAE latent（③）</li>
+        <li><b>SD3 / FLUX</b> ＝ Rectified Flow（①）+ MMDiT（②）+ VAE latent（③）</li>
+        <li><b>JiT</b> ＝ Flow Matching 路径 + <span class="ht">x-预测</span>（①）+ 纯 ViT（②）+ <span class="ht">原始像素</span>（③）</li>
+      </ul>
+
+      <p>把这三根轴画成平行坐标，每篇论文就是一条<b>连线</b>——一眼能看出谁跟谁只差一个坐标：</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 410" width="700" height="410" role="img" aria-label="用三根正交轴的平行坐标图定位各篇论文">
+            <!-- 轴 -->
+            <g stroke="#36425e" stroke-width="1.4">
+              <line x1="150" y1="72" x2="150" y2="312"/>
+              <line x1="390" y1="72" x2="390" y2="312"/>
+              <line x1="610" y1="72" x2="610" y2="312"/>
+            </g>
+            <g font-family="Inter" font-size="12.5" font-weight="600" fill="#f0a361" text-anchor="middle">
+              <text x="150" y="56">① 路径 / 回归目标</text>
+              <text x="390" y="56">② 架构</text>
+              <text x="610" y="56">③ 表示空间</text>
+            </g>
+
+            <!-- 连线（先画，标签压在上面） -->
+            <g fill="none" stroke-width="2.2" opacity=".92">
+              <polyline points="150,96 390,104 610,246" stroke="#6aa6ff"/>
+              <polyline points="150,106 390,120 610,136" stroke="#b49bff"/>
+              <polyline points="150,167 390,190 610,146" stroke="#9bce6b"/>
+              <polyline points="150,232 390,270 610,256" stroke="#46d7cc"/>
+              <polyline points="150,292 390,132 610,264" stroke="#f0a361" stroke-dasharray="5 4"/>
+            </g>
+
+            <!-- 轴 1 刻度 + 左侧标签 -->
+            <g fill="#9aa6bf">
+              <circle cx="150" cy="100" r="4"/><circle cx="150" cy="167" r="4"/>
+              <circle cx="150" cy="232" r="4"/><circle cx="150" cy="292" r="4"/>
+            </g>
+            <g font-family="Inter" font-size="12" fill="#9aa6bf" text-anchor="end">
+              <text x="138" y="104">ε-预测（扩散）</text>
+              <text x="138" y="171">v-预测（FM / RF）</text>
+              <text x="138" y="236">x-预测</text>
+              <text x="138" y="296">−∇V（能量）</text>
+            </g>
+
+            <!-- 轴 2 刻度 + 标签（带底衬，压住连线） -->
+            <g fill="#9aa6bf">
+              <circle cx="390" cy="112" r="4"/><circle cx="390" cy="190" r="4"/><circle cx="390" cy="270" r="4"/>
+            </g>
+            <g>
+              <rect x="344" y="82" width="92" height="20" rx="6" fill="#161d2e" stroke="#283248"/>
+              <text x="390" y="96" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">U-Net</text>
+              <rect x="330" y="160" width="120" height="20" rx="6" fill="#161d2e" stroke="#283248"/>
+              <text x="390" y="174" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">Transformer / DiT</text>
+              <rect x="344" y="240" width="92" height="20" rx="6" fill="#161d2e" stroke="#283248"/>
+              <text x="390" y="254" text-anchor="middle" font-family="Inter" font-size="12" fill="#9aa6bf">纯 ViT</text>
+            </g>
+
+            <!-- 轴 3 刻度 + 右侧标签 -->
+            <g fill="#9aa6bf">
+              <circle cx="610" cy="141" r="4"/><circle cx="610" cy="255" r="4"/>
+            </g>
+            <g font-family="Inter" font-size="12" fill="#9aa6bf">
+              <text x="622" y="145">VAE latent</text>
+              <text x="622" y="259">原始像素</text>
+            </g>
+
+            <!-- 图例 -->
+            <line x1="16" y1="336" x2="684" y2="336" stroke="#283248" stroke-width="1"/>
+            <g font-family="Inter" font-size="12">
+              <rect x="20"  y="352" width="22" height="3" fill="#6aa6ff"/><text x="50"  y="358" fill="#9aa6bf">DDPM 2020</text>
+              <rect x="146" y="352" width="22" height="3" fill="#b49bff"/><text x="176" y="358" fill="#9aa6bf">DiT 2022</text>
+              <rect x="256" y="352" width="22" height="3" fill="#9bce6b"/><text x="286" y="358" fill="#9aa6bf">SD3 / FLUX 2024</text>
+              <rect x="416" y="352" width="22" height="3" fill="#46d7cc"/><text x="446" y="358" fill="#9aa6bf">JiT 2025</text>
+              <rect x="530" y="352" width="22" height="3" fill="#f0a361"/><text x="560" y="358" fill="#9aa6bf">Energy Matching 2025</text>
+            </g>
+            <text x="350" y="384" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">DiT 与 DDPM 只差第 ② 根轴；SD3 与 DiT 只差第 ① 根轴；JiT 同时换了 ① 和 ③</text>
+            <text x="350" y="400" text-anchor="middle" font-family="Inter" font-size="11" fill="#6b768f">虚线：Energy Matching 的骨干是 U-Net 主干 + 一个 ViT 能量头，落在两档之间</text>
+          </svg>
+        </div>
+        <figcaption><b>图 10.</b> 五篇论文放进同一张图。<b>论文之间的「区别」＝连线在哪根轴上分叉</b>；看不出区别的地方，就是它们真正共享的部分。</figcaption>
+      </figure>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">DiT 和 DDPM 不是并列关系</span>
+        <p>就像「Transformer」和「语言建模」不是并列关系一样。DiT 做的是<b>把 U-Net 换成 Transformer</b>，它第一版用的还是 DDPM 那套 \( \varepsilon \)-预测加 DDPM/DDIM 采样器——仓库里的 <code>diffusion/</code> 目录直接就是 OpenAI guided-diffusion 那份代码。<b>DiT 只动了轴 ②。</b></p></div>
+      </div>
+
+      <h3>11.2 DiT：把骨干换成 Transformer，顺便证明 scaling law 成立</h3>
+
+      <p>DiT（Peebles &amp; Xie, ICCV 2023）的三件事：</p>
+      <ul>
+        <li>扔掉 U-Net 的卷积 + 跳连结构，改成在 VAE latent 的 patch 上跑标准 Transformer；</li>
+        <li>条件（\( t \) 与 \( y \)）用 adaLN-Zero 注入——§10.1 已经逐行读过；</li>
+        <li>核心结论：<b>FID 随模型 Gflops 单调下降</b>。也就是说 scaling law 在扩散骨干上同样成立。这才是它真正的贡献，也是后来 SD3 / FLUX / Sora 全线转向 Transformer 的依据。</li>
+      </ul>
+
+      <h3>11.3 JiT：把「预测什么」这个问题问到底</h3>
+
+      <div class="badge b2">Li &amp; He 2025 · arXiv 2511.13720 · Just image Transformers</div>
+
+      <p>挑衅就写在标题里——<b>《Back to Basics: Let Denoising Generative Models Denoise》</b>：现在的「去噪」模型其实都不预测干净图像，它们预测的是噪声 \( \varepsilon \) 或速度 \( v \)。JiT 主张<b>直接预测 \( x \)</b>，并且扔掉 tokenizer、latent 空间和 U-Net，让一个朴素 ViT 直接吃原始像素 patch。</p>
+
+      <p>训练代码把这个差别摆得极其清楚：</p>
+
+      <span class="srcpath">LTH14/JiT · <b>denoiser.py:52-64</b></span>
+      <pre><code>t = self.sample_t(x.size(0), device=x.device).view(-1, *([1] * (x.ndim - 1)))
+e = torch.randn_like(x) * self.noise_scale
+
+z = t * x + (1 - t) * e                           <span class="cm"># ① 线性路径，与 §6.2 的 rectified flow 同款</span>
+v = (x - z) / (1 - t).clamp_min(self.t_eps)       <span class="cm">#    目标速度</span>
+
+x_pred = self.net(z, t.flatten(), labels_dropped) <span class="cm"># ② ★ 网络输出的是 x（干净图）</span>
+v_pred = (x_pred - z) / (1 - t).clamp_min(self.t_eps)
+
+loss = (v - v_pred) ** 2                          <span class="cm"># ③ 但损失仍在 v 空间算</span>
+loss = loss.mean(dim=(1, 2, 3)).mean()</code></pre>
+
+      <p>三处标注对应三件独立的事：<b>①路径是 Flow Matching 的</b>（JiT 不是新的建模范式）；<b>②网络的输出口开在 x 上</b>；<b>③损失仍在 v 空间</b>，两者之间由 §9.3 那个线性关系连接。</p>
+
+      <h3>11.4 为什么「线性重参数化」在这里不再无害</h3>
+
+      <p>§12 的要点框会说：\( \varepsilon \) / \( x_0 \) / \( v \) 互为线性重参数化，不是不同范式。JiT 恰好是这句话的<b>边界案例</b>，值得说清楚。</p>
+
+      <p>换算确实是线性的，但看系数——是 \( \tfrac{1}{1-t} \)，在 \( t\to 1 \)（接近干净数据）时会<b>爆炸</b>。于是同一份误差，经过不同输出口进入损失时被放大的程度完全不同：</p>
+
+      <ul>
+        <li>网络输出 <b>x</b>：\( x \) 的误差被 \( \tfrac{1}{1-t} \) 放大后进损失——但 \( x \) 本身好学。</li>
+        <li>网络输出 <b>ε 或 v</b>：数据端误差被压缩，噪声端误差被放大——而噪声那一端<b>并不好学</b>。</li>
+      </ul>
+
+      <p>在低维 latent 上（DiT 的一个 patch 只有几十维）这点差别不致命。但 JiT 直接跑<b>像素</b>：patch 16 意味着每个 token 是 \( 16\times16\times3=768 \) 维，patch 32 则是 <b>3072 维</b>。论文报告，在这种维度下预测「加噪后的量」会<span class="hi">灾难性失败</span>，而预测 \( x \) 不会。</p>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">解释指向流形假设</span>
+        <p>干净图像 \( x \) 位于高维像素空间中的一个<b>低维流形</b>上，网络容易拟合。而 \( \varepsilon \) 是各向同性高斯噪声，\( v \) 含有它的成分——<b>它们不在任何低维流形上</b>。逼一个容量有限的网络去精确回归一个高维满秩的随机量，本身就是个坏任务。</p></div>
+      </div>
+
+      <p>这个假设还被<b>直接写进了架构</b>。JiT 的 patch embedding 不是一步到 hidden，而是先过一个瓶颈：</p>
+
+      <span class="srcpath">LTH14/JiT · <b>model_jit.py:29-30</b>（<code>BottleneckPatchEmbed</code>）</span>
+      <pre><code><span class="cm"># patch(3072 维) → pca_dim 瓶颈(128) → hidden</span>
+self.proj1 = nn.Conv2d(in_chans, pca_dim,
+                       kernel_size=patch_size, stride=patch_size, bias=False)
+self.proj2 = nn.Conv2d(pca_dim, embed_dim,
+                       kernel_size=1, stride=1, bias=bias)</code></pre>
+
+      <p>参数名叫 <code>pca_dim</code>，默认 <b>128</b>。也就是说 3072 维的原始 patch，先被一个<b>无 bias 的线性层压到 128 维</b>再升到 hidden。<span class="ht">「数据在低维流形上」这句话被翻译成了一个 Conv2d。</span></p>
+
+      <h3>11.5 JiT 顺带印证了本文前面的两个说法</h3>
+
+      <p><b>其一，\( t \) 确实不是均匀采的</b>（§6.6 那个 note）：</p>
+
+      <span class="srcpath">LTH14/JiT · <b>denoiser.py:45-47</b></span>
+      <pre><code><span class="kw">def</span> <span class="fn">sample_t</span>(self, n: int, device=None):
+    z = torch.randn(n, device=device) * self.P_std + self.P_mean
+    <span class="kw">return</span> torch.sigmoid(z)        <span class="cm"># logit-normal，与 SD3 同一个选择</span></code></pre>
+
+      <p><b>其二，CFG 用的是 DiT 那个「s=1 表示不引导」的约定</b>（§10.3 那个差 1 的坑），而且多了一个实用技巧——<b>CFG 只在一段时间区间内开</b>：</p>
+
+      <span class="srcpath">LTH14/JiT · <b>denoiser.py:98-104</b></span>
+      <pre><code>low, high = self.cfg_interval
+interval_mask = (t &lt; high) &amp; ((low == 0) | (t &gt; low))
+cfg_scale_interval = torch.where(interval_mask, self.cfg_scale, 1.0)   <span class="cm"># 区间外置 1.0 ＝ 不引导</span>
+
+<span class="kw">return</span> v_uncond + cfg_scale_interval * (v_cond - v_uncond)</code></pre>
+
+      <p>区间外把 scale 置成 <code>1.0</code> 而不是 <code>0.0</code>——这一行本身就再次确认了该约定下 <b>s=1 才是「无引导」</b>。</p>
+
+      <h3>11.6 JiT 的条件注入：两条路一起走</h3>
+
+      <p>§10 列了四条通路，JiT 里能看到第一条和一个自注意力变体的<b>组合</b>：</p>
+
+      <span class="srcpath">LTH14/JiT · <b>model_jit.py:337-354</b></span>
+      <pre><code>t_emb = self.t_embedder(t)
+y_emb = self.y_embedder(y)
+c = t_emb + y_emb                      <span class="cm"># ① 与 DiT 完全一样：合成一个向量走 adaLN</span>
+
+<span class="kw">for</span> i, block <span class="kw">in</span> enumerate(self.blocks):
+    <span class="kw">if</span> self.in_context_len &gt; 0 <span class="kw">and</span> i == self.in_context_start:
+        in_context_tokens = y_emb.unsqueeze(1).repeat(1, self.in_context_len, 1)
+        in_context_tokens += self.in_context_posemb
+        x = torch.cat([in_context_tokens, x], dim=1)   <span class="cm"># ② 类别再变成 32 个 token 拼进序列</span>
+    x = block(x, c, ...)
+
+x = x[:, self.in_context_len:]         <span class="cm"># 输出时把这些 token 丢掉</span></code></pre>
+
+      <p>同一个类别条件走了<b>两条路</b>：既调制每个 block 的 adaLN，又从第 8 层起以 32 个「in-context token」的身份参与自注意力。后者是 §10.2 那个 cross-attention 思路的<b>自注意力版本</b>——不额外加一层 cross-attn，直接把条件拼进序列，让原有的自注意力去处理。</p>
+
+      <h3>11.7 收束</h3>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>维度</th><th style="color:#6aa6ff">DiT</th><th style="color:#46d7cc">JiT</th></tr></thead>
+          <tbody>
+            <tr><td><b>动的是哪根轴</b></td><td>② 架构</td><td>② 架构 ＋ ① 的预测目标</td></tr>
+            <tr><td><b>训练目标</b></td><td>原版 DDPM \( \varepsilon \)-预测</td><td>Flow Matching 路径 ＋ <b>x-预测</b></td></tr>
+            <tr><td><b>工作空间</b></td><td>VAE latent</td><td><b>原始像素</b></td></tr>
+            <tr><td><b>依赖组件</b></td><td>VAE tokenizer</td><td>无 tokenizer、无 latent、无 U-Net</td></tr>
+            <tr><td><b>条件注入</b></td><td>adaLN-Zero</td><td>adaLN-Zero ＋ in-context token</td></tr>
+            <tr><td><b>主要论点</b></td><td>Transformer 骨干可用，且 scaling law 成立</td><td>高维像素下只有 x-预测不崩；流形假设写进架构</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">一句话摆位</span>
+        <p><span class="hi">DDPM / DDIM / FM / RF / EM</span> 回答「学什么、怎么走」；<span class="hb">DiT</span> 回答「谁来算」；<span class="ht">JiT</span> 回答「输出口该开在哪」。JiT 最值得记住的一点是：<b>「\( \varepsilon \) 与 \( x \) 与 \( v \) 只是线性重参数化」这句在低维 latent 里无害的话，到了高维像素空间会因为 \( \tfrac{1}{1-t} \) 的放大而失效</b>——记号的选择在数值上是有代价的。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 11. 对比表 ══════════════ -->
+    <section id="s12">
+      <h2>12. 横向对比</h2>
+
+      <p><b>Rectified Flow 归在 Flow Matching 那一列</b>——线性路径的 FM 与 1-rectified flow 是同一个东西，reflow 与蒸馏属于它额外多出来的一层（细账见 §6.7）。</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>维度</th><th style="color:#6aa6ff">DDPM</th><th style="color:#46d7cc">DDIM</th><th style="color:#9bce6b">Flow Matching</th><th style="color:#b49bff">Energy Matching</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>路径怎么定</b></td>
+              <td>逐步加高斯噪声的马尔可夫链</td>
+              <td>同边缘的<b>非</b>马尔可夫族</td>
+              <td>手工指定，常用直线插值</td>
+              <td>标量势的梯度流 + 熵平衡</td>
+            </tr>
+            <tr>
+              <td><b>网络学什么</b></td>
+              <td>噪声 \( \varepsilon_\theta \)（≡ 分数）</td>
+              <td>不训练，复用 DDPM 的 \( \varepsilon_\theta \)</td>
+              <td>速度场 \( v_\theta \)</td>
+              <td>标量势 \( V_\theta \)，无时间条件</td>
+            </tr>
+            <tr>
+              <td><b>训练方式</b></td>
+              <td>simulation-free 回归</td>
+              <td>—</td>
+              <td>simulation-free 回归（更简）</td>
+              <td>回归 + 对比散度（需 MCMC）</td>
+            </tr>
+            <tr>
+              <td><b>采样</b></td>
+              <td>祖先采样 SDE，~1000 NFE</td>
+              <td>ODE，20–50 NFE</td>
+              <td>ODE，10–50；Reflow 后 1–4</td>
+              <td>传输 + Langevin 平衡</td>
+            </tr>
+            <tr>
+              <td><b>随机性</b></td>
+              <td>每步注入</td>
+              <td>\( \eta \) 可调，\( \eta=0 \) 全确定</td>
+              <td>确定（也可加噪变 SDE）</td>
+              <td>传输相确定，平衡相随机</td>
+            </tr>
+            <tr>
+              <td><b>显式密度</b></td>
+              <td>无（似然需积 ODE）</td>
+              <td>无（同左）</td>
+              <td>无（同左）</td>
+              <td><b>有</b>：未归一化能量直接可用</td>
+            </tr>
+            <tr>
+              <td><b>可逆 / 编辑</b></td>
+              <td>差（随机性破坏对应）</td>
+              <td>DDIM inversion</td>
+              <td>ODE 天然可逆</td>
+              <td>能量可与先验相加做后验</td>
+            </tr>
+            <tr>
+              <td><b>起点分布</b></td>
+              <td>必须高斯</td>
+              <td>必须高斯</td>
+              <td><b>任意可采样分布</b></td>
+              <td>高斯（传输相）</td>
+            </tr>
+            <tr>
+              <td><b>少步手段</b></td>
+              <td>换采样器（本身无解）</td>
+              <td>跳步 + 高阶求解器（DPM-Solver）</td>
+              <td>路径本就更直；再叠 <b>Reflow / 蒸馏</b>（第 6 节）</td>
+              <td>暂无专门的少步工作</td>
+            </tr>
+            <tr>
+              <td><b>典型落地</b></td>
+              <td>SD 1.x/2.x、Imagen</td>
+              <td>几乎所有扩散推理栈的默认器</td>
+              <td>SD3、FLUX、Movie Gen</td>
+              <td>逆问题正则、科学生成（蛋白）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">别被记号骗了</span><p>\( \varepsilon \)-预测、分数、\( x_0 \)-预测、速度场 \( v \) 在高斯路径下互为线性重参数化，可以彼此换算。它们在<b>数值条件、损失加权、不同 SNR 段的有效权重</b>上有实质差异，但不是几种不同的建模范式。真正的范式差别在「路径」和「学的是向量还是标量」这两栏。<b>不过这句话有边界</b>：在高维像素空间里，换算系数 \( \tfrac{1}{1-t} \) 会把差异放大到「崩不崩」的量级——见 §10.4。</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ 8. 选型与脉络 ══════════════ -->
+    <section id="s13">
+      <h2>13. 怎么选，以及这条脉络说明了什么</h2>
+
+      <h3>13.1 选型</h3>
+      <ul>
+        <li><b>要成熟生态、大量预训练权重与社区工具</b> → 扩散模型 + DDIM / DPM-Solver 采样器。</li>
+        <li><b>要少步、要训练简洁、要在两个非高斯分布之间搬运</b>（超分、翻译、跨模态） → Flow Matching / Rectified Flow。今天从零开搞的新项目，这通常是默认选择。</li>
+        <li><b>要密度、要把物理约束或观测作为能量项加进去、要做逆问题正则或多约束组合</b> → Energy Matching 及 EBM 路线，接受更慢的采样。</li>
+        <li><b>要极致实时（单步 / 少步）</b> → 在 Flow Matching 基础上叠 <b>Reflow + 蒸馏</b>（第 6 节，代价是一轮全量 ODE 推理造数据），或换 consistency models / 对抗蒸馏。</li>
+      </ul>
+
+      <h3>13.2 一条脉络</h3>
+      <p>把这几步连起来看，每一步都是在<b>拆掉上一步中一个「其实不必要」的约束</b>——画成台阶就很清楚：</p>
+
+      <figure>
+        <div class="frame">
+          <svg viewBox="0 0 700 330" width="700" height="330" role="img" aria-label="逐步拆约束的演化台阶">
+            <defs>
+              <marker id="st" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="#6b768f"/></marker>
+            </defs>
+
+            <!-- 连接线 -->
+            <g stroke="#6b768f" stroke-width="1.4" fill="none" marker-end="url(#st)" opacity=".7">
+              <path d="M112 262 L 128 232"/><path d="M228 224 L 244 194"/><path d="M344 186 L 360 156"/>
+              <path d="M460 148 L 476 118"/><path d="M576 110 L 592 80"/>
+            </g>
+
+            <!-- 台阶 -->
+            <g>
+              <rect x="8"   y="247" width="104" height="30" rx="8" fill="rgba(106,166,255,.16)" stroke="#6aa6ff"/>
+              <text x="60"  y="267" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6aa6ff">DDPM</text>
+              <rect x="124" y="209" width="104" height="30" rx="8" fill="rgba(70,215,204,.15)" stroke="#46d7cc"/>
+              <text x="176" y="229" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#46d7cc">DDIM</text>
+              <rect x="240" y="171" width="104" height="30" rx="8" fill="rgba(240,163,97,.15)" stroke="#f0a361"/>
+              <text x="292" y="191" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#f0a361">Score SDE / ODE</text>
+              <rect x="356" y="133" width="104" height="30" rx="8" fill="rgba(155,206,107,.15)" stroke="#9bce6b"/>
+              <text x="408" y="153" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#9bce6b">Flow Matching</text>
+              <rect x="472" y="95"  width="104" height="30" rx="8" fill="rgba(240,191,76,.15)" stroke="#f0bf4c"/>
+              <text x="524" y="115" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#f0bf4c">Rectified Flow</text>
+              <rect x="588" y="57"  width="104" height="30" rx="8" fill="rgba(180,155,255,.15)" stroke="#b49bff"/>
+              <text x="640" y="77"  text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="600" fill="#b49bff">Energy Matching</text>
+            </g>
+
+            <!-- 每级下方：拆掉了什么 -->
+            <g font-family="Inter" font-size="10" fill="#9aa6bf" text-anchor="middle">
+              <text x="60"  y="295">生成变成回归问题</text>
+              <text x="60"  y="309" fill="#6b768f">拆掉：必须直接建密度</text>
+              <text x="176" y="257">训练只锁边缘分布</text>
+              <text x="176" y="271" fill="#6b768f">拆掉：采样须同构训练</text>
+              <text x="292" y="219">加噪只是路径之一</text>
+              <text x="292" y="233" fill="#6b768f">拆掉：随机性是必需品</text>
+              <text x="408" y="181">选最直的那条路</text>
+              <text x="408" y="195" fill="#6b768f">拆掉：路径由加噪定义</text>
+              <text x="524" y="143">直可被反复校正</text>
+              <text x="524" y="157" fill="#6b768f">拆掉：配对必须是随机</text>
+              <text x="640" y="105">场收成标量势梯度</text>
+              <text x="640" y="119" fill="#6b768f">拆掉：场可以是有旋的</text>
+            </g>
+
+            <text x="20" y="26" font-family="Inter" font-size="12" fill="#6b768f">2020 →</text>
+            <text x="680" y="26" text-anchor="end" font-family="Inter" font-size="12" fill="#6b768f">→ 2025</text>
+          </svg>
+        </div>
+        <figcaption><b>图 11.</b> 六级台阶，每一级下方是它<b>拆掉</b>的那条约束。注意没有任何一步是「加了个新模块」。</figcaption>
+      </figure>
+
+      <ol>
+        <li><span class="hb">DDPM</span>：把生成变成对已知加噪过程的回归——<b>可训练</b>了。</li>
+        <li><span class="ht">DDIM</span>：发现训练只锁住边缘分布——<b>采样与训练解绑</b>，随机性成为可选项。</li>
+        <li><span class="hi">SDE / 概率流 ODE</span>：说明「加噪路径」也只是众多选择之一——<b>路径自由</b>。</li>
+        <li><span class="hg">Flow Matching</span>：那就选最直的路，目标简化成回归位移——<b>步数塌缩</b>，且起点不必是高斯。</li>
+        <li><span class="ha">Rectified Flow</span>：再发现「直」本身可以被<b>反复校正</b>，燃料是模型自己的输出——步数塌到个位数。</li>
+        <li><span class="hp">Energy Matching</span>：再把向量场约束成某个标量的梯度——<b>拿回密度与可组合性</b>，代价是采样端重新引入 MCMC。</li>
+      </ol>
+
+      <blockquote>每一次进展都不是加了什么新组件，而是发现某个被默认接受的结构其实是可拆的。</blockquote>
+    </section>
+
+    <!-- ══════════════ 9. 延伸阅读 ══════════════ -->
+    <section id="s14">
+      <h2>14. 延伸阅读</h2>
+      <div class="cards">
+        <a class="c" href="https://arxiv.org/abs/2006.11239" target="_blank" rel="noopener"><span class="k">原始论文</span><h4>DDPM</h4><p>Ho, Jain &amp; Abbeel 2020 · arXiv 2006.11239</p></a>
+        <a class="c" href="https://arxiv.org/abs/2010.02502" target="_blank" rel="noopener"><span class="k">原始论文</span><h4>DDIM</h4><p>Song, Meng &amp; Ermon 2021 · arXiv 2010.02502</p></a>
+        <a class="c" href="https://arxiv.org/abs/2011.13456" target="_blank" rel="noopener"><span class="k">统一视角</span><h4>Score-Based SDE</h4><p>Song et al. 2021 · 概率流 ODE 的出处</p></a>
+        <a class="c" href="https://arxiv.org/abs/2210.02747" target="_blank" rel="noopener"><span class="k">原始论文</span><h4>Flow Matching</h4><p>Lipman et al. 2023 · arXiv 2210.02747</p></a>
+        <a class="c" href="https://arxiv.org/abs/2209.03003" target="_blank" rel="noopener"><span class="k">原始论文</span><h4>Rectified Flow</h4><p>Liu, Gong &amp; Liu 2022 · arXiv 2209.03003</p></a>
+        <a class="c" href="https://arxiv.org/abs/2303.08797" target="_blank" rel="noopener"><span class="k">并行工作</span><h4>Stochastic Interpolants</h4><p>Albergo, Boffi &amp; Vanden-Eijnden 2023</p></a>
+        <a class="c" href="https://arxiv.org/abs/2412.06264" target="_blank" rel="noopener"><span class="k">教程</span><h4>Flow Matching Guide and Code</h4><p>Lipman et al. 2024 · 最完整的入门综述</p></a>
+        <a class="c" href="https://arxiv.org/abs/2504.10612" target="_blank" rel="noopener"><span class="k">原始论文</span><h4>Energy Matching</h4><p>Balcerak et al. · NeurIPS 2025</p></a>
+        <a class="c" href="https://arxiv.org/abs/2212.09748" target="_blank" rel="noopener"><span class="k">架构</span><h4>DiT</h4><p>Peebles &amp; Xie, ICCV 2023 · Transformer 骨干与 scaling law</p></a>
+        <a class="c" href="https://arxiv.org/abs/2511.13720" target="_blank" rel="noopener"><span class="k">架构</span><h4>JiT · Back to Basics</h4><p>Li &amp; He 2025 · 高维像素下改回 x-预测</p></a>
+        <a class="c" href="differential-equations.html"><span class="k">本站</span><h4>微分方程的故事</h4><p>ODE/PDE 基础与 Neural ODE，本文的数学前置</p></a>
+      </div>
+
+      <h3>本文逐行引用的五个仓库</h3>
+      <div class="cards">
+        <a class="c" href="https://github.com/ermongroup/ddim" target="_blank" rel="noopener"><span class="k">代码</span><h4>ermongroup/ddim</h4><p>DDPM 训练损失 + DDIM/DDPM 两个采样器（作者官方实现）</p></a>
+        <a class="c" href="https://github.com/facebookresearch/flow_matching" target="_blank" rel="noopener"><span class="k">代码</span><h4>facebookresearch/flow_matching</h4><p>Meta 官方 FM 库：ProbPath 抽象、ε↔v 换算、CFG 完整示例</p></a>
+        <a class="c" href="https://github.com/gnobitab/RectifiedFlow" target="_blank" rel="noopener"><span class="k">代码</span><h4>gnobitab/RectifiedFlow</h4><p>reflow 配对生成、k 步蒸馏、欧拉采样器</p></a>
+        <a class="c" href="https://github.com/m1balcerak/EnergyMatching" target="_blank" rel="noopener"><span class="k">代码</span><h4>m1balcerak/EnergyMatching</h4><p>potential / velocity 的 autograd 关系、CD 项、能量相加式条件注入</p></a>
+        <a class="c" href="https://github.com/facebookresearch/DiT" target="_blank" rel="noopener"><span class="k">代码</span><h4>facebookresearch/DiT</h4><p>adaLN-Zero、label dropout 与 forward_with_cfg，条件注入的范本</p></a>
+        <a class="c" href="https://github.com/LTH14/JiT" target="_blank" rel="noopener"><span class="k">代码</span><h4>LTH14/JiT</h4><p>x-预测、pca_dim 瓶颈、logit-normal 时刻采样、区间 CFG</p></a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>知识库 · 数学与机器学习可视化</span>
+    <a class="back" href="../index.html">← 返回门户</a>
+  </footer>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   §8 交互演示：四种采样器并排去噪
+   目标 p_data = 8 个各向同性高斯摆成一个环。
+   因为「高斯卷高斯还是高斯」，p_t 的分数与边缘速度场都有闭式解，
+   所以无需训练网络——下面用的是解析 oracle。
+   ══════════════════════════════════════════════════════════════════ */
+(function(){
+  const cv = document.getElementById('dz');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+
+  // ---------- 目标分布 ----------
+  const S = 0.13, S2 = S*S, R = 1.55, K = 8;
+  const MU = [];
+  for (let k=0;k<K;k++){ const a = k*2*Math.PI/K - Math.PI/2; MU.push([R*Math.cos(a), R*Math.sin(a)]); }
+
+  // 责任度：各分量均值 means（已缩放）、各向同性方差 vv
+  const _r = new Float64Array(K);
+  function resp(x,y,means,vv){
+    let m = -Infinity;
+    for (let k=0;k<K;k++){
+      const dx=x-means[k][0], dy=y-means[k][1];
+      const l = -(dx*dx+dy*dy)/(2*vv);
+      _r[k]=l; if(l>m) m=l;
+    }
+    let s=0;
+    for (let k=0;k<K;k++){ _r[k]=Math.exp(_r[k]-m); s+=_r[k]; }
+    for (let k=0;k<K;k++) _r[k]/=s;
+    return _r;
+  }
+  const scaled = (c)=> MU.map(m=>[c*m[0], c*m[1]]);
+
+  // VP 前向 x_t = √ᾱ·x₀ + √(1−ᾱ)·ε  ⇒  p_t 仍是高斯混合
+  function scoreVP(x,y,abar){
+    const sa=Math.sqrt(abar), vv = abar*S2 + (1-abar), M = scaled(sa);
+    const r = resp(x,y,M,vv);
+    let sx=0, sy=0;
+    for (let k=0;k<K;k++){ sx += r[k]*(M[k][0]-x)/vv; sy += r[k]*(M[k][1]-y)/vv; }
+    return [sx,sy];
+  }
+  // 线性路径 x_t = t·x₁ + (1−t)·x₀ 的边缘速度 u_t = E[x₁−x₀ | x_t]
+  function velFM(x,y,t){
+    const om = 1-t, vv = t*t*S2 + om*om, M = scaled(t);
+    const r = resp(x,y,M,vv);
+    const c = (t*S2 - om)/vv;
+    let ux=0, uy=0;
+    for (let k=0;k<K;k++){
+      ux += r[k]*( MU[k][0] + c*(x - M[k][0]) );
+      uy += r[k]*( MU[k][1] + c*(y - M[k][1]) );
+    }
+    return [ux,uy];
+  }
+  // 数据分布本身的分数（= −∇V / ε，V = −ε·log p_data）
+  function scoreData(x,y){
+    const r = resp(x,y,MU,S2);
+    let sx=0, sy=0;
+    for (let k=0;k<K;k++){ sx += r[k]*(MU[k][0]-x)/S2; sy += r[k]*(MU[k][1]-y)/S2; }
+    return [sx,sy];
+  }
+
+  // ---------- DDPM schedule（与 §2.1 一致：T=1000，β 线性 1e-4→0.02）----------
+  const T = 1000, ABAR = new Float64Array(T);
+  (function(){ let c=1; for(let i=0;i<T;i++){ const b = 1e-4 + (0.02-1e-4)*i/(T-1); c *= (1-b); ABAR[i]=c; } })();
+
+  // ---------- 面板定义 ----------
+  const PANELS = [
+    {key:'ddpm', name:'DDPM',           sub:'祖先采样 · 每步注噪',      col:'#6aa6ff'},
+    {key:'ddim', name:'DDIM',           sub:'同一个 ε，η 可调',        col:'#46d7cc'},
+    {key:'fm',   name:'Flow Matching',  sub:'线性路径 · 纯 ODE',       col:'#9bce6b'},
+    {key:'em',   name:'Energy Matching',sub:'传输 → 玻尔兹曼平衡',      col:'#b49bff'},
+  ];
+  const NP = 260, EM_T = 2.0, EPS_MAX = 0.02, EM_CUT = 0.8;
+
+  let N = 12, eta = 0, step = 0, playing = false, seed = null;
+  const P = PANELS.map(()=>({x:new Float64Array(NP), y:new Float64Array(NP),
+                             px:new Float64Array(NP), py:new Float64Array(NP), done:false, nfe:0}));
+
+  let gauss2 = null;
+  function randn(){
+    if (gauss2 !== null){ const g = gauss2; gauss2 = null; return g; }
+    let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+    const r = Math.sqrt(-2*Math.log(u)), th = 2*Math.PI*v;
+    gauss2 = r*Math.sin(th); return r*Math.cos(th);
+  }
+
+  function reset(newSeed){
+    if (newSeed || !seed){ seed = {x:new Float64Array(NP), y:new Float64Array(NP)};
+      for(let i=0;i<NP;i++){ seed.x[i]=randn(); seed.y[i]=randn(); } }
+    for (const p of P){
+      p.x.set(seed.x); p.y.set(seed.y); p.px.set(seed.x); p.py.set(seed.y);
+      p.done=false; p.nfe=0;
+    }
+    step = 0; draw();
+  }
+
+  // 采样时刻子序列：把 0..T-1 均匀取 N 个（跳步——见 §3.2）
+  function tau(i){ return Math.round(i*(T-1)/(N-1)); }
+
+  function advance(){
+    if (step >= N) { P.forEach(p=>p.done=true); return false; }
+    const i = N-1-step;                    // 反向：从最噪走到最干净
+    const at = ABAR[tau(i)];
+    const atn = i>0 ? ABAR[tau(i-1)] : 1.0;
+    const last = (i===0);
+
+    for (let pi=0; pi<4; pi++){
+      const p = P[pi], kind = PANELS[pi].key;
+      p.px.set(p.x); p.py.set(p.y);
+      for (let j=0;j<NP;j++){
+        let x=p.x[j], y=p.y[j];
+        if (kind==='ddpm' || kind==='ddim'){
+          const sc = scoreVP(x,y,at), s1 = Math.sqrt(1-at);
+          const ex = -s1*sc[0], ey = -s1*sc[1];               // ε = −√(1−ᾱ)·score
+          let x0x = (x - s1*ex)/Math.sqrt(at), x0y = (y - s1*ey)/Math.sqrt(at);
+          x0x = Math.max(-3.2, Math.min(3.2, x0x)); x0y = Math.max(-3.2, Math.min(3.2, x0y));
+          if (kind==='ddim'){                                  // generalized_steps
+            const c1 = eta*Math.sqrt((1-at/atn)*(1-atn)/(1-at));
+            const c2 = Math.sqrt(Math.max(0,(1-atn) - c1*c1));
+            x = Math.sqrt(atn)*x0x + c2*ex + (last?0:c1*randn());
+            y = Math.sqrt(atn)*x0y + c2*ey + (last?0:c1*randn());
+          } else {                                             // ddpm_steps
+            const bt = 1 - at/atn;
+            x = (Math.sqrt(atn)*bt*x0x + Math.sqrt(1-bt)*(1-atn)*x)/(1-at);
+            y = (Math.sqrt(atn)*bt*x0y + Math.sqrt(1-bt)*(1-atn)*y)/(1-at);
+            if (!last){ const sd = Math.sqrt(bt); x += sd*randn(); y += sd*randn(); }
+          }
+        } else if (kind==='fm'){
+          const t = step/N, dt = 1/N;
+          const v = velFM(x,y,Math.min(t,0.999));
+          x += v[0]*dt; y += v[1]*dt;
+        } else {                                               // Energy Matching
+          const dt = EM_T/N, t = step*dt;
+          let e = 0;
+          if (t >= 1.0) e = EPS_MAX;
+          else if (t > EM_CUT) e = (t-EM_CUT)/(1-EM_CUT)*EPS_MAX;
+          if (t < 1.0){
+            const v = velFM(x,y,Math.min(t,0.999));
+            x += v[0]*dt; y += v[1]*dt;
+          } else {
+            const sc = scoreData(x,y);
+            const edt = Math.min(EPS_MAX*dt, 0.28*S2);         // 稳定性夹取
+            x += edt*sc[0]; y += edt*sc[1];
+          }
+          if (e > 0){ const sd = Math.sqrt(2*Math.min(e*dt, 0.28*S2)); x += sd*randn(); y += sd*randn(); }
+        }
+        p.x[j]=x; p.y[j]=y;
+      }
+      p.nfe++;
+    }
+    step++;
+    return true;
+  }
+
+  // ---------- 绘制 ----------
+  const PAD = 6, LIM = 2.45;
+  function draw(){
+    const W = cv.width, H = cv.height, pw = W/2, ph = H/2;
+    ctx.fillStyle = '#0a0f1b'; ctx.fillRect(0,0,W,H);
+    const showTrail = document.getElementById('dz-trail').checked;
+    const showTgt   = document.getElementById('dz-target').checked;
+
+    for (let pi=0; pi<4; pi++){
+      const col = pi%2, row = (pi/2)|0;
+      const ox = col*pw, oy = row*ph;
+      const sc = (Math.min(pw,ph) - 60)/(2*LIM);
+      const cx = ox + pw/2, cy = oy + ph/2;
+      const X = (u)=> cx + u*sc, Y = (v)=> cy - v*sc;
+
+      ctx.save();
+      ctx.beginPath(); ctx.rect(ox+PAD, oy+PAD, pw-2*PAD, ph-2*PAD); ctx.clip();
+      ctx.strokeStyle = '#1c2438'; ctx.lineWidth = 1;
+      ctx.strokeRect(ox+PAD+.5, oy+PAD+.5, pw-2*PAD-1, ph-2*PAD-1);
+
+      if (showTgt){
+        ctx.strokeStyle = 'rgba(154,166,191,.5)'; ctx.setLineDash([7,7]); ctx.lineWidth = 2.4;
+        for (const m of MU){ ctx.beginPath(); ctx.arc(X(m[0]), Y(m[1]), 2*S*sc, 0, 2*Math.PI); ctx.stroke(); }
+        ctx.setLineDash([]);
+      }
+
+      const p = P[pi], info = PANELS[pi];
+      if (showTrail && step>0){
+        ctx.strokeStyle = info.col + '3a'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let j=0;j<NP;j+=1){ ctx.moveTo(X(p.px[j]),Y(p.py[j])); ctx.lineTo(X(p.x[j]),Y(p.y[j])); }
+        ctx.stroke();
+      }
+      ctx.fillStyle = info.col;
+      for (let j=0;j<NP;j++){ ctx.beginPath(); ctx.arc(X(p.x[j]), Y(p.y[j]), 2.4, 0, 2*Math.PI); ctx.fill(); }
+
+      ctx.fillStyle = info.col; ctx.font = '600 22px Inter, sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(info.name, ox+22, oy+38);
+      ctx.fillStyle = '#6b768f'; ctx.font = '15px Inter, sans-serif';
+      ctx.fillText(info.sub, ox+22, oy+60);
+      ctx.font = '14px "JetBrains Mono", monospace'; ctx.textAlign = 'right';
+      ctx.fillStyle = step>=N ? '#9bce6b' : '#6b768f';
+      ctx.fillText('NFE ' + p.nfe + (step>=N ? ' · 完成' : ''), ox+pw-22, oy+ph-22);
+      ctx.restore();
+    }
+    ctx.strokeStyle = '#1c2438'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+  }
+
+  // ---------- 控制 ----------
+  const $ = id => document.getElementById(id);
+  const btnPlay = $('dz-play');
+  let acc = 0;
+  function loop(){
+    if (!playing) return;
+    const per = Math.max(1, Math.round(N/55));
+    for (let k=0;k<per;k++){ if(!advance()) { playing=false; btnPlay.textContent='▶ 重播'; break; } }
+    draw();
+    if (playing) requestAnimationFrame(loop);
+  }
+  btnPlay.addEventListener('click', ()=>{
+    if (step>=N) reset(true);
+    playing = !playing;
+    btnPlay.textContent = playing ? '⏸ 暂停' : '▶ 播放';
+    if (playing) requestAnimationFrame(loop);
+  });
+  $('dz-step').addEventListener('click', ()=>{ playing=false; btnPlay.textContent='▶ 播放'; advance(); draw(); });
+  $('dz-reset').addEventListener('click', ()=>{ playing=false; btnPlay.textContent='▶ 播放'; reset(true); });
+  $('dz-n').addEventListener('input', e=>{ N = +e.target.value; $('dz-nv').value = N;
+    playing=false; btnPlay.textContent='▶ 播放'; reset(false); });
+  $('dz-eta').addEventListener('input', e=>{ eta = +e.target.value; $('dz-etav').value = eta.toFixed(2);
+    playing=false; btnPlay.textContent='▶ 播放'; reset(false); });
+  $('dz-trail').addEventListener('change', draw);
+  $('dz-target').addEventListener('change', draw);
+
+  reset(true);
+})();
+
+  // 顶部阅读进度条
+  const bar = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  };
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+</body>
+</html>
