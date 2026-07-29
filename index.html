@@ -219,9 +219,16 @@ const CATEGORIES = {
   "强化学习":     { color:"#f0bf4c", g:["#b06c2e","#6f3f18"] },
   "机器人 / SLAM":{ color:"#46d7cc", g:["#34908d","#1c504f"] },
   "科研方法":     { color:"#ff8a8a", g:["#9a4a4a","#5e2e2e"] },
+  "生成模型":     { color:"#f28ec8", g:["#96517c","#5b3050"] },
 };
 
 const PAGES = [
+  {
+    file:"pages/diffusion-flow-energy-matching.html",
+    title:"DDPM · DDIM · Flow Matching · Rectified Flow · Energy Matching",
+    sub:"把五种生成模型放进同一个「造一条从噪声到数据的路，学一个往哪儿挪的场」的框架里逐个拆解：DDPM 的闭式跳步与 ε-参数化、DDIM 用 η 旋钮解绑训练与采样、概率流 ODE 归位、Flow Matching 的条件化定理与直线路径、Rectified Flow 的 reflow 与 k 步蒸馏、Energy Matching 用一个时间无关标量势换回密度与可组合性。后半程对着 ddim / flow_matching / RectifiedFlow / EnergyMatching / DiT / JiT 六个官方仓库逐行读源码，把「几份训练循环其实只差三行」讲实；再单列两节讲正交维度——条件注入的四条通路（FiLM·adaLN-Zero / cross-attn / CFG 两侧实现与 scale 差 1 的坑 / 能量相加），以及架构轴 U-Net→DiT→JiT（为什么 ε/x/v 的线性重参数化在高维像素上会因 1/(1−t) 放大而失效）。含一个交互演示：四种采样器共用同一批初始噪声与同一步数预算并排去噪（目标是二维高斯混合，分数与速度场走闭式解，不训练网络），拖 N 到 5 能直接看到 DDPM 崩而 Flow Matching 已成形，η 旋钮可看 DDIM 连续退化回 DDPM。开篇「统一模板表」把五种方法压成三处填空，第 10 节用平行坐标把 DDPM/DiT/SD3/JiT/EM 五篇论文放进同一张三轴图，收尾用六级台阶展示每一步各拆掉了哪条约束。11 张手绘 SVG 图，代码在 frameworks/diffusion/。",
+    cat:"生成模型", tags:["扩散模型","DDPM","DDIM","Flow Matching","Rectified Flow","Energy Matching","DiT","JiT","EBM","CFG","源码解读","交互演示"], icon:"🌊", date:"2026-07-29"
+  },
   {
     file:"pages/zotero-library-atlas.html",
     title:"Zotero 全库文献地图",
