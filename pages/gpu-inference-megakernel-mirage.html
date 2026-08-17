@@ -256,11 +256,12 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
       <li><a href="#s3">一次 kernel 执行的时间轴</a></li>
       <li><a href="#s4">Roofline：decode 为何 memory-bound</a></li>
       <li><a href="#s5">kernel-per-operator 的三笔税</a></li>
-      <li><a href="#s6">Mirage 是什么（两代系统）</a></li>
-      <li><a href="#s7">MPK 核心机制（对着源码）</a></li>
-      <li><a href="#s8">动态性：paged KV 与在线请求</a></li>
-      <li><a href="#s9">在 vLLM 上落地的三条路</a></li>
-      <li><a href="#s10">总结与延伸阅读</a></li>
+      <li><a href="#s6">Mirage 是什么与设计哲学</a></li>
+      <li><a href="#s7">barrier 到底是什么</a></li>
+      <li><a href="#s8">MPK 核心机制与「无 barrier」</a></li>
+      <li><a href="#s9">动态性：paged KV 与在线请求</a></li>
+      <li><a href="#s10">在 vLLM 上落地的三条路</a></li>
+      <li><a href="#s11">总结与延伸阅读</a></li>
     </ol>
   </div>
 
@@ -1058,12 +1059,151 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
       <blockquote>把 GPU 从「CUDA runtime 按 kernel 调度」，改成「一个驻留在 GPU 上的自定义运行时按 task 调度」。</blockquote>
 
-      <p>命题变了：不再是优化单个 kernel，而是 <span class="hi">整个模型的 forward 只发一次 kernel launch</span>。下一节对着源码看它怎么做到的。</p>
+      <p>命题变了：不再是优化单个 kernel，而是 <span class="hi">整个模型的 forward 只发一次 kernel launch</span>。</p>
+
+      <h3>6.3 贯穿两代的设计哲学</h3>
+
+      <p>两代系统看起来做的是完全不同的事，但方法论是同一条。把它抽出来，比记住任何实现细节都有用：</p>
+
+      <div class="callout key">
+        <div class="ic">🧭</div>
+        <div class="ct"><span class="t">第一原则：找到「抽象层次」与「硬件真实层次」之间的错配，把抽象降到硬件那一层</span>
+        <p>错配一旦消除，原本「不可能」的优化会自己浮现出来——不是想出来的，是<b>让它变得可表达</b>。</p></div>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th></th><th>原本的抽象</th><th>硬件的真实层次</th><th>降下去之后解锁了什么</th></tr></thead>
+          <tbody>
+            <tr><td><b>第一代<br>μGraph</b></td><td>GPU 程序 = <b>kernel 调用序列</b>，kernel 内部是黑盒</td><td>grid / block / thread 三级并行，对应 HBM / SMEM / 寄存器三级存储</td><td>「这个 reduction 放 block 级还是 thread 级」变成<b>可搜索的选择</b>，于是能自动搜出 FlashAttention 这类融合</td></tr>
+            <tr><td><b>第二代<br>tGraph</b></td><td>调度单位 = <b>kernel</b>，依赖只能按整个算子记</td><td>真正的调度单位是 <b>CTA → SM</b></td><td>依赖精确到 tile，于是<b>跨层流水、计算通信重叠</b>成为可能</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><b>第二原则：用搜索代替规则。</b>传统编译器靠人写重写规则，覆盖面受限于人的想象力。Mirage 直接在 μGraph 空间里搜——而敢放开搜索空间的前提，是有一个足够快的正确性验证器，这就是概率等价验证存在的理由。<span class="hi">验证器的速度决定了搜索空间的大小</span>，这两件事是绑在一起设计的。</p>
+
+      <p><b>第三原则（MPK 特有）：把调度权从驱动手里夺回来，自己写运行时。</b>只要还是「CPU 发 kernel、驱动分派 CTA」，kernel 边界就永远在那儿。MPK 的做法是启动一个<b>永不退出的 kernel</b>，在它内部实现一套任务队列 + 事件系统——<span class="mark">GPU 从「被驱动调度的执行器」变成了「自己调度自己的处理器」。</span></p>
+
+      <p>下面两节就是这第三条原则的展开：先讲清楚 barrier 到底是什么，再看 MPK 怎么把它消掉。</p>
 
     </section>
 
     <!-- ══════════════════ 7 ══════════════════ -->
-    <h2 id="s7">七、MPK 核心机制（对着源码）</h2>
+    <h2 id="s7">七、barrier 到底是什么</h2>
+    <section>
+
+      <p>前面反复说「293 次隐式全局 barrier」，但没说清 barrier 究竟是什么、为什么非它不可。这一节补上——<b>不理解 barrier 为什么存在，就无法理解 MPK 为什么能拆掉它。</b></p>
+
+      <h3>7.1 GPU 上有三种 barrier，层次完全不同</h3>
+
+      <figure>
+        <div class="frame scroll">
+          <svg viewBox="0 0 820 330" width="820" height="330" role="img" aria-label="GPU 三级 barrier 的作用域对比">
+            <defs>
+              <marker id="abr" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 z" fill="#9aa6bf"/></marker>
+            </defs>
+
+            <!-- ① warp -->
+            <rect x="22" y="40" width="240" height="150" rx="12" fill="rgba(155,206,107,.10)" stroke="#9bce6b" stroke-width="1.5"/>
+            <text x="142" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="11.5" fill="#9bce6b">作用域：32 个线程</text>
+            <text x="142" y="66" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#e4ebf7">① warp 级</text>
+            <text x="142" y="88" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#9bce6b">__syncwarp()</text>
+            <g fill="rgba(155,206,107,.35)" stroke="#9bce6b" stroke-opacity=".7">
+              <rect x="52" y="104" width="14" height="30" rx="2"/><rect x="70" y="104" width="14" height="30" rx="2"/>
+              <rect x="88" y="104" width="14" height="30" rx="2"/><rect x="106" y="104" width="14" height="30" rx="2"/>
+              <rect x="124" y="104" width="14" height="30" rx="2"/><rect x="142" y="104" width="14" height="30" rx="2"/>
+              <rect x="160" y="104" width="14" height="30" rx="2"/><rect x="178" y="104" width="14" height="30" rx="2"/>
+              <rect x="196" y="104" width="14" height="30" rx="2"/><rect x="214" y="104" width="14" height="30" rx="2"/>
+            </g>
+            <text x="142" y="158" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9aa6bf">几乎零成本</text>
+            <text x="142" y="176" text-anchor="middle" font-family="Inter" font-size="12" fill="#6b768f">硬件本来就锁步</text>
+
+            <!-- ② block -->
+            <rect x="282" y="40" width="240" height="150" rx="12" fill="rgba(70,215,204,.10)" stroke="#46d7cc" stroke-width="1.5"/>
+            <text x="402" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="11.5" fill="#46d7cc">作用域：1 个 SM 内的 1 个 CTA</text>
+            <text x="402" y="66" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#e4ebf7">② block 级</text>
+            <text x="402" y="88" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#46d7cc">__syncthreads() / bar.sync</text>
+            <g fill="rgba(70,215,204,.28)" stroke="#46d7cc" stroke-opacity=".6">
+              <rect x="306" y="104" width="52" height="14" rx="3"/><rect x="364" y="104" width="52" height="14" rx="3"/>
+              <rect x="422" y="104" width="52" height="14" rx="3"/>
+              <rect x="306" y="122" width="52" height="14" rx="3"/><rect x="364" y="122" width="52" height="14" rx="3"/>
+              <rect x="422" y="122" width="52" height="14" rx="3"/>
+            </g>
+            <path d="M300 142 H482" stroke="#46d7cc" stroke-width="2.5"/>
+            <text x="402" y="160" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#9aa6bf">几十个周期</text>
+            <text x="402" y="178" text-anchor="middle" font-family="Inter" font-size="12" fill="#6b768f"><tspan fill="#9bce6b" font-weight="600">MPK 保留了这一级</tspan></text>
+
+            <!-- ③ grid -->
+            <rect x="542" y="40" width="256" height="150" rx="12" fill="rgba(255,138,138,.10)" stroke="#ff8a8a" stroke-width="2"/>
+            <text x="670" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="11.5" fill="#ff8a8a">作用域：整个 GPU 的所有 CTA</text>
+            <text x="670" y="66" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#e4ebf7">③ grid 级（全局）</text>
+            <text x="670" y="88" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ff8a8a">没有指令！只能靠 kernel 边界</text>
+            <g fill="rgba(255,138,138,.24)" stroke="#ff8a8a" stroke-opacity=".55">
+              <rect x="562" y="104" width="34" height="14" rx="3"/><rect x="600" y="104" width="34" height="14" rx="3"/>
+              <rect x="638" y="104" width="34" height="14" rx="3"/><rect x="676" y="104" width="34" height="14" rx="3"/>
+              <rect x="714" y="104" width="34" height="14" rx="3"/><rect x="752" y="104" width="26" height="14" rx="3"/>
+              <rect x="562" y="122" width="34" height="14" rx="3"/><rect x="600" y="122" width="34" height="14" rx="3"/>
+              <rect x="638" y="122" width="34" height="14" rx="3"/><rect x="676" y="122" width="34" height="14" rx="3"/>
+              <rect x="714" y="122" width="34" height="14" rx="3"/><rect x="752" y="122" width="26" height="14" rx="3"/>
+            </g>
+            <path d="M556 142 H784" stroke="#ff8a8a" stroke-width="3"/>
+            <text x="670" y="160" text-anchor="middle" font-family="Inter" font-size="12.5" font-weight="700" fill="#ff8a8a">微秒级 + tail effect</text>
+            <text x="670" y="178" text-anchor="middle" font-family="Inter" font-size="12" fill="#ff8a8a">★ MPK 要消掉的就是这一级</text>
+
+            <!-- 底部说明 -->
+            <rect x="22" y="212" width="776" height="96" rx="12" fill="rgba(29,37,64,.5)" stroke="#36425e"/>
+            <text x="44" y="238" font-family="Inter" font-size="14" font-weight="700" fill="#f0a361">为什么 grid 级没有指令？—— CTA 之间没有「前向进展保证」</text>
+            <text x="44" y="262" font-family="Inter" font-size="13" fill="#9aa6bf">CUDA 不保证 CTA 的调度顺序，也不保证所有 CTA 同时在跑：grid 通常远大于 SM 数，CTA 是<tspan fill="#e4ebf7" font-weight="600">分批上场</tspan>的。</text>
+            <text x="44" y="282" font-family="Inter" font-size="13" fill="#9aa6bf">于是 CTA #0 若在 kernel 里等 CTA #9999，而后者还没被调度上 SM ——<tspan fill="#ff8a8a" font-weight="700">直接死锁</tspan>。</text>
+            <text x="44" y="302" font-family="Inter" font-size="13" fill="#9aa6bf">所以 CUDA 只提供一个安全的全局同步点：<tspan fill="#e4ebf7" font-weight="600">kernel 边界</tspan>。这既是它存在的理由，也是它的代价。</text>
+          </svg>
+        </div>
+        <figcaption><b>图 10.</b> 三级 barrier。前两级是廉价的硬件指令，<b>第三级根本没有指令</b>——它是 CUDA 编程模型用「结束一个 kernel」这件事换来的。</figcaption>
+      </figure>
+
+      <h3>7.2 关键认知：barrier 同时提供了两样东西</h3>
+
+      <p>这是理解 MPK 的钥匙。一次 kernel 边界的全局 barrier，实际上一口气给了你<b>两个保证</b>，而人们通常只想到第一个：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>保证</th><th>含义</th><th>MPK 用什么替代</th></tr></thead>
+          <tbody>
+            <tr><td><b>① 执行序</b><br><span style="font-size:13px">execution order</span></td><td>第 N+1 层的任何工作，都在第 N 层<b>全部</b>完成之后才开始</td><td><span class="hg">event 计数器</span>——把「全等」换成「偏序」</td></tr>
+            <tr><td><b>② 内存序</b><br><span style="font-size:13px">memory ordering</span></td><td>第 N 层写进 HBM 的数据，第 N+1 层读得到（缓存已刷新、写已可见）</td><td><span class="hg">acquire / release 原子操作</span>——精确重建，且只在真正相关的两个 task 之间</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">很多人只拆了①，然后踩坑</span><p>「不就是把 kernel 融合起来吗」——如果只保证执行顺序而忘了内存序，程序会在<b>大多数时候是对的、偶尔算错</b>，而且随 GPU 型号和负载变化。这是最难调的一类 bug。MPK 把两件事分别用不同机制重建，下一节能在源码里看得很清楚。</p></div>
+      </div>
+
+      <h3>7.3 barrier 的三笔代价</h3>
+
+      <div class="cards">
+        <div class="c" style="border-left:3px solid var(--rust)">
+          <span class="k">代价一</span><h4>收敛代价</h4>
+          <p>必须等最慢的那个 CTA。300 个 CTA 丢给 108 个 SM＝3 轮，最后一轮只有 84 个在干活，<b>24 个 SM 纯空转</b>。这就是 tail effect。</p>
+        </div>
+        <div class="c" style="border-left:3px solid var(--rust)">
+          <span class="k">代价二</span><h4>清空代价</h4>
+          <p>所有 SM 的流水线要排空，寄存器与 shared memory 要释放、下个 kernel 重新分配。<b>已经在 SMEM 里的数据全部作废</b>，下个 kernel 得重新从 HBM 搬。</p>
+        </div>
+        <div class="c" style="border-left:3px solid var(--rust)">
+          <span class="k">代价三 · 最贵</span><h4>信息代价</h4>
+          <p>barrier <b>抹掉了细粒度依赖信息</b>。第 N+1 层某个 tile 其实只依赖第 N 层的几个 tile，但 barrier 强制它等全部——<b>本来能重叠的全被串行化了</b>。</p>
+        </div>
+      </div>
+
+      <p>前两笔是<b>常数开销</b>，第三笔是<b>结构性损失</b>：它让「跨层软件流水」「计算与通信重叠」这类优化从一开始就无从谈起。<span class="mark">MPK 的收益大头来自第三笔，而不是前两笔。</span>这也解释了为什么 CUDA Graph（只压缩了 launch 开销）拿不到这部分收益。</p>
+
+    </section>
+
+    <!-- ══════════════════ 7 ══════════════════ -->
+    <h2 id="s8">八、MPK 核心机制（对着源码）</h2>
     <section>
 
       <div class="callout note">
@@ -1071,7 +1211,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
         <div class="ct"><span class="t">代码基准</span><p>以下引用自 <code>mirage-project/mirage</code> 的 <code>mpk</code> 分支，commit <code>5c28cc6</code>（2026-07-28）。<code>git clone --recursive --branch mpk</code> 即可复现。</p></div>
       </div>
 
-      <h3>7.1 表示层：tGraph —— 把调度粒度从 kernel 下沉到 SM</h3>
+      <h3>8.1 表示层：tGraph —— 把调度粒度从 kernel 下沉到 SM</h3>
 
       <p>传统计算图的节点是<b>算子</b>；MPK 的 tGraph 节点是 <b>task</b>，而<span class="hi">一个 task ＝ 一个 SM 上跑的一个 thread block</span>。三个要素：<b>Task</b>（计算或通信单元）、<b>Event</b>（带计数器的同步点）、<b>依赖</b>（task 的输入输出区域重叠时由编译器插入）。</p>
 
@@ -1113,7 +1253,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
       <p><b>编译期</b>做四件事：算子拆 task（按输出张量切分）→ 依赖分析插 event → <b>event 融合</b>（触发同一组消费者的 event 合并、依赖同一组生产者的 event 合并，压缩同步开销）→ 图归一化 + BFS 线性化，让运行时能紧凑存储、顺序扫描。</p>
 
-      <h3>7.2 执行层：一个常驻 kernel 里的 worker / scheduler 分工</h3>
+      <h3>8.2 执行层：一个常驻 kernel 里的 worker / scheduler 分工</h3>
 
       <p>整个 megakernel 的入口只有 8 行：</p>
 
@@ -1177,7 +1317,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
         <figcaption><b>图 8.</b> README 里那组必须手工填对的参数 <code>num_workers=96, num_local_schedulers=48</code>，正好把 A100 的 108 个 SM 占满。（H100 是 132、B200 是 148，参数要跟着改。）</figcaption>
       </figure>
 
-      <h3>7.3 Worker：一个永不退出的轮询循环</h3>
+      <h3>8.3 Worker：一个永不退出的轮询循环</h3>
 
       <span class="srcpath">mirage-project/mirage · <b>include/mirage/persistent_kernel/persistent_kernel.cuh:857-993</b>（节选）</span>
 <pre><code><span class="k">while</span> (<span class="k">true</span>) {
@@ -1197,7 +1337,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
   ...
 }</code></pre>
 
-      <h3>7.4 Event：一个原子计数器就是全部的同步机制</h3>
+      <h3>8.4 Event：一个原子计数器就是全部的同步机制</h3>
 
       <span class="srcpath">同上 · <b>persistent_kernel.cuh:1004-1060</b>（节选）</span>
 <pre><code><span class="k">if</span> (threadIdx.x == <span class="n">0</span>) {
@@ -1287,7 +1427,113 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
         <figcaption><b>图 9.</b> MPK 的调度回路。<b>没有 CPU 参与、没有 kernel launch、没有全局屏障</b>——所有同步都退化成显存上一个原子计数器的加法。</figcaption>
       </figure>
 
-      <h3>7.5 于是三笔税一起消失</h3>
+      <h3>8.5 它到底怎么做到「全程没有 barrier」</h3>
+
+      <p>回到第七节的两个保证。MPK 拆 barrier 分四步走，缺一步都不成立：</p>
+
+      <h4>第一步 · 让所有 CTA 同时驻留，解除死锁前提</h4>
+
+      <p>第七节说过，grid 级 barrier 之所以只能靠 kernel 边界，是因为 <b>CTA 之间没有前向进展保证</b>——你等的那个 CTA 可能还没被调度上 SM。</p>
+
+      <p>MPK 把这个前提直接掀了：<span class="hi">让 grid 大小恰好等于物理 SM 数，且每个 SM 只放一个 CTA。</span>所有 CTA 从头到尾同时在跑，谁等谁都不会死锁。</p>
+
+      <span class="srcpath">mirage-project/mirage · <b>include/mirage/persistent_kernel/persistent_kernel.cuh:787-798</b></span>
+<pre><code><span class="k">__device__</span> <span class="k">__forceinline__</span> <span class="k">void</span> <span class="f">persistent_checker</span>(RuntimeConfig config) {
+  ...
+  <span class="c">// 每个 worker SM 跑一个 worker；每个 scheduler SM 塞四个 scheduler</span>
+  <span class="f">assert</span>(gridDim.x ==
+         config.num_workers + num_schedulers / num_schedulers_per_sm);
+}</code></pre>
+
+      <p>这个 assert 是<b>正确性前提，不是性能调优</b>。README 里 <code>num_workers=96, num_local_schedulers=48</code> 恰好凑成 A100 的 108，填错了不是慢一点，是<b>直接死锁</b>。</p>
+
+      <p>共驻留靠三件事一起保证：</p>
+      <ul>
+        <li><code>__launch_bounds__(WORKER_NUM_THREADS, <b>1</b>)</code> —— 第二个参数是「每 SM 最少驻留几个 block」，写 1 就是告诉编译器按 1 CTA/SM 分配资源；</li>
+        <li><b>把 shared memory 吃干净</b>：<code>runtime_header.h</code> 里 A100 分支申请 <code>160 KB</code> 动态 SMEM（SM 上限 164 KB）——<span class="hi">物理上就塞不下第二个 CTA</span>；</li>
+        <li>grid 大小由上面的 assert 卡死。</li>
+      </ul>
+
+      <div class="callout note">
+        <div class="ic">📌</div>
+        <div class="ct"><span class="t">注意它没有用官方的 cooperative launch</span><p>CUDA 其实提供了 <code>cudaLaunchCooperativeKernel</code> + <code>grid.sync()</code> 来做合法的 grid 级同步。MPK <b>没用</b>——它用的是普通 <code>&lt;&lt;&lt;&gt;&gt;&gt;</code> 启动，靠 occupancy 工程手工保证共驻留。原因很直接：<code>grid.sync()</code> 本身<b>还是一个全局 barrier</b>，那就白干了。MPK 要的不是「合法的 barrier」，是<b>根本不要 barrier</b>。</p></div>
+      </div>
+
+      <h4>第二步 · 执行序：把「全等」换成「偏序」</h4>
+
+      <p>barrier 的语义是<b>所有人到齐</b>；MPK 换成<b>我等的那几个人到齐</b>。载体就是 <code>EventDesc.num_triggers</code>：</p>
+
+      <div class="mathbox">
+        <div class="lbl">语义替换</div>
+        <p style="margin:0; font-size:16px; text-align:left;">
+        <b class="hr_">barrier：</b>第 N+1 层所有 task　⟵ 等 ⟶　第 N 层<b>全部</b> task（全等，一刀切）<br>
+        <b class="hg">event：</b>某个下游 task　⟵ 等 ⟶　它真正读到的那 <code>num_triggers</code> 个上游 task（偏序）</p>
+      </div>
+
+      <p>于是第 N 层某个 tile 一算完，只依赖它的第 N+1 层 task <b>立刻</b>就能上 SM——不必等同层的其他 tile。这就是<b>跨层软件流水</b>的全部来源，也正是第七节说的「第三笔代价」被追回来的地方。</p>
+
+      <h4>第三步 · 内存序：用 acquire / release 精确重建</h4>
+
+      <p>这是最容易被忽略、也最见功力的一步。没有了 kernel 边界，<b>谁来保证生产者写的数据消费者读得到？</b></p>
+
+      <p>答案是整个 <code>mpk_atoms.cuh</code>——这个文件<b>只做一件事</b>：定义一组带 scope 的 acquire/release PTX 原语。</p>
+
+      <span class="srcpath">mirage-project/mirage · <b>include/mirage/persistent_kernel/mpk_atoms.cuh</b>（节选）</span>
+<pre><code><span class="c">// 生产者：干完活后 +1，release 语义保证「之前所有写」先对外可见</span>
+<span class="k">__device__</span> <span class="k">__forceinline__</span> <span class="k">unsigned</span> <span class="k">long</span> <span class="k">long</span> <span class="k">int</span>
+<span class="f">atom_add_release_gpu_u64</span>(<span class="k">unsigned</span> <span class="k">long</span> <span class="k">long</span> <span class="k">int</span> *addr, <span class="k">unsigned</span> <span class="k">long</span> <span class="k">long</span> <span class="k">int</span> val) {
+  <span class="k">asm</span> <span class="k">volatile</span>(<span class="s">"atom.add.<span class="n">release</span>.<span class="n">gpu</span>.u64 %0,[%1],%2;"</span> ... : <span class="s">"memory"</span>);
+}
+
+<span class="c">// 消费者：读队列时 acquire，保证「之后所有读」能看到生产者的写</span>
+<span class="k">__device__</span> <span class="k">__forceinline__</span> <span class="k">unsigned</span> <span class="k">long</span> <span class="k">long</span> <span class="k">int</span>
+<span class="f">ld_acquire_gpu_u64</span>(<span class="k">unsigned</span> <span class="k">long</span> <span class="k">long</span> <span class="k">int</span> *addr) {
+  <span class="k">asm</span> <span class="k">volatile</span>(<span class="s">"ld.<span class="n">acquire</span>.<span class="n">gpu</span>.u64 %0, [%1];"</span> ...);
+}
+
+<span class="c">// CPU↔GPU 的 pinned 环用 system scope —— 注释原文：</span>
+<span class="c">// "System-scope acquire load (int32): safe to use for pinned CPU↔GPU rings."</span>
+<span class="f">ld_acquire_sys_i32</span> / <span class="f">st_release_sys_i32</span>   <span class="c">// ld.acquire.sys / st.release.sys</span></code></pre>
+
+      <p>把它和前面 worker 的代码对起来看，配对关系就一目了然：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>角色</th><th>代码位置</th><th>做什么</th></tr></thead>
+          <tbody>
+            <tr><td><b>生产者 task</b></td><td><code>persistent_kernel.cuh:1012</code></td><td><code>atom_add_release_gpu_u64(&amp;counter, 1)</code> —— <span class="hg">release</span>：把「我刚写进 HBM 的结果」在计数器 +1 <b>之前</b>推出去</td></tr>
+            <tr><td><b>消费者 worker</b></td><td><code>persistent_kernel.cuh:864</code></td><td><code>ld_acquire_gpu_u64(&amp;queue_tail)</code> —— <span class="hg">acquire</span>：看到新任务后，<b>之后</b>的读一定能看到生产者的数据</td></tr>
+            <tr><td><b>CPU 投请求</b></td><td><code>runtime_header.h:376-395</code></td><td>scope 提到 <code>.sys</code>，因为这次的另一端在 CPU 上</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout key">
+        <div class="ic">🔑</div>
+        <div class="ct"><span class="t">这就是整个设计最精妙的一处</span><p>kernel barrier 一口气给你的<b>两个保证</b>被拆开，各自用更细的机制重建：<b>执行序交给 event 计数器，内存序交给 acquire/release 配对</b>。而且两者都<span class="mark">只作用在真正相关的那对 task 之间</span>，而不是整个 GPU。<br><br>「消掉 barrier」不是把它删了，而是<b>把它替换成了同样严格、但作用域小得多的东西</b>。</p></div>
+      </div>
+
+      <h4>第四步 · 跨迭代：连「清零」都不需要全局同步</h4>
+
+      <p>还剩最后一个坑：一个 decode step 结束后，几百个 event 计数器得清零才能进入下一步——<b>而「所有人都清零完了」本身就需要一次全局 barrier</b>，兜了一圈又回去了。</p>
+
+      <p>MPK 的解法很漂亮：<span class="hi">计数器根本不清零，改成把阈值乘以轮次。</span></p>
+
+      <span class="srcpath">mirage-project/mirage · <b>persistent_kernel.cuh:1033-1034</b></span>
+<pre><code><span class="k">if</span> ((count + <span class="n">1</span>) == num_triggers * <span class="f">get_task_iteration_num</span>(task_ids[queue_pos])) {
+  <span class="c">// 第 N 轮的判定阈值就是 N × num_triggers —— 计数器一路单调递增，永不 reset</span>
+}</code></pre>
+
+      <p>一个乘法换掉一次全局同步。<b>这类细节才是「全程无 barrier」能真正成立的原因</b>——只要有任何一处还需要「所有人到齐」，前面三步的努力就全废了。</p>
+
+      <h4>诚实的说明：不是「零同步」，是「零全局 barrier」</h4>
+
+      <div class="callout warn">
+        <div class="ic">⚠️</div>
+        <div class="ct"><span class="t">CTA 内部的 <code>__syncthreads()</code> 一个没少</span><p>翻 <code>execute_worker</code> 就能看到满屏的 <code>__syncthreads()</code>——加载 TaskDesc 之后、执行 task 之后都有。<b>MPK 消掉的是第七节图里的第③级（grid 级），保留了第②级（block 级）。</b><br><br>这个保留是对的：block 级 barrier 只有几十个周期，作用域是一个 SM 内部，既不涉及 tail effect 也不需要刷全局缓存。<span class="mark">拿它开刀没有收益，只有风险。</span></p></div>
+      </div>
+
+      <h3>8.6 于是三笔税一起消失</h3>
 
       <div class="tablewrap">
         <table>
@@ -1309,7 +1555,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
     </section>
 
     <!-- ══════════════════ 8 ══════════════════ -->
-    <h2 id="s8">八、动态性：paged KV、变 batch 与在线请求</h2>
+    <h2 id="s9">九、动态性：paged KV、变 batch 与在线请求</h2>
     <section>
 
       <p>能不能上生产，看的是动态性怎么处理。一个静态编译出来的 megakernel，怎么应付随时到达、随时结束、长度各异的请求？</p>
@@ -1354,10 +1600,10 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
     </section>
 
     <!-- ══════════════════ 9 ══════════════════ -->
-    <h2 id="s9">九、在 vLLM 上落地：现状与三条路</h2>
+    <h2 id="s10">十、在 vLLM 上落地：现状与三条路</h2>
     <section>
 
-      <h3>9.1 先说结论：官方集成路线目前是断的</h3>
+      <h3>10.1 先说结论：官方集成路线目前是断的</h3>
 
       <p><a href="https://github.com/vllm-project/vllm/issues/22201" target="_blank" rel="noopener">vLLM RFC #22201</a> 提议把 MPK 做成 vLLM 的实验性执行后端，设计相当完整：</p>
 
@@ -1388,7 +1634,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
       <p>也就是说：<b>vLLM-MPK 集成是「能跑通过、但没进主干、目前处于半注释状态」。</b></p>
 
-      <h3>9.2 MPK 现在自己长出了一套 serving 栈</h3>
+      <h3>10.2 MPK 现在自己长出了一套 serving 栈</h3>
 
       <p><code>python/mirage/engine/</code> 下已经是完整服务端：<code>launch_server.py</code>（FastAPI + OpenAI 兼容）、<code>llm_engine.py</code>、<code>model_runner.py</code>、<code>tokenizer_manager.py</code>。</p>
 
@@ -1399,7 +1645,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
       <p>而 <code>benchmark/benchmark_serving.py</code> 的用法注释直接写着「停掉 MPK、起 vLLM、跑同一套 benchmark」——<span class="hi">它把 vLLM 当对照组，而不是宿主。</span></p>
 
-      <h3>9.3 三条可选路线</h3>
+      <h3>10.3 三条可选路线</h3>
 
       <div class="cards">
         <div class="c" style="border-left:3px solid var(--blue)">
@@ -1416,7 +1662,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
         </div>
       </div>
 
-      <h3>9.4 什么场景 MPK 才真的有收益</h3>
+      <h3>10.4 什么场景 MPK 才真的有收益</h3>
 
       <p>这是判断要不要投入的核心，别搞反：</p>
 
@@ -1441,7 +1687,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
         <p style="margin-top:8px"><b>要和 vLLM / SGLang 比，请用论文里的 1.0–1.7×。</b>注意区间下沿是 <span class="hr_">1.0×</span>——即某些配置下<b>没有收益</b>。</p></div>
       </div>
 
-      <h3>9.5 实际风险</h3>
+      <h3>10.5 实际风险</h3>
 
       <ul>
         <li><b>模型要手工搭图。</b>看 <code>demo/qwen3/demo.py</code>——权重映射表、每层的 <code>grid_dim</code> 都得手填，里面甚至有这样的注释：<code>An add-hoc workaround for linear kernel ... will output unexpected result (not same output for same prompt) if the OUTPUT_SIZE is too big</code>。<span class="hr_">它不是 vLLM 那种「HF 权重丢进去就能跑」的成熟度。</span></li>
@@ -1453,7 +1699,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
     </section>
 
     <!-- ══════════════════ 10 ══════════════════ -->
-    <h2 id="s10">十、总结</h2>
+    <h2 id="s11">十一、总结</h2>
     <section>
 
       <div class="tablewrap">
