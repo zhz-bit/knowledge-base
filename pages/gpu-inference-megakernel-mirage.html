@@ -178,6 +178,30 @@ figure.figwide{width:min(1180px, calc(100vw - 36px)); margin-left:50%; transform
 @media (max-width:980px){
   figure.figwide{width:auto; margin-left:0; transform:none;}
 }
+/* 悬浮目录出现后，超宽图改为「在目录右侧的剩余空间里居中」，而不是在整个视口里居中，
+   这样既不压住目录，又能保住宽度（1120 宽的图在 1400px 视口下仍可完整显示） */
+@media (min-width:1400px){
+  figure.figwide{width:min(1180px, calc(100vw - 260px)); margin-left:calc(50% + 110px);}
+}
+
+/* ---------- 左侧悬浮目录（≥1400px 才出现，窄屏回落到顶部那份） ---------- */
+#tocf{position:fixed; left:20px; top:50%; transform:translateY(-50%); width:196px; z-index:50;
+  background:rgba(22,29,46,.88); border:1px solid var(--line); border-radius:14px;
+  padding:13px 11px 12px; box-shadow:var(--shadow); display:none;
+  -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);}
+#tocf .th{font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--dim); padding:0 8px 9px; border-bottom:1px solid var(--line); margin-bottom:7px;}
+#tocf ol{list-style:none; margin:0; padding:0; counter-reset:tf;}
+#tocf li{margin:0; counter-increment:tf;}
+#tocf a{display:flex; gap:8px; align-items:baseline; padding:5px 8px; border-radius:8px;
+  font-size:12.5px; line-height:1.35; color:var(--muted); border-left:2px solid transparent;
+  transition:color .14s, background .14s, border-color .14s;}
+#tocf a::before{content:counter(tf); font-family:var(--mono); font-size:10.5px; color:var(--dim);
+  flex:0 0 14px; text-align:right;}
+#tocf a:hover{color:var(--ink); background:var(--panel-2); text-decoration:none;}
+#tocf a.on{color:var(--terra); background:var(--soft-terra); border-left-color:var(--terra); font-weight:600;}
+#tocf a.on::before{color:var(--terra);}
+@media (min-width:1400px){ #tocf{display:block;} }
 figcaption{margin-top:10px; font-size:14px; color:var(--muted); text-align:center; line-height:1.6;}
 figcaption b{color:var(--ink);}
 
@@ -229,6 +253,24 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
 <body>
 <div id="progress"></div>
+
+<!-- 左侧悬浮目录（宽屏显示，滚动高亮当前章节） -->
+<nav id="tocf" aria-label="章节目录">
+  <div class="th">目录</div>
+  <ol>
+    <li><a href="#s1">硬件地图</a></li>
+    <li><a href="#s2">CUDA / Tensor Core</a></li>
+    <li><a href="#s3">kernel 执行时间轴</a></li>
+    <li><a href="#s4">Roofline</a></li>
+    <li><a href="#s5">三笔税</a></li>
+    <li><a href="#s6">Mirage 与设计哲学</a></li>
+    <li><a href="#s7">barrier 是什么</a></li>
+    <li><a href="#s8">MPK 核心机制</a></li>
+    <li><a href="#s9">动态性</a></li>
+    <li><a href="#s10">在 vLLM 上落地</a></li>
+    <li><a href="#s11">总结</a></li>
+  </ol>
+</nav>
 
 <div class="wrap">
 
@@ -1159,8 +1201,146 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
             <text x="44" y="302" font-family="Inter" font-size="13" fill="#9aa6bf">所以 CUDA 只提供一个安全的全局同步点：<tspan fill="#e4ebf7" font-weight="600">kernel 边界</tspan>。这既是它存在的理由，也是它的代价。</text>
           </svg>
         </div>
-        <figcaption><b>图 10.</b> 三级 barrier。前两级是廉价的硬件指令，<b>第三级根本没有指令</b>——它是 CUDA 编程模型用「结束一个 kernel」这件事换来的。</figcaption>
+        <figcaption><b>图 8.</b> 三级 barrier。前两级是廉价的硬件指令，<b>第三级根本没有指令</b>——它是 CUDA 编程模型用「结束一个 kernel」这件事换来的。</figcaption>
       </figure>
+
+      <p>「CTA 之间不能互相等」这句话抽象，把它摊到泳道上就一目了然了。<b>关键在于 CTA 的数量通常远大于 SM 的数量——它们是分批上场的。</b></p>
+
+      <figure class="figwide">
+        <div class="frame scroll">
+          <svg viewBox="0 0 1120 596" width="1120" height="596" role="img" aria-label="CTA 分批上场导致死锁，与 persistent kernel 全驻留的对比">
+            <defs>
+              <pattern id="hxd" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <rect width="7" height="7" fill="rgba(255,138,138,.10)"/>
+                <line x1="0" y1="0" x2="0" y2="7" stroke="#ff8a8a" stroke-width="2" stroke-opacity=".5"/>
+              </pattern>
+              <marker id="adR" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L10 4.5 L0 9 z" fill="#ff8a8a"/></marker>
+              <marker id="adG" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L10 4.5 L0 9 z" fill="#9bce6b"/></marker>
+              <marker id="adM" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 z" fill="#6b768f"/></marker>
+            </defs>
+
+            <!-- ══════════ ① 普通 kernel ══════════ -->
+            <rect x="8" y="10" width="1104" height="272" rx="10" fill="rgba(255,138,138,.05)" stroke="#3d2b38"/>
+            <text x="24" y="36" font-family="Inter" font-size="15.5" font-weight="700" fill="#ff8a8a">① 普通 kernel：grid ≫ SM 数，CTA 分批上场</text>
+            <text x="430" y="36" font-family="JetBrains Mono" font-size="12" fill="#9aa6bf">例：grid = 10000 个 CTA，只有 108 个 SM</text>
+
+            <g font-family="Inter" font-size="12" fill="#9aa6bf" text-anchor="end">
+              <text x="104" y="72">SM #0</text><text x="104" y="102">SM #1</text><text x="104" y="160">SM #107</text>
+            </g>
+            <text x="104" y="131" font-family="Inter" font-size="14" fill="#6b768f" text-anchor="end">⋮</text>
+
+            <!-- 泳道底 -->
+            <g fill="rgba(255,255,255,.04)">
+              <rect x="114" y="56" width="674" height="22" rx="4"/><rect x="114" y="86" width="674" height="22" rx="4"/><rect x="114" y="144" width="674" height="22" rx="4"/>
+            </g>
+
+            <!-- 第一批 CTA：先跑一段，然后开始等 -->
+            <rect x="120" y="56" width="92" height="22" rx="4" fill="rgba(70,215,204,.42)" stroke="#46d7cc"/>
+            <text x="166" y="72" text-anchor="middle" font-family="Inter" font-size="11" fill="#e4ebf7">CTA #0 干活</text>
+            <rect x="212" y="56" width="576" height="22" fill="url(#hxd)" stroke="#ff8a8a" stroke-opacity=".55"/>
+            <text x="500" y="72" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff8a8a">等 CTA #9999 ⋯⋯ 永远等不到，而且死死占着 SM #0 不退出</text>
+
+            <rect x="120" y="86" width="108" height="22" rx="4" fill="rgba(70,215,204,.42)" stroke="#46d7cc"/>
+            <text x="174" y="102" text-anchor="middle" font-family="Inter" font-size="11" fill="#e4ebf7">CTA #1 干活</text>
+            <rect x="228" y="86" width="560" height="22" fill="url(#hxd)" stroke="#ff8a8a" stroke-opacity=".55"/>
+            <text x="508" y="102" text-anchor="middle" font-family="Inter" font-size="11" fill="#ff8a8a">同样在等</text>
+
+            <rect x="120" y="144" width="84" height="22" rx="4" fill="rgba(70,215,204,.42)" stroke="#46d7cc"/>
+            <text x="162" y="160" text-anchor="middle" font-family="Inter" font-size="11" fill="#e4ebf7">CTA #107</text>
+            <rect x="204" y="144" width="584" height="22" fill="url(#hxd)" stroke="#ff8a8a" stroke-opacity=".55"/>
+            <text x="496" y="160" text-anchor="middle" font-family="Inter" font-size="11" fill="#ff8a8a">同样在等</text>
+
+            <text x="451" y="188" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#6b768f">第一批 108 个 CTA 全部就位并占满全部 SM —— 但没有一个能退出</text>
+
+            <!-- 待调度队列 -->
+            <rect x="812" y="52" width="288" height="140" rx="10" fill="rgba(107,118,143,.14)" stroke="#6b768f" stroke-dasharray="5 4"/>
+            <text x="956" y="74" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#c3cde0">待调度队列（还没上场）</text>
+            <g fill="rgba(107,118,143,.3)" stroke="#8695b3">
+              <rect x="832" y="88" width="60" height="22" rx="4"/><rect x="900" y="88" width="60" height="22" rx="4"/><rect x="968" y="88" width="60" height="22" rx="4"/>
+            </g>
+            <g font-family="JetBrains Mono" font-size="10.5" fill="#c3cde0" text-anchor="middle">
+              <text x="862" y="103">#108</text><text x="930" y="103">#109</text><text x="998" y="103">⋯</text>
+            </g>
+            <rect x="1036" y="88" width="46" height="22" rx="4" fill="rgba(255,138,138,.3)" stroke="#ff8a8a"/>
+            <text x="1059" y="103" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#ffd0d0">#9999</text>
+            <text x="956" y="132" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#9aa6bf">要上场，必须先等一个 SM 空出来</text>
+            <text x="956" y="152" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff8a8a">但没有任何 SM 会空出来</text>
+            <text x="956" y="176" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" fill="#6b768f">还有 9892 个 CTA 排在后面</text>
+
+            <!-- 循环等待 -->
+            <path d="M788 66 C 830 30, 1010 24, 1052 84" fill="none" stroke="#ff8a8a" stroke-width="1.8" marker-end="url(#adR)"/>
+            <text x="920" y="26" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff8a8a">① #0 等 #9999</text>
+
+            <path d="M1036 116 C 940 232, 300 236, 214 200" fill="none" stroke="#ff8a8a" stroke-width="1.8" marker-end="url(#adR)"/>
+            <text x="640" y="248" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff8a8a">② #9999 等一个空闲 SM　→　③ 而 SM #0 被还在等待的 #0 占着 —— 回到 ①</text>
+
+            <rect x="120" y="208" width="188" height="34" rx="8" fill="rgba(255,138,138,.20)" stroke="#ff8a8a" stroke-width="1.6"/>
+            <text x="214" y="230" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#ff8a8a">💀 循环等待 = 死锁</text>
+
+            <text x="24" y="268" font-family="Inter" font-size="12.5" fill="#9aa6bf">所以 CUDA <tspan fill="#e4ebf7" font-weight="600">不允许</tspan> CTA 之间互相等待，也就<tspan fill="#e4ebf7" font-weight="600">不可能提供 grid 级 barrier 指令</tspan> —— 只能用「结束整个 kernel」来做全局同步点。</text>
+
+            <!-- ══════════ ② persistent kernel ══════════ -->
+            <rect x="8" y="298" width="1104" height="288" rx="10" fill="rgba(155,206,107,.05)" stroke="#2b3d2f"/>
+            <text x="24" y="324" font-family="Inter" font-size="15.5" font-weight="700" fill="#9bce6b">② MPK persistent kernel：grid == SM 数，全部同时驻留</text>
+            <text x="560" y="324" font-family="JetBrains Mono" font-size="12" fill="#9aa6bf">96 workers + 48/4 schedulers = 108 = 物理 SM 数</text>
+
+            <g font-family="Inter" font-size="12" fill="#9aa6bf" text-anchor="end">
+              <text x="104" y="360">SM #0</text><text x="104" y="390">SM #1</text><text x="104" y="448">SM #107</text>
+            </g>
+            <text x="104" y="419" font-family="Inter" font-size="14" fill="#6b768f" text-anchor="end">⋮</text>
+
+            <g fill="rgba(255,255,255,.04)">
+              <rect x="114" y="344" width="674" height="22" rx="4"/><rect x="114" y="374" width="674" height="22" rx="4"/><rect x="114" y="432" width="674" height="22" rx="4"/>
+            </g>
+
+            <!-- 全部常驻、持续推进 -->
+            <rect x="120" y="344" width="104" height="22" rx="4" fill="rgba(70,215,204,.42)" stroke="#46d7cc"/>
+            <text x="172" y="360" text-anchor="middle" font-family="Inter" font-size="11" fill="#e4ebf7">CTA #0 干活</text>
+            <rect x="224" y="344" width="120" height="22" rx="4" fill="rgba(240,191,76,.30)" stroke="#f0bf4c"/>
+            <text x="284" y="360" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#f0bf4c">等 #107 的 event</text>
+            <rect x="344" y="344" width="120" height="22" rx="4" fill="rgba(240,163,97,.45)" stroke="#f0a361"/>
+            <text x="404" y="360" text-anchor="middle" font-family="Inter" font-size="11" fill="#e4ebf7">拿到数据，继续</text>
+            <rect x="464" y="344" width="324" height="22" rx="4" fill="rgba(70,215,204,.32)" stroke="#46d7cc" stroke-opacity=".7"/>
+            <text x="626" y="360" text-anchor="middle" font-family="Inter" font-size="11" fill="#cfe0ff">后续 task 一路推进，永不退出</text>
+
+            <rect x="120" y="374" width="668" height="22" rx="4" fill="rgba(70,215,204,.30)" stroke="#46d7cc" stroke-opacity=".7"/>
+            <text x="454" y="390" text-anchor="middle" font-family="Inter" font-size="11" fill="#cfe0ff">CTA #1 常驻，持续从队列取 task</text>
+
+            <rect x="120" y="432" width="180" height="22" rx="4" fill="rgba(70,215,204,.42)" stroke="#46d7cc"/>
+            <text x="210" y="448" text-anchor="middle" font-family="Inter" font-size="11" fill="#e4ebf7">CTA #107 干活</text>
+            <rect x="300" y="432" width="60" height="22" rx="4" fill="rgba(155,206,107,.5)" stroke="#9bce6b"/>
+            <text x="330" y="448" text-anchor="middle" font-family="Inter" font-size="10" fill="#e4ebf7">触发</text>
+            <rect x="360" y="432" width="428" height="22" rx="4" fill="rgba(70,215,204,.30)" stroke="#46d7cc" stroke-opacity=".7"/>
+            <text x="574" y="448" text-anchor="middle" font-family="Inter" font-size="11" fill="#cfe0ff">继续下一个 task</text>
+
+            <!-- 安全等待箭头 -->
+            <path d="M284 372 C 290 410, 316 418, 328 428" fill="none" stroke="#9bce6b" stroke-width="1.8" marker-end="url(#adG)"/>
+            <text x="352" y="404" font-family="Inter" font-size="11.5" font-weight="700" fill="#9bce6b">#0 等的 #107 <tspan font-weight="400" fill="#9aa6bf">此刻正在 SM 上跑，一定会推进 → 等待安全</tspan></text>
+
+            <!-- 空队列 -->
+            <rect x="812" y="340" width="288" height="114" rx="10" fill="rgba(155,206,107,.10)" stroke="#9bce6b" stroke-dasharray="5 4"/>
+            <text x="956" y="362" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#9bce6b">待调度队列</text>
+            <text x="956" y="398" text-anchor="middle" font-family="Inter" font-size="30" font-weight="700" fill="#9bce6b">∅</text>
+            <text x="956" y="424" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#9aa6bf">空的 —— 没有任何 CTA 在排队</text>
+            <text x="956" y="443" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#9bce6b">循环等待的链条断了</text>
+
+            <rect x="120" y="474" width="212" height="34" rx="8" fill="rgba(155,206,107,.18)" stroke="#9bce6b" stroke-width="1.6"/>
+            <text x="226" y="496" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#9bce6b">✅ 互相等待是安全的</text>
+
+            <text x="356" y="496" font-family="Inter" font-size="12.5" fill="#9aa6bf">于是 MPK 可以放心用 <tspan fill="#e4ebf7" font-weight="600">event 计数器</tspan> 做细粒度同步，而不必回头去借 kernel 边界。</text>
+
+            <rect x="120" y="522" width="980" height="50" rx="8" fill="rgba(29,37,64,.55)" stroke="#36425e"/>
+            <text x="140" y="542" font-family="Inter" font-size="12.5" fill="#9aa6bf">代价：<tspan fill="#e4ebf7" font-weight="600">grid 大小被死死锁定</tspan>，且每个 SM 只能放一个 CTA（MPK 靠吃满 shared memory 来保证）。</text>
+            <text x="140" y="562" font-family="Inter" font-size="12.5" fill="#9aa6bf">所以 <tspan font-family="JetBrains Mono" fill="#f0a361">num_workers + num_schedulers/4 == SM 数</tspan> 这个 assert 是<tspan fill="#ff8a8a" font-weight="700">正确性前提</tspan>，填错不是慢一点，是直接死锁。</text>
+          </svg>
+        </div>
+        <figcaption><b>图 9.</b> 死锁从何而来：<b>CTA #0 等 #9999，#9999 等一个空闲 SM，而那个 SM 正被还在等待的 #0 占着</b>——一个闭环。上半部分解释了为什么 CUDA 不能提供 grid 级 barrier；下半部分是 MPK 掀掉这个前提的方式：<b>让排队队列为空</b>。</figcaption>
+      </figure>
+
+      <div class="callout tip">
+        <div class="ic">💡</div>
+        <div class="ct"><span class="t">换个角度理解这张图</span><p>死锁的成因不是「CTA 会等待」，而是 <b>CTA 在等待时仍然占着它的 SM 不放</b>。操作系统里线程阻塞会让出 CPU，<span class="mark">而 CTA 一旦上了 SM 就绑死到退出为止，没有抢占、没有让出</span>。这正是 GPU 与 CPU 在调度模型上最本质的差别，也是 persistent kernel 这类技巧存在的根源。</p></div>
+      </div>
 
       <h3>7.2 关键认知：barrier 同时提供了两样东西</h3>
 
@@ -1253,7 +1433,358 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
       <p><b>编译期</b>做四件事：算子拆 task（按输出张量切分）→ 依赖分析插 event → <b>event 融合</b>（触发同一组消费者的 event 合并、依赖同一组生产者的 event 合并，压缩同步开销）→ 图归一化 + BFS 线性化，让运行时能紧凑存储、顺序扫描。</p>
 
-      <h3>8.2 执行层：一个常驻 kernel 里的 worker / scheduler 分工</h3>
+      <h3>8.2 从模型到「一次 launch」：完整编译链路</h3>
+
+      <div class="callout warn">
+        <div class="ic">🚫</div>
+        <div class="ct"><span class="t">先纠正一个很自然但错误的直觉</span><p><b>MPK 并不是「把 CUDA Graph 转换成一个 kernel」——它根本不接触 CUDA Graph。</b><br><br>两者是从<span class="mark">同一个计算图出发的两条分叉的下降路径</span>，不是先后关系。CUDA Graph 是驱动层的对象（一张 kernel launch 的 DAG），MPK 从来不消费它；MPK 直接从计算图降到自己的 task/event 表。</p></div>
+      </div>
+
+      <figure class="figwide">
+        <div class="frame scroll">
+          <svg viewBox="0 0 1120 542" width="1120" height="542" role="img" aria-label="vLLM 与 MPK 从同一计算图分叉的两条下降路径">
+            <defs>
+              <marker id="alA" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L10 4.5 L0 9 z" fill="#9aa6bf"/></marker>
+              <marker id="alY" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L10 4.5 L0 9 z" fill="#f0bf4c"/></marker>
+              <marker id="alG" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L10 4.5 L0 9 z" fill="#9bce6b"/></marker>
+            </defs>
+
+            <!-- 三个阶段的竖带 -->
+            <rect x="130" y="26" width="430" height="270" rx="8" fill="rgba(106,166,255,.05)" stroke="#283248"/>
+            <rect x="566" y="26" width="222" height="270" rx="8" fill="rgba(180,155,255,.05)" stroke="#283248"/>
+            <rect x="794" y="26" width="310" height="270" rx="8" fill="rgba(240,163,97,.05)" stroke="#283248"/>
+            <text x="345" y="44" text-anchor="middle" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.5" fill="#6aa6ff">编译期 · 离线一次</text>
+            <text x="677" y="44" text-anchor="middle" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.5" fill="#b49bff">启动时 · 一次</text>
+            <text x="949" y="44" text-anchor="middle" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.5" fill="#f0a361">运行时 · 每个 token</text>
+
+            <!-- 共同起点 -->
+            <rect x="12" y="128" width="106" height="66" rx="10" fill="rgba(70,215,204,.20)" stroke="#46d7cc" stroke-width="1.8"/>
+            <text x="65" y="152" text-anchor="middle" font-family="Inter" font-size="12.5" font-weight="700" fill="#c7f2fb">HF / PyTorch</text>
+            <text x="65" y="170" text-anchor="middle" font-family="Inter" font-size="12.5" font-weight="700" fill="#c7f2fb">模型定义</text>
+            <text x="65" y="187" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6fc4d6">共同起点</text>
+            <text x="65" y="212" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#f0bf4c">↓ 在这里分叉 ↓</text>
+
+            <!-- 分叉箭头 -->
+            <path d="M118 148 C 132 110, 134 96, 148 92" fill="none" stroke="#f0bf4c" stroke-width="1.8" marker-end="url(#alY)"/>
+            <path d="M118 174 C 132 214, 134 228, 148 232" fill="none" stroke="#9bce6b" stroke-width="1.8" marker-end="url(#alG)"/>
+
+            <!-- ══ 轨道 ① vLLM ══ -->
+            <text x="150" y="72" font-family="Inter" font-size="13.5" font-weight="700" fill="#f0bf4c">① vLLM + CUDA Graph</text>
+
+            <rect x="150" y="80" width="122" height="52" rx="7" fill="rgba(240,191,76,.16)" stroke="#f0bf4c" stroke-opacity=".7"/>
+            <text x="211" y="100" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#e4ebf7">torch.compile</text>
+            <text x="211" y="117" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c9b47a">fx.Graph + Inductor</text>
+
+            <path d="M272 106 H288" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="292" y="80" width="126" height="52" rx="7" fill="rgba(240,191,76,.16)" stroke="#f0bf4c" stroke-opacity=".7"/>
+            <text x="355" y="100" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#e4ebf7">293 个 kernel</text>
+            <text x="355" y="117" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c9b47a">各自独立的二进制</text>
+
+            <path d="M418 106 H434" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="438" y="80" width="112" height="52" rx="7" fill="rgba(240,191,76,.16)" stroke="#f0bf4c" stroke-opacity=".7"/>
+            <text x="494" y="100" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#e4ebf7">splitting_ops</text>
+            <text x="494" y="117" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c9b47a">在 attention 处切开</text>
+
+            <path d="M550 106 H578" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="582" y="80" width="190" height="52" rx="7" fill="rgba(224,68,94,.16)" stroke="#e0445e" stroke-opacity=".75"/>
+            <text x="677" y="100" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#ffc2cc">capture ×51 个 batch 桶</text>
+            <text x="677" y="117" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#d99aa6">→ driver 内的节点 DAG</text>
+
+            <path d="M772 106 H802" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="806" y="80" width="288" height="52" rx="7" fill="rgba(240,191,76,.16)" stroke="#f0bf4c" stroke-opacity=".7"/>
+            <text x="950" y="100" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#e4ebf7">replay()：driver 逐节点分派</text>
+            <text x="950" y="117" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="#ff9db0">293 次 launch · 293 次 barrier</text>
+
+            <!-- ══ 轨道 ② MPK ══ -->
+            <text x="150" y="212" font-family="Inter" font-size="13.5" font-weight="700" fill="#9bce6b">② Mirage MPK</text>
+
+            <rect x="150" y="220" width="122" height="52" rx="7" fill="rgba(155,206,107,.14)" stroke="#9bce6b" stroke-opacity=".7"/>
+            <text x="211" y="240" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#e4ebf7">μGraph</text>
+            <text x="211" y="257" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a8c98a">kernel 级计算图</text>
+
+            <path d="M272 246 H288" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="292" y="220" width="126" height="52" rx="7" fill="rgba(155,206,107,.14)" stroke="#9bce6b" stroke-opacity=".7"/>
+            <text x="355" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" fill="#e4ebf7">register_mugraph()</text>
+            <text x="355" y="257" text-anchor="middle" font-family="Inter" font-size="10" fill="#a8c98a">算子 → task + event</text>
+
+            <path d="M418 246 H434" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="438" y="220" width="112" height="52" rx="7" fill="rgba(155,206,107,.22)" stroke="#9bce6b" stroke-width="1.6"/>
+            <text x="494" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" font-weight="700" fill="#c9f0a8">TaskDesc[]</text>
+            <text x="494" y="254" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" font-weight="700" fill="#c9f0a8">EventDesc[]</text>
+            <text x="494" y="268" text-anchor="middle" font-family="Inter" font-size="9.5" fill="#a8c98a">两个扁平数组</text>
+
+            <path d="M550 246 H578" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="582" y="220" width="190" height="52" rx="7" fill="rgba(70,215,204,.18)" stroke="#46d7cc" stroke-opacity=".75"/>
+            <text x="677" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" font-weight="700" fill="#c7f2fb">cudaMemcpy 两个数组</text>
+            <text x="677" y="257" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#8fd8e6">搬进显存，就是普通数据</text>
+
+            <path d="M772 246 H802" stroke="#9aa6bf" stroke-width="1.5" marker-end="url(#alA)"/>
+
+            <rect x="806" y="220" width="288" height="52" rx="7" fill="rgba(155,206,107,.14)" stroke="#9bce6b" stroke-opacity=".7"/>
+            <text x="950" y="240" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#e4ebf7">1 次 launch，片上 scheduler 读数组分派</text>
+            <text x="950" y="257" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="#9bce6b">1 次 launch · 0 次 barrier</text>
+
+            <!-- ══ 底部：谁能读这张「图」 ══ -->
+            <text x="16" y="330" font-family="Inter" font-size="14" font-weight="700" fill="#f0a361">两条路线最本质的差别：这张「图」存在哪儿、谁读得到它</text>
+
+            <rect x="16" y="344" width="536" height="182" rx="10" fill="rgba(224,68,94,.06)" stroke="#5c3542"/>
+            <text x="36" y="368" font-family="Inter" font-size="13" font-weight="700" fill="#ff9db0">CUDA Graph：driver 私有的不透明对象</text>
+            <rect x="36" y="382" width="196" height="76" rx="8" fill="rgba(107,118,143,.20)" stroke="#8695b3" stroke-dasharray="4 3"/>
+            <text x="134" y="406" text-anchor="middle" font-family="Inter" font-size="11.5" fill="#c3cde0">🔒 cudaGraphExec_t</text>
+            <text x="134" y="426" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8695b3">节点 = kernel launch 记录</text>
+            <text x="134" y="444" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8695b3">存在 driver / host 侧</text>
+            <text x="252" y="402" font-family="Inter" font-size="11.5" fill="#e8b4bf">· 记录的是<tspan font-weight="700" fill="#ff9db0">「发牌顺序」</tspan></text>
+            <text x="252" y="422" font-family="Inter" font-size="11.5" fill="#e8b4bf">· 只有 <tspan font-weight="700" fill="#ffffff">CUDA driver</tspan> 能解释它</text>
+            <text x="252" y="442" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff9db0">· GPU kernel 读不到它</text>
+            <rect x="36" y="472" width="500" height="40" rx="7" fill="rgba(224,68,94,.12)" stroke="#e0445e" stroke-opacity=".6"/>
+            <text x="286" y="497" text-anchor="middle" font-family="Inter" font-size="12" fill="#ffc2cc">所以 GPU <tspan font-weight="700">没有能力自己调度自己</tspan> —— 只能被 driver 一个个喂</text>
+
+            <rect x="568" y="344" width="536" height="182" rx="10" fill="rgba(155,206,107,.06)" stroke="#33503a"/>
+            <text x="588" y="368" font-family="Inter" font-size="13" font-weight="700" fill="#9bce6b">MPK：显存里两个普通数组</text>
+            <g fill="rgba(155,206,107,.22)" stroke="#9bce6b" stroke-opacity=".8">
+              <rect x="588" y="382" width="34" height="22" rx="3"/><rect x="626" y="382" width="34" height="22" rx="3"/>
+              <rect x="664" y="382" width="34" height="22" rx="3"/><rect x="702" y="382" width="34" height="22" rx="3"/>
+              <rect x="740" y="382" width="34" height="22" rx="3"/>
+            </g>
+            <text x="782" y="398" font-family="JetBrains Mono" font-size="10.5" fill="#c9f0a8">TaskDesc[]</text>
+            <g fill="rgba(70,215,204,.22)" stroke="#46d7cc" stroke-opacity=".8">
+              <rect x="588" y="412" width="34" height="22" rx="3"/><rect x="626" y="412" width="34" height="22" rx="3"/>
+              <rect x="664" y="412" width="34" height="22" rx="3"/><rect x="702" y="412" width="34" height="22" rx="3"/>
+              <rect x="740" y="412" width="34" height="22" rx="3"/>
+            </g>
+            <text x="782" y="428" font-family="JetBrains Mono" font-size="10.5" fill="#c7f2fb">EventDesc[]</text>
+            <text x="588" y="456" font-family="Inter" font-size="11.5" fill="#c3e0a8">· 记录的是<tspan font-weight="700" fill="#9bce6b">「任务与依赖」</tspan>，不是发牌顺序</text>
+            <text x="588" y="474" font-family="Inter" font-size="11.5" font-weight="700" fill="#9bce6b">· 就躺在 HBM 里，worker / scheduler 直接读</text>
+            <rect x="588" y="486" width="500" height="30" rx="7" fill="rgba(155,206,107,.12)" stroke="#9bce6b" stroke-opacity=".6"/>
+            <text x="838" y="506" text-anchor="middle" font-family="Inter" font-size="12" fill="#c9f0a8">所以 GPU <tspan font-weight="700">能自己调度自己</tspan> —— 这就是 megakernel 成立的前提</text>
+          </svg>
+        </div>
+        <figcaption><b>图 10.</b> 两条下降路径。<b>它们在「计算图」处分叉，之后再无交集</b>——vLLM 把计算图降成一串 kernel 再录成 driver 侧的 launch 列表；MPK 把计算图降成显存里的 task/event 表，让 kernel 自己读。</figcaption>
+      </figure>
+
+      <h4>两张「图」在结构上到底差在哪</h4>
+
+      <figure class="figwide">
+        <div class="frame scroll">
+          <svg viewBox="0 0 1120 406" width="1120" height="406" role="img" aria-label="CUDA Graph 与 tGraph 的拓扑结构对比">
+            <defs>
+              <marker id="agA" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 z" fill="#8696b3"/></marker>
+              <marker id="agG" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 z" fill="#9bce6b"/></marker>
+            </defs>
+
+            <!-- ══ 左：CUDA Graph ══ -->
+            <rect x="8" y="14" width="546" height="384" rx="10" fill="rgba(240,191,76,.045)" stroke="#3d3a2b"/>
+            <text x="281" y="42" text-anchor="middle" font-family="Inter" font-size="14.5" font-weight="700" fill="#f0bf4c">CUDA Graph：节点 ＝ 一整个 kernel</text>
+
+            <!-- K1 -->
+            <rect x="26" y="58" width="496" height="52" rx="8" fill="rgba(240,191,76,.14)" stroke="#f0bf4c" stroke-opacity=".75"/>
+            <text x="40" y="76" font-family="Inter" font-size="12" fill="#e4ebf7">① RMSNorm + QKV Linear</text>
+            <text x="508" y="76" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#c9b47a">grid = 300 CTA</text>
+            <g fill="rgba(240,191,76,.35)" stroke="#f0bf4c" stroke-opacity=".5">
+              <rect x="42" y="86" width="22" height="14" rx="2"/><rect x="71" y="86" width="22" height="14" rx="2"/><rect x="100" y="86" width="22" height="14" rx="2"/><rect x="129" y="86" width="22" height="14" rx="2"/>
+              <rect x="158" y="86" width="22" height="14" rx="2"/><rect x="187" y="86" width="22" height="14" rx="2"/><rect x="216" y="86" width="22" height="14" rx="2"/><rect x="245" y="86" width="22" height="14" rx="2"/>
+              <rect x="274" y="86" width="22" height="14" rx="2"/><rect x="303" y="86" width="22" height="14" rx="2"/><rect x="332" y="86" width="22" height="14" rx="2"/><rect x="361" y="86" width="22" height="14" rx="2"/>
+              <rect x="390" y="86" width="22" height="14" rx="2"/><rect x="419" y="86" width="22" height="14" rx="2"/><rect x="448" y="86" width="22" height="14" rx="2"/><rect x="477" y="86" width="22" height="14" rx="2"/>
+            </g>
+
+            <rect x="26" y="118" width="496" height="24" rx="5" fill="rgba(224,68,94,.20)" stroke="#e0445e" stroke-opacity=".8"/>
+            <text x="274" y="135" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff9db0">▬ 全局 barrier：隐含 300 × 300 条依赖边</text>
+
+            <!-- K2 -->
+            <rect x="26" y="150" width="496" height="52" rx="8" fill="rgba(240,191,76,.14)" stroke="#f0bf4c" stroke-opacity=".75"/>
+            <text x="40" y="168" font-family="Inter" font-size="12" fill="#e4ebf7">② Attention</text>
+            <g fill="rgba(240,191,76,.35)" stroke="#f0bf4c" stroke-opacity=".5">
+              <rect x="42" y="178" width="22" height="14" rx="2"/><rect x="71" y="178" width="22" height="14" rx="2"/><rect x="100" y="178" width="22" height="14" rx="2"/><rect x="129" y="178" width="22" height="14" rx="2"/>
+              <rect x="158" y="178" width="22" height="14" rx="2"/><rect x="187" y="178" width="22" height="14" rx="2"/><rect x="216" y="178" width="22" height="14" rx="2"/><rect x="245" y="178" width="22" height="14" rx="2"/>
+              <rect x="274" y="178" width="22" height="14" rx="2"/><rect x="303" y="178" width="22" height="14" rx="2"/><rect x="332" y="178" width="22" height="14" rx="2"/><rect x="361" y="178" width="22" height="14" rx="2"/>
+              <rect x="390" y="178" width="22" height="14" rx="2"/><rect x="419" y="178" width="22" height="14" rx="2"/><rect x="448" y="178" width="22" height="14" rx="2"/><rect x="477" y="178" width="22" height="14" rx="2"/>
+            </g>
+
+            <rect x="26" y="210" width="496" height="24" rx="5" fill="rgba(224,68,94,.20)" stroke="#e0445e" stroke-opacity=".8"/>
+            <text x="274" y="227" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff9db0">▬ 全局 barrier</text>
+
+            <!-- K3 -->
+            <rect x="26" y="242" width="496" height="52" rx="8" fill="rgba(240,191,76,.14)" stroke="#f0bf4c" stroke-opacity=".75"/>
+            <text x="40" y="260" font-family="Inter" font-size="12" fill="#e4ebf7">③ FFN</text>
+            <g fill="rgba(240,191,76,.35)" stroke="#f0bf4c" stroke-opacity=".5">
+              <rect x="42" y="270" width="22" height="14" rx="2"/><rect x="71" y="270" width="22" height="14" rx="2"/><rect x="100" y="270" width="22" height="14" rx="2"/><rect x="129" y="270" width="22" height="14" rx="2"/>
+              <rect x="158" y="270" width="22" height="14" rx="2"/><rect x="187" y="270" width="22" height="14" rx="2"/><rect x="216" y="270" width="22" height="14" rx="2"/><rect x="245" y="270" width="22" height="14" rx="2"/>
+              <rect x="274" y="270" width="22" height="14" rx="2"/><rect x="303" y="270" width="22" height="14" rx="2"/><rect x="332" y="270" width="22" height="14" rx="2"/><rect x="361" y="270" width="22" height="14" rx="2"/>
+              <rect x="390" y="270" width="22" height="14" rx="2"/><rect x="419" y="270" width="22" height="14" rx="2"/><rect x="448" y="270" width="22" height="14" rx="2"/><rect x="477" y="270" width="22" height="14" rx="2"/>
+            </g>
+
+            <text x="26" y="326" font-family="Inter" font-size="12" fill="#c9b47a">· 拓扑<tspan font-weight="700" fill="#f0bf4c">退化成一条链</tspan>：每个 kernel 必须等前一个<tspan font-weight="700">完全</tspan>结束</text>
+            <text x="26" y="348" font-family="Inter" font-size="12" fill="#c9b47a">· 边的语义是<tspan font-weight="700" fill="#ff9db0">全序</tspan>——无法表达「我只依赖其中几个 CTA」</text>
+            <text x="26" y="370" font-family="Inter" font-size="12" fill="#c9b47a">· 单部图：节点直接连节点，没有中间层</text>
+            <text x="26" y="390" font-family="JetBrains Mono" font-size="10.5" fill="#8696b3">Qwen3-8B 每 token ≈ 293 个节点</text>
+
+            <!-- ══ 右：tGraph ══ -->
+            <rect x="566" y="14" width="546" height="384" rx="10" fill="rgba(155,206,107,.045)" stroke="#2b3d2f"/>
+            <text x="839" y="42" text-anchor="middle" font-family="Inter" font-size="14.5" font-weight="700" fill="#9bce6b">tGraph：节点 ＝ 一个 task（1 个 CTA）＋ event</text>
+
+            <!-- 上游 task 行 -->
+            <text x="580" y="72" font-family="JetBrains Mono" font-size="10" fill="#8696b3">第 N 层</text>
+            <g>
+              <rect x="592" y="78" width="64" height="28" rx="6" fill="rgba(155,206,107,.30)" stroke="#9bce6b" stroke-width="1.6"/>
+              <rect x="690" y="78" width="64" height="28" rx="6" fill="rgba(155,206,107,.30)" stroke="#9bce6b" stroke-width="1.6"/>
+              <rect x="788" y="78" width="64" height="28" rx="6" fill="rgba(155,206,107,.14)" stroke="#9bce6b" stroke-opacity=".55"/>
+              <rect x="886" y="78" width="64" height="28" rx="6" fill="rgba(155,206,107,.14)" stroke="#9bce6b" stroke-opacity=".55"/>
+              <rect x="984" y="78" width="64" height="28" rx="6" fill="rgba(155,206,107,.14)" stroke="#9bce6b" stroke-opacity=".55"/>
+            </g>
+            <g font-family="JetBrains Mono" font-size="11" fill="#e4ebf7" text-anchor="middle">
+              <text x="624" y="97">T0</text><text x="722" y="97">T1</text><text x="820" y="97">T2</text><text x="918" y="97">T3</text><text x="1016" y="97">T4</text>
+            </g>
+
+            <!-- task → event -->
+            <g stroke="#8696b3" stroke-width="1.3" fill="none">
+              <path d="M624 106 L652 138" marker-end="url(#agA)" stroke="#9bce6b" stroke-width="1.7"/>
+              <path d="M722 106 L692 138" marker-end="url(#agA)" stroke="#9bce6b" stroke-width="1.7"/>
+              <path d="M820 106 L902 138" marker-end="url(#agA)"/>
+              <path d="M918 106 L936 138" marker-end="url(#agA)"/>
+              <path d="M1016 106 L974 138" marker-end="url(#agA)"/>
+            </g>
+
+            <!-- event 行 -->
+            <text x="580" y="162" font-family="JetBrains Mono" font-size="10" fill="#8696b3">event</text>
+            <rect x="618" y="140" width="104" height="38" rx="19" fill="rgba(240,191,76,.24)" stroke="#f0bf4c" stroke-width="1.8"/>
+            <text x="670" y="157" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="#ffd97a">E1</text>
+            <text x="670" y="172" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#e0c48a">num_triggers=2</text>
+
+            <rect x="886" y="140" width="104" height="38" rx="19" fill="rgba(240,191,76,.16)" stroke="#f0bf4c" stroke-opacity=".65"/>
+            <text x="938" y="157" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="#ffd97a">E2</text>
+            <text x="938" y="172" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#e0c48a">num_triggers=3</text>
+
+            <!-- event → task -->
+            <g stroke="#8696b3" stroke-width="1.3" fill="none">
+              <path d="M654 178 L628 210" marker-end="url(#agG)" stroke="#9bce6b" stroke-width="1.7"/>
+              <path d="M690 178 L718 210" marker-end="url(#agG)" stroke="#9bce6b" stroke-width="1.7"/>
+              <path d="M906 178 L826 210" marker-end="url(#agA)"/>
+              <path d="M938 178 L918 210" marker-end="url(#agA)"/>
+              <path d="M970 178 L1012 210" marker-end="url(#agA)"/>
+            </g>
+
+            <!-- 下游 task 行 -->
+            <text x="580" y="206" font-family="JetBrains Mono" font-size="10" fill="#8696b3">第 N+1 层</text>
+            <g>
+              <rect x="592" y="212" width="64" height="28" rx="6" fill="rgba(70,215,204,.34)" stroke="#46d7cc" stroke-width="1.6"/>
+              <rect x="690" y="212" width="64" height="28" rx="6" fill="rgba(70,215,204,.34)" stroke="#46d7cc" stroke-width="1.6"/>
+              <rect x="788" y="212" width="64" height="28" rx="6" fill="rgba(70,215,204,.14)" stroke="#46d7cc" stroke-opacity=".5"/>
+              <rect x="886" y="212" width="64" height="28" rx="6" fill="rgba(70,215,204,.14)" stroke="#46d7cc" stroke-opacity=".5"/>
+              <rect x="984" y="212" width="64" height="28" rx="6" fill="rgba(70,215,204,.14)" stroke="#46d7cc" stroke-opacity=".5"/>
+            </g>
+            <g font-family="JetBrains Mono" font-size="11" fill="#e4ebf7" text-anchor="middle">
+              <text x="624" y="231">D0</text><text x="722" y="231">D1</text><text x="820" y="231">D2</text><text x="918" y="231">D3</text><text x="1016" y="231">D4</text>
+            </g>
+
+            <rect x="580" y="252" width="470" height="30" rx="7" fill="rgba(155,206,107,.14)" stroke="#9bce6b" stroke-opacity=".6"/>
+            <text x="815" y="272" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#9bce6b">高亮那条路径：D0 只等 T0、T1 —— 完全不关心 T2–T4 跑到哪了</text>
+
+            <text x="580" y="304" font-family="Inter" font-size="12" fill="#a8c98a">· 拓扑是<tspan font-weight="700" fill="#9bce6b">网状</tspan>：一个算子横向摊成几十个 task（demo 里 grid_dim 常取 96）</text>
+            <text x="580" y="326" font-family="Inter" font-size="12" fill="#a8c98a">· 边的语义是<tspan font-weight="700" fill="#9bce6b">偏序</tspan>——精确到 tile，于是层与层能错峰重叠</text>
+            <text x="580" y="348" font-family="Inter" font-size="12" fill="#a8c98a">· <tspan font-weight="700" fill="#9bce6b">二部图</tspan>：task 从不直连 task，一律经过 event 这一层</text>
+            <text x="580" y="370" font-family="Inter" font-size="12" fill="#a8c98a">· event 只存 <tspan font-family="JetBrains Mono" font-size="10.5" fill="#ffd97a">first_task_id / last_task_id</tspan> 两个整数</text>
+            <text x="580" y="390" font-family="JetBrains Mono" font-size="10.5" fill="#8696b3">—— 后继必须连续，这正是要做 BFS 线性化的原因</text>
+          </svg>
+        </div>
+        <figcaption><b>图 11.</b> 两张图的拓扑。<b>CUDA Graph 的一条边 = 一次全序约束</b>（下一个 kernel 的每个 CTA 等上一个的全部 CTA）；<b>tGraph 用 task→event→task 的二部结构把这条边拆散</b>，只保留真实存在的那几条。</figcaption>
+      </figure>
+
+      <div class="callout tip">
+        <div class="ic">🔎</div>
+        <div class="ct"><span class="t">一个容易被略过、但很能说明设计的细节</span><p><code>EventDesc</code> 里存后继 task 的方式不是一个列表，而是 <code>first_task_id</code> / <code>last_task_id</code> <b>两个整数</b>——它假定「一个 event 要放出的所有 task 在数组里是连续的」。<span class="mark">编译期那步「BFS 线性化」就是为了让这个假设成立。</span>用一次排序换掉了运行时的指针追逐，这在 GPU 上是很划算的交易。</p></div>
+      </div>
+
+      <h4>对着源码走一遍这条链路</h4>
+
+      <span class="srcpath">mirage-project/mirage · <b>src/kernel/runtime.cc:1906</b>（Graph::generate_task_graph 主干）</span>
+<pre><code>TaskGraphResult Graph::<span class="f">generate_task_graph</span>(<span class="k">int</span> _num_gpus, <span class="k">int</span> _my_gpu_id) {
+  std::vector&lt;FullTaskDesc&gt; all_tasks;      <span class="c">// ← 最终产物只有这两个数组</span>
+  std::vector&lt;EventDesc&gt;    all_events;
+
+  all_events.<span class="f">push_back</span>(<span class="f">EventDesc</span>(EVENT_TERMINATION, <span class="n">1</span>, <span class="n">0</span>, <span class="n">0</span>));
+  all_tasks.<span class="f">push_back</span>(<span class="f">FullTaskDesc</span>(TASK_TERMINATE, <span class="n">0</span>));
+
+  <span class="f">register_mugraph</span>(*<span class="k">this</span>, ..., all_tasks, all_events, first_tasks, ...);  <span class="c">// 算子 → task/event</span>
+  <span class="f">assert</span>(<span class="f">sanity_check</span>(*<span class="k">this</span>, all_tasks, all_events, first_tasks));
+  <span class="k">return</span> <span class="f">print_task_graph</span>(..., <span class="k">true</span> <span class="c">/*use_json_format*/</span>);        <span class="c">// 落成 JSON + 生成 CUDA</span>
+}</code></pre>
+
+      <p>然后启动时，这两个数组被<b>原样搬进显存</b>——这一步是整条链路的题眼：</p>
+
+      <span class="srcpath">同上 · <b>include/mirage/persistent_kernel/persistent_kernel.cuh:1686-1700</b></span>
+<pre><code>global_runtime_config.all_tasks = <span class="f">gpu_malloc</span>&lt;TaskDesc&gt;(all_tasks.size() * <span class="k">sizeof</span>(TaskDesc));
+<span class="f">cudaMemcpy</span>(global_runtime_config.all_tasks, all_tasks.<span class="f">data</span>(),
+           all_tasks.size() * <span class="k">sizeof</span>(TaskDesc), cudaMemcpyHostToDevice);
+
+global_runtime_config.all_events = <span class="f">gpu_malloc</span>&lt;EventDesc&gt;(all_events.size() * <span class="k">sizeof</span>(EventDesc));
+<span class="f">cudaMemcpy</span>(global_runtime_config.all_events, all_events.<span class="f">data</span>(), ...);
+
+<span class="c">// 每个 event 要被触发几次，也是一个普通 int 数组</span>
+<span class="f">cudaMemcpy</span>(global_runtime_config.all_event_num_triggers, host_all_event_counters.<span class="f">data</span>(), ...);</code></pre>
+
+      <div class="callout key">
+        <div class="ic">🗝️</div>
+        <div class="ct"><span class="t">整个「一次 launch」的秘密就在这三行 cudaMemcpy 里</span>
+        <p>CUDA Graph 把执行计划交给 <b>driver</b> 保管，GPU 只能被动等着被喂；MPK 把执行计划做成 <b>HBM 里的普通数组</b>，于是 <code>persistent_kernel</code> 里的 worker 和 scheduler <span class="mark">能像读任何一个张量那样读它</span>——读得到，才谈得上自己调度。</p>
+        <p style="margin-top:8px">换句话说：<b>不是「把 293 个 kernel 合并成 1 个」，而是把「293 个 kernel」这个概念整个换成了「一张写在显存里的任务表 + 一个会读表的解释器」。</b>那个解释器就是常驻的 megakernel。</p></div>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>问题</th><th>vLLM + CUDA Graph</th><th>Mirage MPK</th></tr></thead>
+          <tbody>
+            <tr><td><b>输入是什么</b></td><td>一串已经编译好的 kernel launch</td><td>计算图（μGraph）本身</td></tr>
+            <tr><td><b>产物是什么</b></td><td><code>cudaGraphExec_t</code>（driver 侧对象）</td><td><code>TaskDesc[]</code> + <code>EventDesc[]</code>（显存数组）＋生成的 task CUDA 代码</td></tr>
+            <tr><td><b>记录的是</b></td><td>发牌顺序（launch 序列）</td><td>任务与依赖（偏序关系）</td></tr>
+            <tr><td><b>谁来解释</b></td><td>CUDA driver + GPU 硬件前端</td><td><b>GPU 自己</b>（片上 scheduler warp）</td></tr>
+            <tr><td><b>kernel 能读到吗</b></td><td class="hr_">不能</td><td class="hg">能——就是一段显存</td></tr>
+            <tr><td><b>动态 batch 怎么办</b></td><td>按 batch 分桶，各 capture 一份图</td><td>按 batch 分桶，各生成一份 tGraph<span style="font-size:13px">（这一点两者同构）</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>那么，什么样的算子会被融进同一个 task？</h4>
+
+      <p>看 <code>TaskType</code> 枚举就能读出规律——有些算子被<b>合并</b>进一条记录，有些反而被<b>拆成两条</b>：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>枚举值</th><th>发生了什么</th></tr></thead>
+          <tbody>
+            <tr><td><code>TASK_RMS_NORM_LINEAR</code></td><td class="hg"><b>合并</b>：RMSNorm ＋ Linear 进同一个 task</td></tr>
+            <tr><td><code>TASK_SILU_MUL_LINEAR_WITH_RESIDUAL</code></td><td class="hg"><b>合并</b>：SiLU ＋ 逐元素乘 ＋ Linear ＋ residual 加法，四个算子一条记录</td></tr>
+            <tr><td><code>TASK_ARGMAX_PARTIAL</code> / <code>TASK_ARGMAX_REDUCE</code></td><td class="hr_"><b>拆开</b>：一个 argmax 被切成两个 task</td></tr>
+            <tr><td><code>TASK_PAGED_ATTENTION_SPLIT_KV_*</code> / <code>..._MERGE_*</code></td><td class="hr_"><b>拆开</b>：split-KV attention ＋ 一个专门的 merge task</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>分界线只有一条：<span class="hi">中间结果能不能一直待在这一个 CTA 的 shared memory 里，不回 HBM。</span></p>
+
+      <div class="cards">
+        <div class="c" style="border-left:3px solid var(--olive)">
+          <span class="k">能融合</span><h4>消费者只读生产者的<b>同一块 tile</b></h4>
+          <p>norm 的缩放系数、激活、residual 加法、紧随其后的 GEMM —— 数据从头到尾在 SMEM 和寄存器里流转。看 <code>norm_linear.cuh</code>：norm 权重、reduction 结果、MMA 中间量、输出全部挤在<b>同一个</b> <code>extern __shared__ char smem[]</code> 里，靠手工分配偏移共存。<b class="hg">RMSNorm 的结果一次都没落过 HBM。</b></p>
+        </div>
+        <div class="c" style="border-left:3px solid var(--rust)">
+          <span class="k">必须拆开</span><h4>需要<b>跨 CTA 归约</b></h4>
+          <p>全局 argmax、split-KV attention 的 softmax 分母、多卡 all-reduce —— 一个 task 就是一个 CTA，<b class="hr_">CTA 之间只能通过 HBM + event 通信</b>。所以只能切成 <code>partial</code> ＋ <code>reduce</code> 两个 task。<code>merge_splitkv.cuh</code> 的注释写得很直白：它吃的是上一个 split-kv task 的输出<b>和那个 log-exp-sum</b>。</p>
+        </div>
+      </div>
+
+      <div class="callout key">
+        <div class="ic">📏</div>
+        <div class="ct"><span class="t">所以 task 的边界不是「算子边界」，而是「一个 CTA 的能力边界」</span><p>能在一个 CTA 的 shared memory 预算内跑完的连续算子链，就压成一个 task；<b>一旦需要和别的 CTA 交换数据，就必须断开、过 HBM、插一个 event。</b><span class="mark">MPK 的融合能力上限，等于一个 CTA 的 shared memory 大小。</span></p></div>
+      </div>
+
+      <h3>8.3 执行层：一个常驻 kernel 里的 worker / scheduler 分工</h3>
 
       <p>整个 megakernel 的入口只有 8 行：</p>
 
@@ -1314,10 +1845,10 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
             <text x="652" y="256" font-family="Inter" font-size="11" fill="#f0bf4c" text-anchor="middle">必须严格等于物理 SM 数，否则跑不起来</text>
           </svg>
         </div>
-        <figcaption><b>图 8.</b> README 里那组必须手工填对的参数 <code>num_workers=96, num_local_schedulers=48</code>，正好把 A100 的 108 个 SM 占满。（H100 是 132、B200 是 148，参数要跟着改。）</figcaption>
+        <figcaption><b>图 12.</b> README 里那组必须手工填对的参数 <code>num_workers=96, num_local_schedulers=48</code>，正好把 A100 的 108 个 SM 占满。（H100 是 132、B200 是 148，参数要跟着改。）</figcaption>
       </figure>
 
-      <h3>8.3 Worker：一个永不退出的轮询循环</h3>
+      <h3>8.4 Worker：一个永不退出的轮询循环</h3>
 
       <span class="srcpath">mirage-project/mirage · <b>include/mirage/persistent_kernel/persistent_kernel.cuh:857-993</b>（节选）</span>
 <pre><code><span class="k">while</span> (<span class="k">true</span>) {
@@ -1337,7 +1868,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
   ...
 }</code></pre>
 
-      <h3>8.4 Event：一个原子计数器就是全部的同步机制</h3>
+      <h3>8.5 Event：一个原子计数器就是全部的同步机制</h3>
 
       <span class="srcpath">同上 · <b>persistent_kernel.cuh:1004-1060</b>（节选）</span>
 <pre><code><span class="k">if</span> (threadIdx.x == <span class="n">0</span>) {
@@ -1424,10 +1955,10 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
             <text x="410" y="273" font-family="Inter" font-size="12.5" font-weight="600" fill="#9bce6b" text-anchor="middle">整套机制的成本：论文实测片上 scheduler 仅占总运行时 0.28%</text>
           </svg>
         </div>
-        <figcaption><b>图 9.</b> MPK 的调度回路。<b>没有 CPU 参与、没有 kernel launch、没有全局屏障</b>——所有同步都退化成显存上一个原子计数器的加法。</figcaption>
+        <figcaption><b>图 13.</b> MPK 的调度回路。<b>没有 CPU 参与、没有 kernel launch、没有全局屏障</b>——所有同步都退化成显存上一个原子计数器的加法。</figcaption>
       </figure>
 
-      <h3>8.5 它到底怎么做到「全程没有 barrier」</h3>
+      <h3>8.6 它到底怎么做到「全程没有 barrier」</h3>
 
       <p>回到第七节的两个保证。MPK 拆 barrier 分四步走，缺一步都不成立：</p>
 
@@ -1533,7 +2064,7 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
         <div class="ct"><span class="t">CTA 内部的 <code>__syncthreads()</code> 一个没少</span><p>翻 <code>execute_worker</code> 就能看到满屏的 <code>__syncthreads()</code>——加载 TaskDesc 之后、执行 task 之后都有。<b>MPK 消掉的是第七节图里的第③级（grid 级），保留了第②级（block 级）。</b><br><br>这个保留是对的：block 级 barrier 只有几十个周期，作用域是一个 SM 内部，既不涉及 tail effect 也不需要刷全局缓存。<span class="mark">拿它开刀没有收益，只有风险。</span></p></div>
       </div>
 
-      <h3>8.6 于是三笔税一起消失</h3>
+      <h3>8.7 于是三笔税一起消失</h3>
 
       <div class="tablewrap">
         <table>
@@ -1550,6 +2081,415 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
       <div class="callout key">
         <div class="ic">📉</div>
         <div class="ct"><span class="t">回到第四节的物理下界</span><p>Qwen3-8B / A100：<b>14.5 ms → 12.5 ms</b>，下界 10 ms。<span class="mark">相当于把「离物理下界的差距」从 4.5 ms 压到 2.5 ms，砍掉 44%。</span></p></div>
+      </div>
+
+      <h3>8.8 三种执行模型并排看</h3>
+
+      <p>把 <b>PyTorch eager</b>、<b>vLLM + CUDA Graph</b>、<b>Mirage MPK</b> 放在同一条时间轴上，用图 5 那套泳道画法对比。先补一句 vLLM 那一行的前提：</p>
+
+      <div class="callout note">
+        <div class="ic">🎬</div>
+        <div class="ct"><span class="t">CUDA Graph 一句话</span><p>把一整串 kernel <b>录成一张静态的节点图</b>，之后一次 <code>replay()</code> 全部下发，CPU 侧的 Python、算子 dispatcher、逐个 launch 全部跳过。<span class="mark">但它录的是「发牌顺序」，不是「牌桌流程」——图里依然是 293 个 kernel 节点，293 次 barrier 一个不少。</span></p></div>
+      </div>
+
+      <figure class="figwide">
+        <div class="frame scroll">
+          <svg viewBox="0 0 1120 706" width="1120" height="706" role="img" aria-label="PyTorch eager、vLLM+CUDA Graph、Mirage MPK 三种执行模型的泳道时间轴对比">
+            <defs>
+              <pattern id="hx3" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <rect width="7" height="7" fill="rgba(107,118,143,.10)"/>
+                <line x1="0" y1="0" x2="0" y2="7" stroke="#6b768f" stroke-width="2" stroke-opacity=".42"/>
+              </pattern>
+              <marker id="ar3w" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#6b768f"/></marker>
+            </defs>
+
+            <!-- ═══════════ ① PyTorch eager ═══════════ -->
+            <rect x="8" y="12" width="1104" height="196" rx="10" fill="rgba(255,138,138,.045)" stroke="#3d2b38"/>
+            <text x="22" y="36" font-family="Inter" font-size="15.5" font-weight="700" fill="#ff8a8a">① PyTorch eager</text>
+            <text x="180" y="36" font-family="Inter" font-size="12.5" fill="#9aa6bf">逐个 launch · 无融合 · 无图</text>
+            <text x="1100" y="36" text-anchor="end" font-family="Inter" font-size="12.5" font-weight="700" fill="#ff8a8a">CPU 发牌跟不上 → GPU 饿着（launch-bound）</text>
+
+            <g font-family="Inter" font-size="11.5" fill="#9aa6bf" text-anchor="end">
+              <text x="132" y="60">CPU</text><text x="132" y="86">SM #0</text>
+              <text x="132" y="110">SM #1</text><text x="132" y="134">SM #107</text><text x="132" y="170">HBM 带宽</text>
+            </g>
+
+            <!-- CPU：几乎全忙 -->
+            <g fill="rgba(106,166,255,.42)" stroke="#6aa6ff" stroke-width=".9">
+              <rect x="142" y="48" width="42" height="16" rx="3"/><rect x="252" y="48" width="42" height="16" rx="3"/>
+              <rect x="362" y="48" width="42" height="16" rx="3"/><rect x="472" y="48" width="42" height="16" rx="3"/>
+              <rect x="582" y="48" width="42" height="16" rx="3"/><rect x="692" y="48" width="42" height="16" rx="3"/>
+              <rect x="802" y="48" width="42" height="16" rx="3"/><rect x="912" y="48" width="42" height="16" rx="3"/>
+              <rect x="1022" y="48" width="42" height="16" rx="3"/>
+            </g>
+            <text x="600" y="44" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6aa6ff">Python dispatch + launch，一个接一个，CPU 是瓶颈</text>
+
+            <!-- SM 三条：工作块之间有大空隙（等 CPU） -->
+            <g>
+              <rect x="192" y="76" width="52" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="244" y="76" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="254" y="76" width="98" height="16" fill="url(#hx3)"/>
+              <rect x="352" y="76" width="52" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="404" y="76" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="414" y="76" width="98" height="16" fill="url(#hx3)"/>
+              <rect x="512" y="76" width="52" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="564" y="76" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="574" y="76" width="98" height="16" fill="url(#hx3)"/>
+              <rect x="672" y="76" width="52" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="724" y="76" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="734" y="76" width="98" height="16" fill="url(#hx3)"/>
+              <rect x="832" y="76" width="52" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="884" y="76" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="894" y="76" width="98" height="16" fill="url(#hx3)"/>
+              <rect x="992" y="76" width="52" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="1044" y="76" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <g>
+              <rect x="190" y="100" width="50" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="240" y="100" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="250" y="100" width="102" height="16" fill="url(#hx3)"/>
+              <rect x="352" y="100" width="50" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="402" y="100" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="412" y="100" width="100" height="16" fill="url(#hx3)"/>
+              <rect x="512" y="100" width="50" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="562" y="100" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="572" y="100" width="100" height="16" fill="url(#hx3)"/>
+              <rect x="672" y="100" width="50" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="722" y="100" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="732" y="100" width="100" height="16" fill="url(#hx3)"/>
+              <rect x="832" y="100" width="50" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="882" y="100" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="892" y="100" width="100" height="16" fill="url(#hx3)"/>
+              <rect x="992" y="100" width="50" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="1042" y="100" width="10" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <g>
+              <rect x="196" y="124" width="58" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="254" y="124" width="12" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="266" y="124" width="86" height="16" fill="url(#hx3)"/>
+              <rect x="356" y="124" width="58" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="414" y="124" width="12" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="426" y="124" width="86" height="16" fill="url(#hx3)"/>
+              <rect x="516" y="124" width="58" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="574" y="124" width="12" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="586" y="124" width="86" height="16" fill="url(#hx3)"/>
+              <rect x="676" y="124" width="58" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="734" y="124" width="12" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="746" y="124" width="86" height="16" fill="url(#hx3)"/>
+              <rect x="836" y="124" width="58" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="894" y="124" width="12" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="906" y="124" width="86" height="16" fill="url(#hx3)"/>
+              <rect x="996" y="124" width="58" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="1054" y="124" width="12" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <!-- barrier 线 -->
+            <g stroke="#ff8a8a" stroke-width="1.4" stroke-dasharray="3 3" opacity=".85">
+              <path d="M352 70 V144"/><path d="M512 70 V144"/><path d="M672 70 V144"/><path d="M832 70 V144"/><path d="M992 70 V144"/>
+            </g>
+            <text x="303" y="160" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#6b768f">↑ 斜纹 = GPU 空等 CPU 发下一张牌</text>
+
+            <!-- HBM 曲线：低而稀疏 -->
+            <path d="M142 196 L192 196 L192 178 L254 178 L254 196 L352 196 L352 178 L414 178 L414 196 L512 196 L512 178 L574 178 L574 196 L672 196 L672 178 L734 178 L734 196 L832 196 L832 178 L894 178 L894 196 L992 196 L992 178 L1054 178 L1054 196 L1066 196"
+                  fill="none" stroke="#f0a361" stroke-width="1.8"/>
+            <path d="M142 196 L192 196 L192 178 L254 178 L254 196 L352 196 L352 178 L414 178 L414 196 L512 196 L512 178 L574 178 L574 196 L672 196 L672 178 L734 178 L734 196 L832 196 L832 178 L894 178 L894 196 L992 196 L992 178 L1054 178 L1054 196 L1066 196 L1066 199 L142 199 Z"
+                  fill="rgba(240,163,97,.16)"/>
+            <text x="1100" y="176" text-anchor="end" font-family="Inter" font-size="11" font-weight="700" fill="#ff8a8a">利用率最低</text>
+
+            <!-- ═══════════ ② vLLM + CUDA Graph ═══════════ -->
+            <rect x="8" y="222" width="1104" height="196" rx="10" fill="rgba(240,191,76,.05)" stroke="#3d3a2b"/>
+            <text x="22" y="246" font-family="Inter" font-size="15.5" font-weight="700" fill="#f0bf4c">② vLLM + CUDA Graph</text>
+            <text x="222" y="246" font-family="Inter" font-size="12.5" fill="#9aa6bf">算子融合 · 一次 replay 下发全部 kernel</text>
+            <text x="1100" y="246" text-anchor="end" font-family="Inter" font-size="12.5" font-weight="700" fill="#f0bf4c">GPU 喂饱了，但 293 次 barrier 一个不少</text>
+
+            <g font-family="Inter" font-size="11.5" fill="#9aa6bf" text-anchor="end">
+              <text x="132" y="270">CPU</text><text x="132" y="296">SM #0</text>
+              <text x="132" y="320">SM #1</text><text x="132" y="344">SM #107</text><text x="132" y="380">HBM 带宽</text>
+            </g>
+
+            <!-- CPU：一次 replay 后解放 -->
+            <rect x="142" y="258" width="70" height="16" rx="3" fill="rgba(155,206,107,.5)" stroke="#9bce6b" stroke-width="1"/>
+            <text x="177" y="270" text-anchor="middle" font-family="Inter" font-size="10" fill="#e4ebf7">replay()</text>
+            <rect x="212" y="258" width="854" height="16" fill="url(#hx3)"/>
+            <text x="639" y="270" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#9bce6b">CPU 彻底解放 —— 这一整片就是 CUDA Graph 省下来的</text>
+
+            <!-- SM：紧挨着，无空隙，但有 barrier -->
+            <g>
+              <rect x="216" y="286" width="64" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="280" y="286" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="304" y="286" width="18" height="16" fill="url(#hx3)"/>
+              <rect x="326" y="286" width="64" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="390" y="286" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="414" y="286" width="18" height="16" fill="url(#hx3)"/>
+              <rect x="436" y="286" width="64" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="500" y="286" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="524" y="286" width="18" height="16" fill="url(#hx3)"/>
+              <rect x="546" y="286" width="64" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="610" y="286" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="634" y="286" width="18" height="16" fill="url(#hx3)"/>
+              <rect x="656" y="286" width="64" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="720" y="286" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <g>
+              <rect x="214" y="310" width="62" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="276" y="310" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="300" y="310" width="22" height="16" fill="url(#hx3)"/>
+              <rect x="326" y="310" width="62" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="388" y="310" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="412" y="310" width="20" height="16" fill="url(#hx3)"/>
+              <rect x="436" y="310" width="62" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="498" y="310" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="522" y="310" width="20" height="16" fill="url(#hx3)"/>
+              <rect x="546" y="310" width="62" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="608" y="310" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="632" y="310" width="20" height="16" fill="url(#hx3)"/>
+              <rect x="656" y="310" width="62" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="718" y="310" width="24" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <g>
+              <rect x="218" y="334" width="72" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="290" y="334" width="28" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="326" y="334" width="72" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="398" y="334" width="28" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="436" y="334" width="72" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="508" y="334" width="28" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="546" y="334" width="72" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="618" y="334" width="28" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="656" y="334" width="72" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="728" y="334" width="28" height="16" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <g stroke="#ff8a8a" stroke-width="1.6" stroke-dasharray="3 3">
+              <path d="M322 280 V354"/><path d="M432 280 V354"/><path d="M542 280 V354"/><path d="M652 280 V354"/>
+            </g>
+            <text x="770" y="346" font-family="Inter" font-size="11" font-weight="700" fill="#ff8a8a">← 每条红虚线 = 一次全局 barrier + tail</text>
+
+            <!-- HBM：锯齿 -->
+            <path d="M142 406 L216 406 L216 362 L304 362 L304 396 L326 396 L326 362 L414 362 L414 396 L436 396 L436 362 L524 362 L524 396 L546 396 L546 362 L634 362 L634 396 L656 396 L656 362 L744 362 L744 406 L1066 406"
+                  fill="none" stroke="#f0a361" stroke-width="1.8"/>
+            <path d="M142 406 L216 406 L216 362 L304 362 L304 396 L326 396 L326 362 L414 362 L414 396 L436 396 L436 362 L524 362 L524 396 L546 396 L546 362 L634 362 L634 396 L656 396 L656 362 L744 362 L744 406 L1066 406 L1066 409 L142 409 Z"
+                  fill="rgba(240,163,97,.16)"/>
+            <text x="1100" y="380" text-anchor="end" font-family="Inter" font-size="11" font-weight="700" fill="#f0bf4c">锯齿：每个凹陷都是浪费</text>
+
+            <!-- ═══════════ ③ Mirage MPK ═══════════ -->
+            <rect x="8" y="432" width="1104" height="196" rx="10" fill="rgba(155,206,107,.05)" stroke="#2b3d2f"/>
+            <text x="22" y="456" font-family="Inter" font-size="15.5" font-weight="700" fill="#9bce6b">③ Mirage MPK</text>
+            <text x="160" y="456" font-family="Inter" font-size="12.5" fill="#9aa6bf">一次 launch · kernel 常驻 · 片上 task 调度</text>
+            <text x="1100" y="456" text-anchor="end" font-family="Inter" font-size="12.5" font-weight="700" fill="#9bce6b">无边界，跨层流水，带宽持续满载</text>
+
+            <g font-family="Inter" font-size="11.5" fill="#9aa6bf" text-anchor="end">
+              <text x="132" y="480">CPU</text><text x="132" y="506">SM #0</text>
+              <text x="132" y="530">SM #1</text><text x="132" y="554">SM #107</text><text x="132" y="590">HBM 带宽</text>
+            </g>
+
+            <rect x="142" y="468" width="56" height="16" rx="3" fill="rgba(155,206,107,.5)" stroke="#9bce6b" stroke-width="1"/>
+            <text x="170" y="480" text-anchor="middle" font-family="Inter" font-size="10" fill="#e4ebf7">launch</text>
+            <rect x="198" y="468" width="868" height="16" fill="url(#hx3)"/>
+            <text x="632" y="480" text-anchor="middle" font-family="Inter" font-size="10.5" fill="#9bce6b">kernel 常驻，CPU 只在这之后投喂新请求</text>
+
+            <!-- SM：task 首尾重叠，无 barrier -->
+            <g>
+              <rect x="202" y="496" width="72" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="262" y="496" width="60" height="16" rx="3" fill="rgba(240,163,97,.46)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="310" y="496" width="74" height="16" rx="3" fill="rgba(70,215,204,.38)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="372" y="496" width="62" height="16" rx="3" fill="rgba(240,163,97,.42)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="422" y="496" width="72" height="16" rx="3" fill="rgba(180,155,255,.4)" stroke="#b49bff" stroke-width=".9"/>
+              <rect x="482" y="496" width="64" height="16" rx="3" fill="rgba(70,215,204,.38)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="534" y="496" width="60" height="16" rx="3" fill="rgba(240,163,97,.42)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <g>
+              <rect x="200" y="520" width="68" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="256" y="520" width="64" height="16" rx="3" fill="rgba(240,163,97,.46)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="308" y="520" width="70" height="16" rx="3" fill="rgba(180,155,255,.4)" stroke="#b49bff" stroke-width=".9"/>
+              <rect x="366" y="520" width="66" height="16" rx="3" fill="rgba(70,215,204,.38)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="420" y="520" width="62" height="16" rx="3" fill="rgba(240,163,97,.42)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="470" y="520" width="70" height="16" rx="3" fill="rgba(70,215,204,.38)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="528" y="520" width="66" height="16" rx="3" fill="rgba(240,163,97,.42)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <g>
+              <rect x="206" y="544" width="76" height="16" rx="3" fill="rgba(70,215,204,.42)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="270" y="544" width="68" height="16" rx="3" fill="rgba(240,163,97,.46)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="326" y="544" width="72" height="16" rx="3" fill="rgba(70,215,204,.38)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="386" y="544" width="64" height="16" rx="3" fill="rgba(180,155,255,.4)" stroke="#b49bff" stroke-width=".9"/>
+              <rect x="438" y="544" width="70" height="16" rx="3" fill="rgba(240,163,97,.42)" stroke="#f0a361" stroke-width=".9"/>
+              <rect x="496" y="544" width="66" height="16" rx="3" fill="rgba(70,215,204,.38)" stroke="#46d7cc" stroke-width=".9"/>
+              <rect x="550" y="544" width="44" height="16" rx="3" fill="rgba(240,163,97,.42)" stroke="#f0a361" stroke-width=".9"/>
+            </g>
+            <text x="640" y="530" font-family="Inter" font-size="11.5" font-weight="700" fill="#9bce6b">← task 首尾重叠：上一层的 tile 算完，下一层立刻上 SM</text>
+            <text x="640" y="548" font-family="JetBrains Mono" font-size="10.5" fill="#6b768f">全图找不到一条红线 —— 一次 barrier 都没有</text>
+
+            <!-- HBM：持续满载 -->
+            <path d="M142 616 L202 616 L202 572 L594 572 L594 616 L1066 616" fill="none" stroke="#9bce6b" stroke-width="2"/>
+            <path d="M142 616 L202 616 L202 572 L594 572 L594 616 L1066 616 L1066 619 L142 619 Z" fill="rgba(155,206,107,.20)"/>
+            <text x="398" y="596" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#9bce6b">持续满载，一个凹陷都没有</text>
+            <text x="1100" y="590" text-anchor="end" font-family="Inter" font-size="11" font-weight="700" fill="#9bce6b">利用率最高</text>
+
+            <!-- 完成线 -->
+            <g stroke-dasharray="5 4" stroke-width="1.6">
+              <path d="M594 432 V656" stroke="#9bce6b"/>
+              <path d="M744 222 V656" stroke="#f0bf4c"/>
+              <path d="M1066 12 V656" stroke="#ff8a8a"/>
+            </g>
+            <text x="594" y="672" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#9bce6b">③ 最先收工</text>
+            <text x="744" y="672" text-anchor="middle" font-family="Inter" font-size="11.5" font-weight="700" fill="#f0bf4c">②</text>
+            <text x="1066" y="672" text-anchor="end" font-family="Inter" font-size="11.5" font-weight="700" fill="#ff8a8a">① 最慢</text>
+
+            <!-- 时间轴 -->
+            <path d="M142 650 H1080" stroke="#6b768f" stroke-width="1.4" marker-end="url(#ar3w)"/>
+            <text x="150" y="668" font-family="JetBrains Mono" font-size="10.5" fill="#6b768f">时间 →</text>
+
+            <!-- 图例 -->
+            <g font-family="JetBrains Mono" font-size="10" fill="#9aa6bf">
+              <rect x="142" y="686" width="10" height="10" rx="2" fill="rgba(106,166,255,.42)" stroke="#6aa6ff"/><text x="157" y="695">CPU launch</text>
+              <rect x="248" y="686" width="10" height="10" rx="2" fill="rgba(155,206,107,.5)" stroke="#9bce6b"/><text x="263" y="695">replay / 常驻</text>
+              <rect x="368" y="686" width="10" height="10" rx="2" fill="rgba(70,215,204,.42)" stroke="#46d7cc"/><text x="383" y="695">显存搬运</text>
+              <rect x="466" y="686" width="10" height="10" rx="2" fill="rgba(240,163,97,.5)" stroke="#f0a361"/><text x="481" y="695">计算</text>
+              <rect x="536" y="686" width="10" height="10" rx="2" fill="rgba(180,155,255,.4)" stroke="#b49bff"/><text x="551" y="695">通信 / 其他 task</text>
+              <rect x="682" y="686" width="10" height="10" rx="2" fill="url(#hx3)"/><text x="697" y="695">空转 idle</text>
+              <path d="M780 686 V696" stroke="#ff8a8a" stroke-width="1.6" stroke-dasharray="3 3"/><text x="790" y="695">全局 barrier</text>
+            </g>
+            <text x="1080" y="695" text-anchor="end" font-family="Inter" font-size="10.5" fill="#6b768f">时间比例为示意，非等比实测</text>
+          </svg>
+        </div>
+        <figcaption><b>图 14.</b> 三种执行模型并排。<b>从①到②，消失的是 CPU 那一行和 SM 行里的斜纹</b>（CUDA Graph 的功劳）；<b>从②到③，消失的是那些红色虚线</b>（MegaKernel 的功劳）。两次改进砍掉的是完全不同的东西。</figcaption>
+      </figure>
+
+      <p>逐行读这张图，三个系统的差异就很清楚了：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>看哪一行</th><th>① PyTorch eager</th><th>② vLLM + CUDA Graph</th><th>③ Mirage MPK</th></tr></thead>
+          <tbody>
+            <tr><td><b>CPU 行</b></td><td class="hr_">几乎全忙，一个接一个发牌</td><td class="hg">一次 <code>replay()</code> 后彻底空闲</td><td class="hg">一次 launch 后彻底空闲</td></tr>
+            <tr><td><b>SM 行的斜纹</b></td><td class="hr_"><b>大片空转</b>——GPU 在等 CPU</td><td class="ha">只剩 barrier 处的窄条</td><td class="hg"><b>没有</b></td></tr>
+            <tr><td><b>红色虚线（barrier）</b></td><td class="hr_">每个 kernel 一条</td><td class="hr_"><b>每个 kernel 一条，一个不少</b></td><td class="hg"><b>零</b></td></tr>
+            <tr><td><b>task 能否重叠</b></td><td class="hr_">不能</td><td class="hr_">不能</td><td class="hg">能——上一层 tile 算完，下一层立刻上 SM</td></tr>
+            <tr><td><b>HBM 带宽曲线</b></td><td class="hr_">低且稀疏</td><td class="ha">锯齿，每个凹陷都是浪费</td><td class="hg">持续满载</td></tr>
+            <tr><td><b>瓶颈叫什么</b></td><td class="hr_">launch-bound（CPU）</td><td>barrier-bound（GPU 结构）</td><td class="hg">bandwidth-bound（物理下界）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout key">
+        <div class="ic">🎯</div>
+        <div class="ct"><span class="t">这张图最该带走的一句话</span><p><b>① → ② 和 ② → ③ 解决的是两个正交的问题。</b>CUDA Graph 把「CPU 发牌太慢」修好了，但它<span class="mark">对红色虚线束手无策</span>——因为那不是发牌问题，是 CUDA 编程模型里 kernel 边界的固有语义。要动它，就只能像 MPK 那样把 kernel 这个抽象整个换掉。</p></div>
+      </div>
+
+      <div class="callout warn">
+        <div class="ic">📐</div>
+        <div class="ct"><span class="t">图是示意，数字才是实测</span>
+        <p>上图的时间比例是<b>示意</b>，用来说明结构差异。真实测得的数字是这些：</p>
+        <p style="margin-top:8px">· 每 token 的纯 launch 开销（B200，293 次）：eager <b class="hr_">1.1 ms</b> → CUDA Graph <b class="ha">0.2 ms</b> → MPK <b class="hg">≈ 0</b>（片上调度占总运行时 0.28%）<br>
+        · 端到端每 token 延迟（Qwen3-8B / A100）：vLLM <b class="ha">14.5 ms</b> → MPK <b class="hg">12.5 ms</b>，物理下界 10 ms<br>
+        · 论文口径：MPK vs SGLang/vLLM <b>1.0–1.7×</b>；vs PyTorch + CUDA Graphs <b>最高约 10×</b></p></div>
+      </div>
+
+      <h3>8.9 代价：把一切塞进一个 kernel，要付什么</h3>
+
+      <p>前面讲的都是收益。但「只有一个 kernel」这件事本身会带来一批<b>结构性</b>的约束——它们不是工程没做完，而是这条路线自带的。</p>
+
+      <h4>① 所有 task 被迫共用同一套资源配置</h4>
+
+      <p>这是最根本的一条。一个 kernel 只有一组编译参数，于是<b>四百多种 task 全部挤在同一个模子里</b>：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>被锁死的东西</th><th>源码</th><th>后果</th></tr></thead>
+          <tbody>
+            <tr><td><b>blockDim</b></td><td><code>WORKER_NUM_THREADS</code> ＝ 128（Ampere）/ 256（Hopper·Blackwell），编译期常量</td><td><span class="hr_">每个 task 都必须用这个线程数</span>。一个天然适合 64 线程的小 task，和一个想要 512 线程的 GEMM，只能各自将就</td></tr>
+            <tr><td><b>shared memory</b></td><td><code>MAX_DYNAMIC_SHARED_MEMORY_SIZE</code>（A100 上约 160 KB）</td><td>按<b>最胖的那个 task</b> 申请，其余 task 也占着同样的额度</td></tr>
+            <tr><td><b>寄存器数</b></td><td><code>__launch_bounds__(WORKER_NUM_THREADS, 1)</code></td><td>寄存器压力最大的 task 决定全局分配；<span class="hr_">它一旦 spill，所有 task 陪着一起慢</span></td></tr>
+            <tr><td><b>grid 大小</b></td><td>必须 ＝ 物理 SM 数（第七节讲过的死锁前提）</td><td>无法按算子调整并行度——而不同算子的最佳 grid 本来就不同</td></tr>
+            <tr><td><b>输入输出个数</b></td><td><code>MAX_INPUTS_PER_TASK = 7</code>、<code>MAX_OUTPUTS_PER_TASK = 3</code></td><td>硬上限。超过就得拆 task 或改结构</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="ic">⚖️</div>
+        <div class="ct"><span class="t">这是一笔真实的交易，不是纯赚</span><p>传统范式里，<b>每个 kernel 都可以为自己挑最优的 blockDim、寄存器数、SMEM 用量</b>——这正是 kernel 边界带来的好处之一。MegaKernel 拆掉边界的同时，<span class="mark">也放弃了这份「每个算子各自调优」的自由</span>。收益（消掉 barrier）必须大过这笔损失，整件事才划算。</p></div>
+      </div>
+
+      <h4>② 序列长度上限也被编译期烧死</h4>
+
+      <p>这是上一条在<b>序列维度</b>上的翻版，但更隐蔽。<code>max_seq_length</code> 不是运行时参数，而是一个编译宏：</p>
+
+      <span class="srcpath">mirage-project/mirage · <b>python/mirage/mpk/persistent_kernel.py:261</b></span>
+<pre><code>flags = flags + [<span class="s">f"-DMPK_MAX_SEQ_LENGTH={mpk.max_seq_length}"</span>]</code></pre>
+
+      <p>要理解<b>为什么非烧死不可</b>，得分清「长度进入了什么」——它有两种进入方式，命运完全不同：</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>长度进入的位置</th><th>能否动态</th><th>为什么</th></tr></thead>
+          <tbody>
+            <tr><td><b>循环次数</b><br><span style="font-size:13px">attention 要走多少个 KV page</span></td><td class="hg"><b>可以动态</b></td><td>task 运行时读 <code>paged_kv_indptr_buffer</code> 就知道走几页——<b>循环边界不改变图的形状</b></td></tr>
+            <tr><td><b>并行度</b><br><span style="font-size:13px">用几个 task 分摊这些 page</span></td><td class="hr_"><b>必须静态</b></td><td><b>task 数量就是图的节点数</b>，而图是编译期烧进数组、启动时 memcpy 到显存的——运行时增删节点等于重建整张表</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>split-KV 正好踩在第二类上：<code>num_kv_chunks</code> 决定 attention 被切成几个 chunk task ＋ 一个 merge task，<b>还直接决定中间缓冲区的形状</b>：</p>
+
+      <span class="srcpath">同上 · <b>persistent_kernel.py:1183-1213</b></span>
+<pre><code><span class="k">assert</span> output.num_dims == <span class="n">3</span>  <span class="c"># (num_tokens, num_kv_chunks * num_qo_per_kv * head_dim / world_size, num_kv_heads)</span>
+<span class="k">assert</span> lse.num_dims    == <span class="n">3</span>  <span class="c"># (num_tokens, num_kv_chunks * num_qo_per_kv / world_size, num_kv_heads)</span>
+...
+<span class="c"># max_seq_length / page_size / num_kv_chunks 直接作为 task 的编译参数</span>
+params = [num_q_heads, num_kv_heads, qk_norm, rotary_embed,
+          self.max_seq_length, self.page_size, num_kv_chunks]</code></pre>
+
+      <p>加上 <code>tokens</code> 数组是拿它当<b>行跨距</b>的扁平数组（<code>persistent_kernel.cuh:253</code> 等处的 <code>config.tokens[request_id * MPK_MAX_SEQ_LENGTH + step + j]</code>），三处一起把这个常量钉死了。</p>
+
+      <div class="callout key">
+        <div class="ic">🤔</div>
+        <div class="ct"><span class="t">那为什么 batch size 能分桶，seq 长度却只能锁一个上限？</span>
+        <p>因为两者的<b>数据形态根本不同</b>：</p>
+        <p style="margin-top:8px">· <b>batch size 是整步的一个标量</b>——一次 decode step 只有一个 batch 值，所以「编译期生成多份 tGraph、运行时选一份」是成立的。</p>
+        <p style="margin-top:6px">· <b class="hr_">seq 长度是每个请求各不相同的</b>——同一步里四个请求可能是 100 / 5000 / 200 / 30000。<span class="mark">根本不存在一个能代表这一步的 seq 值，也就无从选桶。</span></p>
+        <p style="margin-top:8px">要分桶就得<b>逐请求分桶</b>，而一张静态图里每个请求槽位的 task 是固定的，于是只能退化成：<b>给每个槽位按最坏情况配满 chunk task</b>。这就是「锁上限」而不是「分桶」的由来。</p></div>
+      </div>
+
+      <p>代价是实打实的：<b>序列远短于设计点时，多数 chunk task 分到的 KV 区间是空的，白占 SM</b>；而要提高上限，得改宏、重新编译。</p>
+
+      <div class="callout warn">
+        <div class="ic">🔁</div>
+        <div class="ct"><span class="t">和 vLLM 对照，这里有个反转</span>
+        <p>前面说过，vLLM 要发明 piecewise、要给 attention backend 做四级兼容性分级，<b>都是因为 attention 不 graph-safe</b>——看起来是个丑陋的妥协。</p>
+        <p style="margin-top:8px"><b>但正是这个妥协，让 vLLM 在 seq 维度上完全自由</b>：attention 压根没进 CUDA Graph，长度随便变。MPK 把 attention 也收编成 task（更优雅，也确实换来了跨层流水），代价就是<span class="mark">把 seq 长度一起静态化了</span>。</p>
+        <p style="margin-top:8px">同一笔交易的两面：<b>你把什么纳入静态图，就得为它的动态性付静态化的代价。</b></p></div>
+      </div>
+
+      <h4>③ 生态：不能调用任何现成的 kernel</h4>
+
+      <p>cuBLAS、cuDNN、FlashAttention、FlashInfer、CUTLASS 的成品 kernel <b>全都是 <code>__global__</code> 函数</b>——它们是「一个 kernel」，而 MPK 需要的是「能在 kernel 内部被调用的 <code>__device__</code> 函数」。</p>
+
+      <p>所以 MPK <b>把所有算子重写了一遍</b>，这就是 <code>TaskType</code> 长到四百多项的原因。代价是：</p>
+      <ul>
+        <li><b>白名单制</b>——枚举里没有的算子就是没有。新模型架构出现时，vLLM 可能当天就能跑，MPK 要等有人写 task。</li>
+        <li><b>吃不到上游红利</b>——FlashAttention 出了新版本、CUTLASS 出了新 GEMM 内核，MPK 都无法直接受益。</li>
+        <li><b>正确性负担全在自己身上</b>——每个重写的算子都要自己保证数值正确，而这些库是被全世界验证过的。</li>
+      </ul>
+
+      <h4>④ 可观测性：profiler 只看得见一个 kernel</h4>
+
+      <p>Nsight Compute / nsys 的核心抽象就是 kernel：kernel 级的耗时排序、occupancy 分析、访存分析——<b>在 megakernel 面前全部失效</b>，因为整个 forward 只有一个 kernel，你只会看到「它跑了 12.5 ms」。</p>
+
+      <p>MPK 的应对是自建：<code>RuntimeConfig</code> 里有个 <code>profiler_buffer</code>，task 执行前后写时间戳（<code>PROFILER_EVENT_START/END</code>），事后导出成 Perfetto trace。<span class="hi">这等于自己重建了一套 profiler</span>——能用，但和成熟工具链的差距是实打实的。</p>
+
+      <h4>⑤ 一处崩溃 = 整个 kernel 挂掉</h4>
+
+      <p>没有 kernel 边界，也就没有了天然的故障隔离点。任何一个 task 越界写、死循环、或 assert 失败，<b>整个常驻 kernel 一起完蛋</b>；而它常驻的特性又意味着「重启」等于重新初始化全部状态。加上参数填错会<b>直接死锁</b>（第七节），排障难度和传统范式不是一个量级。</p>
+
+      <h4>⑥ 编译产物与指令 cache</h4>
+
+      <p>四百多种 task 的代码全部链进同一个 kernel，二进制体积和编译时间都显著增长；运行时每个 SM 的 L1 指令 cache 也要装下当前执行的各类 task 代码，<b>存在 i-cache 抖动的风险</b>——这是传统范式下不存在的问题（每个 kernel 各自小而专）。</p>
+
+      <div class="callout key">
+        <div class="ic">🧾</div>
+        <div class="ct"><span class="t">一句话总结这笔账</span>
+        <p>MegaKernel 用<b>五样东西</b>换<b>一样东西</b>：<br>
+        用「每算子独立调优的自由 ＋ 现成 kernel 生态 ＋ 成熟 profiler ＋ 故障隔离 ＋ 编译简单」，<br>
+        换「<b class="hg">消掉全局 barrier，让依赖回到真实粒度</b>」。</p>
+        <p style="margin-top:8px"><span class="mark">这笔交易在「小 batch、decode、小模型、新卡、低延迟」时划算，在别的场景不划算</span>——这正是第十节那张判据表背后的道理，也解释了为什么它的加速比对着 vLLM 只有 1.0–1.7×，而不是数量级。</p></div>
       </div>
 
     </section>
@@ -1741,12 +2681,44 @@ footer{border-top:1px solid var(--line); margin-top:46px; padding:24px 0 60px;
 
 <script>
   const bar = document.getElementById('progress');
+
+  // 悬浮目录：滚动高亮当前所在章节
+  const heads = Array.prototype.slice.call(document.querySelectorAll('main h2[id]'));
+  const links = Array.prototype.slice.call(document.querySelectorAll('#tocf a'));
+  let tops = [];
+  const measure = () => {
+    const y = window.pageYOffset;
+    tops = heads.map(h => h.getBoundingClientRect().top + y);
+  };
+  let active = -1;
+  const spy = () => {
+    if (!links.length || !tops.length) return;
+    const y = window.pageYOffset + 140;   // 稍微提前切换，读感更自然
+    let idx = 0;
+    for (let i = 0; i < tops.length; i++) { if (tops[i] <= y) idx = i; }
+    // 滚到底时强制点亮最后一节
+    if (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 4) {
+      idx = tops.length - 1;
+    }
+    if (idx === active) return;
+    active = idx;
+    links.forEach((a, i) => a.classList.toggle('on', i === idx));
+  };
+
   const onScroll = () => {
     const h = document.documentElement;
     const max = h.scrollHeight - h.clientHeight;
     bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    spy();
   };
   document.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', () => { measure(); active = -1; spy(); }, {passive:true});
+  // 图片 / MathJax 排版会改变高度，加载完成后重新量一次
+  window.addEventListener('load', () => { measure(); active = -1; spy(); });
+  if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+    MathJax.startup.promise.then(() => { measure(); active = -1; spy(); });
+  }
+  measure();
   onScroll();
 </script>
 </body>
